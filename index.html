@@ -390,15 +390,18 @@ async function editMemberPoints(userId, currentPoints){
     return alert('Invalid number. Enter a whole number zero or greater.');
   }
 
-  const {error} = await sb
+  const {data, error} = await sb
     .from('profiles')
     .update({points: pointsNum})
-    .eq('id', userId);
+    .eq('id', userId)
+    .select();
 
   if(error){
     alert('Error updating coins: ' + error.message);
+  } else if(!data || data.length === 0){
+    alert('Update failed silently. Please check your Supabase RLS policies for the profiles table.');
   } else {
-    alert('Coins updated successfully.');
+    alert('Coins updated successfully!');
     await loadAdmin();
     if(user && user.id === userId){
       await loadProfile();

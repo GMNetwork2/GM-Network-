@@ -113,7 +113,7 @@ async function loadMyAccountPage(){
   $('accCoins').textContent=isAdmin?'50,000':Number(myProfile?.points||0).toLocaleString();
   $('accBalance').textContent=isAdmin?'$2,000':convertMoney(Math.floor(totalComm));
   const coins=isAdmin?50000:Number(myProfile?.points||0),level=coins>=50000?'Diamond 💎':coins>=10000?'Gold 🥇':coins>=3000?'Silver 🥈':'Bronze 🥉',target=coins>=50000?null:coins>=10000?50000:coins>=3000?10000:3000;
-  $('accAchievements').innerHTML=`<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target?`<p class="muted">Next level: ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>`:'<p>You have reached the highest level! 🏆</p>'}</div>`;
+  $('accAchievements').innerHTML=`<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target?`<p class="muted">Next level: ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>`:'<p>You have reached the highest level! 🏆'}</div>`;
   const {data:orders,error}=await sb.from('orders').select('*, products(name)').eq('buyer_id',user.id).order('created_at',{ascending:false});
   if(error){$('accTransactions').textContent='Could not load transactions: '+error.message;return}
   $('accTransactions').innerHTML=(orders||[]).map(o=>{
@@ -188,7 +188,7 @@ async function uploadPaymentProof(){
 async function loadAdmin(){
   if(!isAdmin)return;
   const [m,p,o,w]=await Promise.all([
-    sb.from('profiles').select('id,full_name,member_code,points,created_at').order('created_at',{ascending:false}).limit(20),
+    sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at',{ascending:false}).limit(20),
     sb.from('products').select('*').order('created_at',{ascending:false}),
     sb.from('orders').select('*').order('created_at',{ascending:false}).limit(20),
     sb.from('withdrawals').select('*, profiles(full_name)').order('created_at',{ascending:false}).limit(10)
@@ -216,11 +216,12 @@ async function loadAdmin(){
     </div>`).join('')||'No requests yet.';
   $('adminMembers').innerHTML=m.error?esc(m.error.message):(m.data||[]).map(x=>{
     const coins=Number(x.points||0);
+    const comm=Number(x.total_commission||0);
     let level='Bronze 🥉';
     if(coins>=50000)level='Diamond 💎';
     else if(coins>=10000)level='Gold 🥇';
     else if(coins>=3000)level='Silver 🥈';
-    return `<div class="item"><div><b>${esc(x.full_name)}</b> <span class="pill" style="background:var(--gold);color:var(--g)">${level}</span><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${coins.toLocaleString()}</b></small></div><div style="display:flex;flex-direction:column;gap:5px"><button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins</button><button class="secondary small-btn" data-view-team="${esc(x.id)}" data-member-name="${esc(x.full_name||'Member')}">View Team</button></div></div>`;
+    return `<div class="item"><div><b>${esc(x.full_name)}</b> <span class="pill" style="background:var(--gold);color:var(--g)">${level}</span><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${coins.toLocaleString()}</b> | Comm: <b>$${comm}</b></small></div><div style="display:flex;flex-direction:column;gap:5px"><button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins/Comm</button><button class="secondary small-btn" data-view-team="${esc(x.id)}" data-member-name="${esc(x.full_name||'Member')}">View Team</button></div></div>`;
   }).join('')||'No members yet.';
   $('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn=>{
     const member=(m.data||[]).find(x=>x.id===btn.dataset.editCoins);
@@ -254,8 +255,8 @@ async function searchAdminMember(){
   if(!data||data.length===0){$('adminSearchResult').textContent='No member found.';return}
   $('adminSearchResult').innerHTML=data.map(x=>`
     <div class="item">
-      <div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points||0).toLocaleString()}</b></small></div>
-      <div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points||0})">Edit Coins</button></div>
+      <div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points||0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission||0)}</b></small></div>
+      <div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points||0})">Edit Coins/Comm</button></div>
     </div>`).join('');
 }
 async function editProduct(id){if(!isAdmin)return alert('Admin access required.');const {data:product,error}=await sb.from('products').select('*').eq('id',id).single();if(error||!product)return alert('Could not load product: '+(error?.message||'Product not found.'));$('editProductId').value=product.id;$('editProductName').value=product.name||'';$('editProductPrice').value=Number(product.price_pkr||0);$('editProductRate').value=Number(product.commission_percent||0);$('editProductImages').value='';$('editProductStatus').classList.add('hidden');$('editProductModal').classList.remove('hidden')}
@@ -289,6 +290,13 @@ async function showOrderDetails(id,phone,address,orderStatus,name,price,buyerId,
   } else {
     proofBox.innerHTML=`<div class="item"><span>Payment Proof</span><b class="muted">Not uploaded</b></div>`;
   }
+  // یہاں ایڈمن کے لیے پروف تبدیل کرنے کا آپشن شامل کیا گیا ہے
+  if(isAdmin){
+    const changeBox=document.createElement('div');
+    changeBox.className='item';
+    changeBox.innerHTML=`<span>Change Proof</span><input type="file" id="adminProofUpload" accept="image/*" style="width:auto;"><button class="primary small-btn" onclick="adminChangeProof('${id}')">Upload</button>`;
+    proofBox.append(changeBox);
+  }
   const actionDiv=$('orderActionButtons');
   actionDiv.innerHTML='';
   if(!isAdmin){
@@ -304,6 +312,48 @@ async function showOrderDetails(id,phone,address,orderStatus,name,price,buyerId,
     actionDiv.append(label,select,btn);
   }
   $('orderDetailModal').classList.remove('hidden');
+}
+async function adminChangeProof(orderId){
+  const fileInput=$('adminProofUpload');
+  const file=fileInput.files[0];
+  if(!file)return alert('Please select a screenshot to upload.');
+  const ext=file.name.split('.').pop();
+  const path=`payments/admin-${orderId}-${Date.now()}.${ext}`;
+  const {error:uploadError}=await sb.storage.from('product-images').upload(path,file);
+  if(uploadError)return alert('Upload failed: '+uploadError.message);
+  const {data:{publicUrl}}=sb.storage.from('product-images').getPublicUrl(path);
+  const {error:updateError}=await sb.from('orders').update({payment_proof:publicUrl}).eq('id',orderId);
+  if(updateError)return alert('Database update failed: '+updateError.message);
+  alert('Proof updated successfully.');
+  await loadAdmin();
+  closeOrderDetailModal();
+}
+async function editMemberPoints(userId,currentPoints){
+  if(!isAdmin)return alert('Admin access required.');
+  // کوائنز پوچھیں
+  const newPoints=prompt('Enter new coin balance for this member:',currentPoints);
+  if(newPoints===null||newPoints.trim()==='')return;
+  const pointsNum=Number(newPoints);
+  if(!Number.isInteger(pointsNum)||pointsNum<0)return alert('Invalid number. Enter a whole number zero or greater.');
+  
+  // کمیشن (ڈالرز) پوچھیں
+  const {data: profileData, error: fetchErr} = await sb.from('profiles').select('total_commission').eq('id', userId).single();
+  if(fetchErr) return alert('Could not load current commission: ' + fetchErr.message);
+  const currentComm=Number(profileData.total_commission||0);
+  const newCommStr=prompt('Enter new Total Commission in USD ($) for this member:',currentComm);
+  if(newCommStr===null||newCommStr.trim()==='')return;
+  const commNum=Number(newCommStr);
+  if(isNaN(commNum)||commNum<0)return alert('Invalid commission amount. Enter a valid number.');
+
+  // دونوں کو اپڈیٹ کریں
+  const {data,error}=await sb.from('profiles').update({points:pointsNum, total_commission:commNum}).eq('id',userId).select();
+  if(error)alert('Error updating data: '+error.message);
+  else if(!data||data.length===0)alert('Update failed silently. Please check your Supabase RLS policies for the profiles table.');
+  else{
+    alert('Coins and Commission updated successfully!');
+    await loadAdmin();
+    if(user&&user.id===userId){await loadProfile();await loadMyAccountPage()}
+  }
 }
 async function markAsDelivered(orderId){
   if(!user||!sb)return alert('Please sign in to confirm delivery.');
@@ -394,21 +444,6 @@ async function updateOrderStatus(orderId,newStatus){
   }
   closeOrderDetailModal();
   await loadAdmin();
-}
-async function editMemberPoints(userId,currentPoints){
-  if(!isAdmin)return alert('Admin access required.');
-  const newPoints=prompt('Enter new coin balance for this member:',currentPoints);
-  if(newPoints===null||newPoints.trim()==='')return;
-  const pointsNum=Number(newPoints);
-  if(!Number.isInteger(pointsNum)||pointsNum<0)return alert('Invalid number. Enter a whole number zero or greater.');
-  const {data,error}=await sb.from('profiles').update({points:pointsNum}).eq('id',userId).select();
-  if(error)alert('Error updating coins: '+error.message);
-  else if(!data||data.length===0)alert('Update failed silently. Please check your Supabase RLS policies for the profiles table.');
-  else{
-    alert('Coins updated successfully!');
-    await loadAdmin();
-    if(user&&user.id===userId){await loadProfile();await loadMyAccountPage()}
-  }
 }
 async function viewMemberTeam(userId,name){
   if(!isAdmin)return alert('Admin access required.');

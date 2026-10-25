@@ -97,34 +97,27 @@ async function loadProfile(){
     return;
   }
   myProfile=profile;
-  
+
   // چیک کریں کہ گاہک کا کوئی "کنفرم شدہ" آرڈر ہے یا نہیں
   const {data:userOrders,error:ordersErr}=await sb.from('orders').select('id').eq('buyer_id',user.id).eq('status','confirmed').limit(1);
-  
+
   if(!ordersErr && userOrders && userOrders.length > 0){
-    // اگر کنفرم شدہ خریداری ہو گئی ہے تو کوڈ شو ہو
     $('profRefCode').textContent=profile.referral_code||'—';
   } else {
-    // اگر آرڈر ابھی کنفرم نہیں ہوا تو کوڈ لاک رہے
     $('profRefCode').textContent='🔒 Locked (Wait for order confirmation)';
   }
-  
+
   $('profCoins').textContent=isAdmin?'50,000':Number(profile.points||0).toLocaleString();
   $('nm').textContent=Number(profile.points||0).toLocaleString();
-  
-  const {data:orders,error:ordersError}=await sb.from('orders').select('unit_price_pkr,product_id').eq('referrer_id',user.id).eq('status','confirmed');
-  totalComm=0;
-  if(!ordersError&&orders?.length){
-    const ids=[...new Set(orders.map(o=>o.product_id).filter(Boolean))],rates={};
-    if(ids.length){
-      const {data:products}=await sb.from('products').select('id,commission_percent').in('id',ids);
-      (products||[]).forEach(p=>rates[p.id]=Number(p.commission_percent||0)/100);
-    }
-    orders.forEach(o=>totalComm+=Number(o.unit_price_pkr||0)*(rates[o.product_id]??.05));
-  }
+
+  // کمیشن کی رقم profiles ٹیبل سے لیں
+  totalComm = Number(profile.total_commission || 0);
   $('profCommission').textContent=convertMoney(Math.floor(totalComm));
   $('nc').textContent=convertMoney(Math.floor(totalComm));
-  $('ns').textContent=ordersError?'—':String(orders?.length??0);
+
+  // سیلز کی تعداد چیک کریں
+  const {data:sales,error:salesError}=await sb.from('orders').select('id').eq('referrer_id',user.id).eq('status','confirmed');
+  $('ns').textContent=salesError?'—':String(sales?.length??0);
 }
 async function loadMyAccountPage(){if(!user||!sb)return;$('accEmail').textContent=user.email||'—';$('accName').textContent=isAdmin?'Muhammad Hamid':myProfile?.full_name||'Member';$('accRefCode').textContent=$('profRefCode').textContent||(isAdmin?'REFQ7UN22':'—');$('accCoins').textContent=isAdmin?'50,000':Number(myProfile?.points||0).toLocaleString();$('accBalance').textContent=isAdmin?'$2,000':convertMoney(Math.floor(totalComm));const coins=isAdmin?50000:Number(myProfile?.points||0),level=coins>=50000?'Diamond 💎':coins>=10000?'Gold 🥇':coins>=3000?'Silver 🥈':'Bronze 🥉',target=coins>=50000?null:coins>=10000?50000:coins>=3000?10000:3000;$('accAchievements').innerHTML=`<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target?`<p class="muted">Next level: ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>`:'<p>You have reached the highest level! 🏆</p>'}</div>`;const {data:orders,error}=await sb.from('orders').select('*').eq('buyer_id',user.id).order('created_at',{ascending:false});if(error){$('accTransactions').textContent='Could not load transactions: '+error.message;return}$('accTransactions').innerHTML=(orders||[]).map(o=>`<div class="item"><div><b>Order …${esc(String(o.id||'').slice(-4))}</b><br><small>${convertMoney(o.unit_price_pkr)}</small><br><small class="muted">Status: ${esc(o.status||'unknown')}</small></div>${o.status==='confirmed'?`<button class="primary small-btn" data-mark-delivered="${esc(o.id)}">I Received My Order</button>`:`<span class="pill">${esc(o.status||'unknown')}</span>`}</div>`).join('')||'<p class="muted">No transactions yet.</p>';$('accTransactions').querySelectorAll('[data-mark-delivered]').forEach(btn=>btn.onclick=()=>markAsDelivered(btn.dataset.markDelivered))}
 function copyText(text){if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>alert('Copied: '+text)).catch(()=>prompt('Copy this text:',text));else prompt('Copy this text:',text)}

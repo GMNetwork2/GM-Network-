@@ -148,15 +148,32 @@ document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'&&!$('imageLightb
 function openOrder(id,name,price){if(!user)return alert('Please sign in first to place an order.');if(!myProfile)return alert('Your profile is not ready. Please refresh or sign in again.');currentProduct={id,name,price:Number(price)||0};$('orderProductName').textContent='Product: '+name+' — '+convertMoney(price);$('orderFormContent').classList.remove('hidden');$('paymentContent').classList.add('hidden');$('orderModal').classList.remove('hidden');$('orderStatus').classList.add('hidden')}
 function closeModal(){$('orderModal').classList.add('hidden')}
 async function submitOrder(){if(!user||!currentProduct||!sb)return;const name=$('orderName').value.trim(),phone=$('orderPhone').value.trim(),address=$('orderAddress').value.trim();if(!name||!phone||!address)return alert('Please fill in all fields.');status('orderStatus','Placing order…');const {data:order,error}=await sb.from('orders').insert({buyer_id:user.id,product_id:currentProduct.id,quantity:1,unit_price_pkr:currentProduct.price,phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null}).select('id').single();if(error){status('orderStatus','Order failed: '+error.message,'error');return}currentOrderId=order?.id||null;$('orderFormContent').classList.add('hidden');$('paymentContent').classList.remove('hidden');$('payAmount').textContent=convertMoney(currentProduct.price);const msg=encodeURIComponent(`Hi, I placed order ${currentOrderId||''} for ${currentProduct.name} (${convertMoney(currentProduct.price)}). My Name: ${name}, Phone: ${phone}. I will send the payment screenshot.`);$('whatsappBtn').href=`https://wa.me/92${MY_EASYPAISA.replace(/^0/,'')}?text=${msg}`;$('orderName').value='';$('orderPhone').value='';$('orderAddress').value=''}
-async function loadAdmin(){if(!isAdmin)return;const [m,p,o,w]=await Promise.all([sb.from('profiles').select('id,full_name,member_code,points,created_at').order('created_at',{ascending:false}).limit(20),sb.from('products').select('*').order('created_at',{ascending:false}),sb.from('orders').select('*').order('created_at',{ascending:false}).limit(20),sb.from('withdrawals').select('*, profiles(full_name)').order('created_at',{ascending:false}).limit(10)]);$('am').textContent='500';$('ap').textContent=p.error?'—':String(p.data?.length||0);$('ao').textContent=o.error?'—':String(o.data?.length||0);$('nm').textContent='50,000';$('ns').textContent='500';$('nc').textContent='$2,000';$('adminOrders').innerHTML=o.error?esc(o.error.message):(o.data||[]).map(x=>`<div class="item" data-order="${esc(x.id)}" style="cursor:pointer"><div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number)} • ${convertMoney(x.unit_price_pkr)}</small></div><span class="pill">${esc(x.status)}</span></div>`).join('')||'No orders yet.';$('adminOrders').querySelectorAll('[data-order]').forEach((el,i)=>{const x=o.data[i];el.onclick=()=>showOrderDetails(x.id,x.phone_number,x.shipping_address,x.status,'Order ID: '+String(x.id).slice(-6),x.unit_price_pkr)});$('adminWithdrawals').innerHTML=w.error?esc(w.error.message):(w.data||[]).map(x=>`<div class="item"><div><b>${esc(x.profiles?.full_name||'User')}</b><br><small>${esc(x.account_details)}</small></div><div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status||'pending')}</span></div></div>`).join('')||'No requests yet.';$('adminMembers').innerHTML=m.error?esc(m.error.message):(m.data||[]).map(x=>`
+async function loadAdmin(){if(!isAdmin)return;const [m,p,o,w]=await Promise.all([sb.from('profiles').select('id,full_name,member_code,points,created_at').order('created_at',{ascending:false}).limit(20),sb.from('products').select('*').order('created_at',{ascending:false}),sb.from('orders').select('*').order('created_at',{ascending:false}).limit(20),sb.from('withdrawals').select('*, profiles(full_name)').order('created_at',{ascending:false}).limit(10)]);$('am').textContent='500';$('ap').textContent=p.error?'—':String(p.data?.length||0);$('ao').textContent=o.error?'—':String(o.data?.length||0);$('nm').textContent='50,000';$('ns').textContent='500';$('nc').textContent='$2,000';$('adminOrders').innerHTML=o.error?esc(o.error.message):(o.data||[]).map(x=>`<div class="item" data-order="${esc(x.id)}" style="cursor:pointer"><div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number)} • ${convertMoney(x.unit_price_pkr)}</small></div><span class="pill">${esc(x.status)}</span></div>`).join('')||'No orders yet.';$('adminOrders').querySelectorAll('[data-order]').forEach((el,i)=>{const x=o.data[i];el.onclick=()=>showOrderDetails(x.id,x.phone_number,x.shipping_address,x.status,'Order ID: '+String(x.id).slice(-6),x.unit_price_pkr)});$('adminWithdrawals').innerHTML=w.error?esc(w.error.message):(w.data||[]).map(x=>`<div class="item"><div><b>${esc(x.profiles?.full_name||'User')}</b><br><small>${esc(x.account_details)}</small></div><div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status||'pending')}</span></div></div>`).join('')||'No requests yet.';$('adminMembers').innerHTML=m.error?esc(m.error.message):(m.data||[]).map(x=>{
+  const coins=Number(x.points||0);
+  let level='Bronze 🥉';
+  if(coins>=50000) level='Diamond 💎';
+  else if(coins>=10000) level='Gold 🥇';
+  else if(coins>=3000) level='Silver 🥈';
+  return `
   <div class="item">
-    <div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: ${Number(x.points||0).toLocaleString()}</small></div>
-    <div><button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins</button></div>
-  </div>
-`).join('')||'No members yet.';
+    <div>
+      <b>${esc(x.full_name)}</b>
+      <span class="pill" style="background:var(--gold);color:var(--g)">${level}</span>
+      <br><small>${esc(x.member_code)}</small><br>
+      <small class="muted">Coins: <b>${coins.toLocaleString()}</b></small>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins</button>
+      <button class="secondary small-btn" data-view-team="${esc(x.id)}" data-member-name="${esc(x.full_name||'Member')}">View Team</button>
+    </div>
+  </div>`;
+}).join('')||'No members yet.';
 $('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn=>{
   const member=(m.data||[]).find(x=>x.id===btn.dataset.editCoins);
-  btn.onclick=()=>editMemberPoints(btn.dataset.editCoins, Number(member?.points||0));
+  btn.onclick=()=>editMemberPoints(btn.dataset.editCoins,Number(member?.points||0));
+});
+$('adminMembers').querySelectorAll('[data-view-team]').forEach(btn=>{
+  btn.onclick=()=>viewMemberTeam(btn.dataset.viewTeam,btn.dataset.memberName||'Member');
 });$('adminManageProducts').innerHTML=p.error?esc(p.error.message):(p.data||[]).map(x=>`<div class="item"><div><b>${esc(x.name)}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active?'Active':'Inactive'}</small></div><div class="row-actions"><button class="secondary" data-edit="${esc(x.id)}">Edit</button><button class="secondary" data-toggle="${esc(x.id)}">${x.active?'Deactivate':'Activate'}</button><button class="secondary" data-delete="${esc(x.id)}">Delete</button></div></div>`).join('')||'No products yet.';$('adminManageProducts').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editProduct(b.dataset.edit));$('adminManageProducts').querySelectorAll('[data-toggle]').forEach(b=>{const x=p.data.find(x=>x.id===b.dataset.toggle);b.onclick=()=>toggleProduct(x.id,x.active)});$('adminManageProducts').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteProduct(b.dataset.delete))}
 async function editProduct(id){if(!isAdmin)return alert('Admin access required.');const {data:product,error}=await sb.from('products').select('*').eq('id',id).single();if(error||!product)return alert('Could not load product: '+(error?.message||'Product not found.'));$('editProductId').value=product.id;$('editProductName').value=product.name||'';$('editProductPrice').value=Number(product.price_pkr||0);$('editProductRate').value=Number(product.commission_percent||0);$('editProductImages').value='';$('editProductStatus').classList.add('hidden');$('editProductModal').classList.remove('hidden')}
 async function saveProductEdit(){if(!isAdmin)return status('editProductStatus','Admin access required.','error');const id=$('editProductId').value,name=$('editProductName').value.trim(),price=Number($('editProductPrice').value),rate=Number($('editProductRate').value),files=$('editProductImages').files;if(!name||!Number.isFinite(price)||price<1)return status('editProductStatus','Enter a product name and valid price.','error');if(!Number.isFinite(rate)||rate<0||rate>50)return status('editProductStatus','Commission must be between 0 and 50%.','error');status('editProductStatus','Saving changes…');const update={name,price_pkr:price,commission_percent:rate};if(files&&files.length>0){const images=[];for(let i=0;i<Math.min(4,files.length);i++){const file=files[i],ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg',path=`products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;const {error:uploadError}=await sb.storage.from('product-images').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(uploadError)return status('editProductStatus','Image upload failed: '+uploadError.message,'error');const url=sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;if(url)images.push(url)}if(images.length){update.images=images;update.image_url=images[0]}}const {error}=await sb.from('products').update(update).eq('id',id);if(error)return status('editProductStatus','Update failed: '+error.message,'error');status('editProductStatus','Product updated successfully.','ok');await loadProducts();await loadAdmin();setTimeout(()=>$('editProductModal').classList.add('hidden'),700)}
@@ -320,6 +337,17 @@ async function editMemberPoints(userId, currentPoints){
       await loadMyAccountPage();
     }
   }
+}
+
+
+async function viewMemberTeam(userId, name){
+  if(!isAdmin) return alert('Admin access required.');
+  const {data,error}=await sb.from('profiles').select('full_name, member_code').eq('referred_by',userId).order('created_at',{ascending:true});
+  if(error) return alert('Error loading team: '+error.message);
+  if(!data||data.length===0) return alert(`Team of ${name}: No members yet.`);
+  let teamList=`Team of ${name}:\n\n`;
+  data.forEach((member,i)=>{teamList+=`${i+1}. ${member.full_name||'Member'} (${member.member_code||'No code'})\n`;});
+  alert(teamList);
 }
 
 document.addEventListener('DOMContentLoaded',init);

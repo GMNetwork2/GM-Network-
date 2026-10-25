@@ -148,7 +148,16 @@ document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'&&!$('imageLightb
 function openOrder(id,name,price){if(!user)return alert('Please sign in first to place an order.');if(!myProfile)return alert('Your profile is not ready. Please refresh or sign in again.');currentProduct={id,name,price:Number(price)||0};$('orderProductName').textContent='Product: '+name+' — '+convertMoney(price);$('orderFormContent').classList.remove('hidden');$('paymentContent').classList.add('hidden');$('orderModal').classList.remove('hidden');$('orderStatus').classList.add('hidden')}
 function closeModal(){$('orderModal').classList.add('hidden')}
 async function submitOrder(){if(!user||!currentProduct||!sb)return;const name=$('orderName').value.trim(),phone=$('orderPhone').value.trim(),address=$('orderAddress').value.trim();if(!name||!phone||!address)return alert('Please fill in all fields.');status('orderStatus','Placing order…');const {data:order,error}=await sb.from('orders').insert({buyer_id:user.id,product_id:currentProduct.id,quantity:1,unit_price_pkr:currentProduct.price,phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null}).select('id').single();if(error){status('orderStatus','Order failed: '+error.message,'error');return}currentOrderId=order?.id||null;$('orderFormContent').classList.add('hidden');$('paymentContent').classList.remove('hidden');$('payAmount').textContent=convertMoney(currentProduct.price);const msg=encodeURIComponent(`Hi, I placed order ${currentOrderId||''} for ${currentProduct.name} (${convertMoney(currentProduct.price)}). My Name: ${name}, Phone: ${phone}. I will send the payment screenshot.`);$('whatsappBtn').href=`https://wa.me/92${MY_EASYPAISA.replace(/^0/,'')}?text=${msg}`;$('orderName').value='';$('orderPhone').value='';$('orderAddress').value=''}
-async function loadAdmin(){if(!isAdmin)return;const [m,p,o,w]=await Promise.all([sb.from('profiles').select('id,full_name,member_code,created_at').order('created_at',{ascending:false}).limit(20),sb.from('products').select('*').order('created_at',{ascending:false}),sb.from('orders').select('*').order('created_at',{ascending:false}).limit(20),sb.from('withdrawals').select('*, profiles(full_name)').order('created_at',{ascending:false}).limit(10)]);$('am').textContent='500';$('ap').textContent=p.error?'—':String(p.data?.length||0);$('ao').textContent=o.error?'—':String(o.data?.length||0);$('nm').textContent='50,000';$('ns').textContent='500';$('nc').textContent='$2,000';$('adminOrders').innerHTML=o.error?esc(o.error.message):(o.data||[]).map(x=>`<div class="item" data-order="${esc(x.id)}" style="cursor:pointer"><div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number)} • ${convertMoney(x.unit_price_pkr)}</small></div><span class="pill">${esc(x.status)}</span></div>`).join('')||'No orders yet.';$('adminOrders').querySelectorAll('[data-order]').forEach((el,i)=>{const x=o.data[i];el.onclick=()=>showOrderDetails(x.id,x.phone_number,x.shipping_address,x.status,'Order ID: '+String(x.id).slice(-6),x.unit_price_pkr)});$('adminWithdrawals').innerHTML=w.error?esc(w.error.message):(w.data||[]).map(x=>`<div class="item"><div><b>${esc(x.profiles?.full_name||'User')}</b><br><small>${esc(x.account_details)}</small></div><div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status||'pending')}</span></div></div>`).join('')||'No requests yet.';$('adminMembers').innerHTML=m.error?esc(m.error.message):(m.data||[]).map(x=>`<div class="item"><div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small></div><span class="pill">…${esc(String(x.id).slice(-6))}</span></div>`).join('')||'No members yet.';$('adminManageProducts').innerHTML=p.error?esc(p.error.message):(p.data||[]).map(x=>`<div class="item"><div><b>${esc(x.name)}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active?'Active':'Inactive'}</small></div><div class="row-actions"><button class="secondary" data-edit="${esc(x.id)}">Edit</button><button class="secondary" data-toggle="${esc(x.id)}">${x.active?'Deactivate':'Activate'}</button><button class="secondary" data-delete="${esc(x.id)}">Delete</button></div></div>`).join('')||'No products yet.';$('adminManageProducts').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editProduct(b.dataset.edit));$('adminManageProducts').querySelectorAll('[data-toggle]').forEach(b=>{const x=p.data.find(x=>x.id===b.dataset.toggle);b.onclick=()=>toggleProduct(x.id,x.active)});$('adminManageProducts').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteProduct(b.dataset.delete))}
+async function loadAdmin(){if(!isAdmin)return;const [m,p,o,w]=await Promise.all([sb.from('profiles').select('id,full_name,member_code,points,created_at').order('created_at',{ascending:false}).limit(20),sb.from('products').select('*').order('created_at',{ascending:false}),sb.from('orders').select('*').order('created_at',{ascending:false}).limit(20),sb.from('withdrawals').select('*, profiles(full_name)').order('created_at',{ascending:false}).limit(10)]);$('am').textContent='500';$('ap').textContent=p.error?'—':String(p.data?.length||0);$('ao').textContent=o.error?'—':String(o.data?.length||0);$('nm').textContent='50,000';$('ns').textContent='500';$('nc').textContent='$2,000';$('adminOrders').innerHTML=o.error?esc(o.error.message):(o.data||[]).map(x=>`<div class="item" data-order="${esc(x.id)}" style="cursor:pointer"><div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number)} • ${convertMoney(x.unit_price_pkr)}</small></div><span class="pill">${esc(x.status)}</span></div>`).join('')||'No orders yet.';$('adminOrders').querySelectorAll('[data-order]').forEach((el,i)=>{const x=o.data[i];el.onclick=()=>showOrderDetails(x.id,x.phone_number,x.shipping_address,x.status,'Order ID: '+String(x.id).slice(-6),x.unit_price_pkr)});$('adminWithdrawals').innerHTML=w.error?esc(w.error.message):(w.data||[]).map(x=>`<div class="item"><div><b>${esc(x.profiles?.full_name||'User')}</b><br><small>${esc(x.account_details)}</small></div><div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status||'pending')}</span></div></div>`).join('')||'No requests yet.';$('adminMembers').innerHTML=m.error?esc(m.error.message):(m.data||[]).map(x=>`
+  <div class="item">
+    <div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: ${Number(x.points||0).toLocaleString()}</small></div>
+    <div><button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins</button></div>
+  </div>
+`).join('')||'No members yet.';
+$('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn=>{
+  const member=(m.data||[]).find(x=>x.id===btn.dataset.editCoins);
+  btn.onclick=()=>editMemberPoints(btn.dataset.editCoins, Number(member?.points||0));
+});$('adminManageProducts').innerHTML=p.error?esc(p.error.message):(p.data||[]).map(x=>`<div class="item"><div><b>${esc(x.name)}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active?'Active':'Inactive'}</small></div><div class="row-actions"><button class="secondary" data-edit="${esc(x.id)}">Edit</button><button class="secondary" data-toggle="${esc(x.id)}">${x.active?'Deactivate':'Activate'}</button><button class="secondary" data-delete="${esc(x.id)}">Delete</button></div></div>`).join('')||'No products yet.';$('adminManageProducts').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editProduct(b.dataset.edit));$('adminManageProducts').querySelectorAll('[data-toggle]').forEach(b=>{const x=p.data.find(x=>x.id===b.dataset.toggle);b.onclick=()=>toggleProduct(x.id,x.active)});$('adminManageProducts').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteProduct(b.dataset.delete))}
 async function editProduct(id){if(!isAdmin)return alert('Admin access required.');const {data:product,error}=await sb.from('products').select('*').eq('id',id).single();if(error||!product)return alert('Could not load product: '+(error?.message||'Product not found.'));$('editProductId').value=product.id;$('editProductName').value=product.name||'';$('editProductPrice').value=Number(product.price_pkr||0);$('editProductRate').value=Number(product.commission_percent||0);$('editProductImages').value='';$('editProductStatus').classList.add('hidden');$('editProductModal').classList.remove('hidden')}
 async function saveProductEdit(){if(!isAdmin)return status('editProductStatus','Admin access required.','error');const id=$('editProductId').value,name=$('editProductName').value.trim(),price=Number($('editProductPrice').value),rate=Number($('editProductRate').value),files=$('editProductImages').files;if(!name||!Number.isFinite(price)||price<1)return status('editProductStatus','Enter a product name and valid price.','error');if(!Number.isFinite(rate)||rate<0||rate>50)return status('editProductStatus','Commission must be between 0 and 50%.','error');status('editProductStatus','Saving changes…');const update={name,price_pkr:price,commission_percent:rate};if(files&&files.length>0){const images=[];for(let i=0;i<Math.min(4,files.length);i++){const file=files[i],ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg',path=`products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;const {error:uploadError}=await sb.storage.from('product-images').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(uploadError)return status('editProductStatus','Image upload failed: '+uploadError.message,'error');const url=sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;if(url)images.push(url)}if(images.length){update.images=images;update.image_url=images[0]}}const {error}=await sb.from('products').update(update).eq('id',id);if(error)return status('editProductStatus','Update failed: '+error.message,'error');status('editProductStatus','Product updated successfully.','ok');await loadProducts();await loadAdmin();setTimeout(()=>$('editProductModal').classList.add('hidden'),700)}
 async function toggleProduct(id,current){if(!isAdmin)return alert('Admin access required.');const {error}=await sb.from('products').update({active:!current}).eq('id',id);if(error)alert('Update failed: '+error.message);else{await loadAdmin();await loadProducts()}}
@@ -156,7 +165,163 @@ async function deleteProduct(id){if(!isAdmin)return alert('Admin access required
 async function addOnlineProduct(){if(!isAdmin)return status('adminStatus','Admin access required.','error');const name=$('newProduct').value.trim(),price=Number($('newPrice').value),rate=Number($('newRate').value),files=$('newImageFiles').files;if(!name||!Number.isFinite(price)||price<1)return status('adminStatus','Enter a product name and valid price.','error');if(!Number.isFinite(rate)||rate<0||rate>50)return status('adminStatus','Commission must be between 0 and 50%.','error');status('adminStatus','Saving product…');let images=[];if(files&&files.length>0){for(let i=0;i<Math.min(4,files.length);i++){const file=files[i],ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg',path=`products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;const {error:uploadError}=await sb.storage.from('product-images').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(uploadError)return status('adminStatus','Image upload failed: '+uploadError.message,'error');const url=sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;if(url)images.push(url)}}const {error}=await sb.from('products').insert({name,price_pkr:price,commission_percent:rate,images,image_url:images[0]||null,active:true});if(error)return status('adminStatus','Save failed: '+error.message,'error');$('newProduct').value='';$('newPrice').value='';$('newImageFiles').value='';$('newRate').value='5';status('adminStatus','Product saved.','ok');await loadProducts();await loadAdmin()}
 function showOrderDetails(id,phone,address,orderStatus,name,price){$('orderDetailName').textContent=name;$('orderDetailPhone').textContent=phone;$('orderDetailAddress').textContent=address;$('orderDetailPrice').textContent=convertMoney(price);$('orderDetailStatus').textContent=String(orderStatus).toUpperCase();const actionDiv=$('orderActionButtons');actionDiv.innerHTML='';if(orderStatus==='pending'){for(const [label,state,color] of [['Confirm Order','confirmed','#28a745'],['Reject Order','cancelled','#dc3545']]){const btn=document.createElement('button');btn.className='primary';btn.textContent=label;btn.style.background=color;btn.onclick=()=>updateOrderStatus(id,state);actionDiv.append(btn)}}else actionDiv.textContent='This order is already '+orderStatus+'.';$('orderDetailModal').classList.remove('hidden')}
 function closeOrderDetailModal(){$('orderDetailModal').classList.add('hidden')}
-async function updateOrderStatus(orderId,newStatus){if(!isAdmin)return alert('Admin access required.');if(!confirm('Are you sure you want to mark this order as '+newStatus+'?'))return;const {error}=await sb.from('orders').update({status:newStatus}).eq('id',orderId);if(error)alert('Error updating order: '+error.message);else{alert('Order marked as '+newStatus);closeOrderDetailModal();await loadAdmin()}}
+async function updateOrderStatus(orderId, newStatus){
+  if(!isAdmin) return alert('Admin access required.');
+  if(!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
+
+  // آرڈر کا موجودہ اسٹیٹس حاصل کریں
+  const {data: currentOrder, error: orderReadError} = await sb
+    .from('orders')
+    .select('status, buyer_id, unit_price_pkr')
+    .eq('id', orderId)
+    .single();
+
+  if(orderReadError || !currentOrder){
+    alert('Could not load order: ' + (orderReadError?.message || 'Order not found.'));
+    return;
+  }
+
+  const previousStatus = currentOrder.status;
+
+  // پہلے اسٹیٹس اپڈیٹ کریں
+  const {error: updateError} = await sb
+    .from('orders')
+    .update({status: newStatus})
+    .eq('id', orderId);
+
+  if(updateError){
+    alert('Error updating order: ' + updateError.message);
+    return;
+  }
+
+  // تصدیق شدہ آرڈر منسوخ یا ریفنڈ ہونے پر ریکارڈ واپس کریں
+  if(previousStatus === 'confirmed' && (newStatus === 'cancelled' || newStatus === 'refunded')){
+    // نوٹ: یہ موجودہ فراہم کردہ منطق کے مطابق خریدار کے کوائنز واپس کرتی ہے۔
+    // تمام اپ لائن کوائنز/کمیشن کا درست reversal سرور سائیڈ RPC میں ہونا چاہیے۔
+    const price = Number(currentOrder.unit_price_pkr);
+    const buyerId = currentOrder.buyer_id;
+    const coinsToRemove = Math.floor(price);
+
+    if(coinsToRemove > 0){
+      const {data: buyerProfile, error: buyerReadError} = await sb
+        .from('profiles')
+        .select('points')
+        .eq('id', buyerId)
+        .single();
+
+      if(buyerReadError){
+        alert('Order status changed, but buyer coins could not be read: ' + buyerReadError.message);
+        await loadAdmin();
+        return;
+      }
+
+      if(buyerProfile){
+        const newPoints = Math.max(0, Number(buyerProfile.points || 0) - coinsToRemove);
+        const {error: pointsError} = await sb
+          .from('profiles')
+          .update({points: newPoints})
+          .eq('id', buyerId);
+
+        if(pointsError){
+          alert('Order status changed, but buyer coins could not be reversed: ' + pointsError.message);
+          await loadAdmin();
+          return;
+        }
+      }
+    }
+
+    const {error: ledgerError} = await sb
+      .from('commission_ledger')
+      .delete()
+      .eq('order_id', orderId);
+
+    if(ledgerError){
+      alert('Order status changed, but commission ledger could not be reversed: ' + ledgerError.message);
+      await loadAdmin();
+      return;
+    }
+
+    alert('Order cancelled/refunded. Buyer coins and commission ledger reversal were processed.');
+  }
+  // نیا آرڈر پہلی مرتبہ تصدیق ہونے پر کوائنز اور کمیشن تقسیم کریں
+  else if(newStatus === 'confirmed' && previousStatus !== 'confirmed'){
+    const price = Number(currentOrder.unit_price_pkr);
+    const buyerId = currentOrder.buyer_id;
+    const coinsToAdd = Math.floor(price);
+
+    if(coinsToAdd > 0){
+      const {data: buyerProfile, error: buyerReadError} = await sb
+        .from('profiles')
+        .select('points')
+        .eq('id', buyerId)
+        .single();
+
+      if(buyerReadError || !buyerProfile){
+        alert('Order confirmed, but buyer coin balance could not be loaded: ' + (buyerReadError?.message || 'Profile not found.'));
+        await loadAdmin();
+        return;
+      }
+
+      const {error: pointsError} = await sb
+        .from('profiles')
+        .update({points: Number(buyerProfile.points || 0) + coinsToAdd})
+        .eq('id', buyerId);
+
+      if(pointsError){
+        alert('Order confirmed, but buyer coins could not be added: ' + pointsError.message);
+        await loadAdmin();
+        return;
+      }
+    }
+
+    const {error: commissionError} = await sb.rpc('get_upline_commissions', {
+      buyer_id: buyerId,
+      order_amount: price,
+      coins_per_dollar: 1
+    });
+
+    if(commissionError){
+      alert('Order confirmed and buyer coins added, but commission distribution failed: ' + commissionError.message);
+      await loadAdmin();
+      return;
+    }
+
+    alert('Order confirmed. Buyer coins and commission distribution were processed.');
+  } else {
+    alert('Order status updated to ' + newStatus);
+  }
+
+  closeOrderDetailModal();
+  await loadAdmin();
+}
+
+async function editMemberPoints(userId, currentPoints){
+  if(!isAdmin) return alert('Admin access required.');
+  const newPoints = prompt('Enter new coin balance for this member:', currentPoints);
+  if(newPoints === null || newPoints.trim() === '') return;
+
+  const pointsNum = Number(newPoints);
+  if(!Number.isInteger(pointsNum) || pointsNum < 0){
+    return alert('Invalid number. Enter a whole number zero or greater.');
+  }
+
+  const {error} = await sb
+    .from('profiles')
+    .update({points: pointsNum})
+    .eq('id', userId);
+
+  if(error){
+    alert('Error updating coins: ' + error.message);
+  } else {
+    alert('Coins updated successfully.');
+    await loadAdmin();
+    if(user && user.id === userId){
+      await loadProfile();
+      await loadMyAccountPage();
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>

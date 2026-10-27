@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123c32">
+<title>GM Network</title>
+<style>
+:root{--g:#123c32;--g2:#1e6652;--gold:#f0bd55;--bg:#f3f7f4;--ink:#17231f;--muted:#65746d;--line:#dfe8e2}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(130deg,var(--g),var(--g2));color:#fff;padding:20px 16px 28px;border-radius:0 0 24px 24px}
+.brand{display:flex;gap:12px;align-items:center}.logo{width:48px;height:48px;border-radius:14px;background:var(--gold);color:var(--g);display:grid;place-items:center;font-weight:900;font-size:20px}
+h1{margin:0;font-size:24px}header p{margin:4px 0;color:#d9e9e1}main{max-width:760px;margin:-12px auto 30px;padding:0 13px}
+.panel,.stat,.tabs{border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff;margin-bottom:12px}
+.tabs{display:flex;gap:5px;overflow:auto;padding:6px}.tabs button{border:0;border-radius:9px;padding:10px;background:transparent;color:var(--muted);white-space:nowrap;font:inherit;cursor:pointer}
+.tabs button.active{background:var(--g);color:#fff}.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{margin:0;min-width:0}
+.stat small,.muted{color:var(--muted);font-size:13px}.stat strong{display:block;font-size:23px;color:var(--g);overflow-wrap:anywhere}h2{font-size:18px;margin:0 0 12px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd9cf;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+button.primary{background:var(--g);color:#fff;border:0;border-radius:10px;padding:12px;font:inherit;width:100%;margin-top:12px;font-weight:650;cursor:pointer}
+button.secondary{background:#eaf3ed;border:1px solid #cbded1;border-radius:9px;padding:10px;color:var(--g);font:inherit;cursor:pointer}
+.item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--line);overflow-wrap:anywhere;align-items:center}
+.hidden{display:none!important}.pill{display:inline-block;background:#e9f4ed;color:#1b6548;border-radius:20px;padding:3px 8px;font-size:11px;white-space:nowrap}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{padding:10px;border-radius:10px;background:#eef5ef;margin-top:10px;font-size:13px;overflow-wrap:anywhere;white-space:pre-line}
+.status.error{background:#ffe8e8;color:#8b1a1a}.status.ok{background:#e1f5e6;color:#135c2e}
+.product-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}
+.product-card .main-img{width:100%;height:220px;object-fit:contain;border-radius:10px;background:#f9f9f9;cursor:pointer}
+.product-card .thumbnails{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:5px}
+.product-card .thumbnails img{width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}
+.product-card .thumbnails img.active{border-color:var(--g)}
+.product-info{display:flex;justify-content:space-between;align-items:flex-start;margin-top:12px;gap:10px}
+.product-info h3{margin:0;font-size:16px}.product-info .price{font-size:18px;font-weight:bold;color:var(--g)}
+.buy-btn{margin-top:10px;width:100%}
+.image-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:15px}
+.image-lightbox img{max-width:100%;max-height:75vh;object-fit:contain}.image-lightbox .lightbox-thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;max-width:100%;width:100%;justify-content:flex-start}.image-lightbox .lightbox-thumbs img{width:60px;height:60px;min-width:60px;max-height:60px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}.image-lightbox .lightbox-thumbs img.active{border-color:var(--gold)}.image-lightbox .close-lightbox{position:absolute;top:14px;right:14px;background:#fff;color:#123c32;border:0;border-radius:50%;width:44px;height:44px;font-size:27px;cursor:pointer}
+.lightbox-nav{position:absolute;top:48%;transform:translateY(-50%);z-index:2;width:46px;height:54px;border:0;border-radius:12px;background:#ffffffd9;color:#123c32;font-size:32px;font-weight:bold;cursor:pointer}.lightbox-prev{left:10px}.lightbox-next{right:10px}.lightbox-counter{color:#fff;font-size:13px}.image-lightbox #lightboxImage{touch-action:pan-y;user-select:none}
+.payment-choice{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;text-align:left}.pay-note{font-size:12px;color:var(--muted);line-height:1.5}
+.modal{position:fixed;inset:0;background:#0008;display:flex;justify-content:center;align-items:center;z-index:100;padding:15px}
+.modal-content{background:#fff;padding:20px;border-radius:15px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto}
+.auth-box{display:flex;gap:10px;margin-bottom:20px}.auth-box button{flex:1;margin:0}.auth-box button.active{background:var(--g);color:#fff}
+.pay-btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:10px;font-weight:bold;margin-top:10px;color:#fff;cursor:pointer}
+.copy-box{background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:10px;margin:15px 0;text-align:center;cursor:pointer}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}.small-btn{padding:5px!important;font-size:12px!important;width:auto!important;margin:0!important}.section-note{line-height:1.5}
+.currency-selector{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.currency-selector select{width:auto;padding:8px;font-size:14px;border-radius:8px}
+.qr-container{text-align:center;margin:15px 0;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.qr-container img{max-width:180px;width:100%;border-radius:10px}
+.search-box{display:flex;gap:8px;margin-bottom:12px}
+.search-box input{flex:1;padding:10px;border:1px solid var(--line);border-radius:8px}
+.search-box button{padding:10px 15px;background:var(--g);color:#fff;border:0;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">GM</div><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div></header>
+<main>
+<div class="currency-selector"><span class="muted">Currency:</span><select id="currencySelect" onchange="changeCurrency(this.value)"><option value="USD">USD ($)</option><option value="PKR">PKR (₨)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select><span id="currencyRateInfo" class="muted" style="font-size:11px"></span></div>
+<nav class="tabs" id="tabs"><button class="active" data-tab="home">Dashboard</button><button data-tab="account">Account/Profile</button><button data-tab="my-account">My Account</button><button data-tab="products">Products</button><button data-tab="team">My Team</button><button data-tab="about">About</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button></nav>
+<section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 29,999 Coins<br>💎 Platinum: 30,000 - 49,999 Coins<br>👑 Diamond: 50,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
+<section id="home" class="view"><div class="stats"><div class="stat"><small>My Coins</small><strong id="nm">—</strong></div><div class="stat"><small>Products</small><strong id="np">—</strong></div><div class="stat"><small>My Sales</small><strong id="ns">—</strong></div><div class="stat"><small>My Commission</small><strong id="nc">—</strong></div></div><div class="panel" style="margin-top:12px"><h2>Welcome</h2><p class="muted section-note">Sign in to view your profile, referral code, team and earnings.</p><div id="connection" class="status">Connecting to backend…</div></div></section>
+<section id="account" class="view hidden"><div class="panel" id="authPanel"><div class="auth-box"><button class="secondary active" id="btnShowSignIn" onclick="switchAuth('signin')">Sign In</button><button class="secondary" id="btnShowSignUp" onclick="switchAuth('signup')">Sign Up</button></div><div id="formSignIn"><h2>Sign in to your account</h2><label>Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password"><button class="primary" onclick="signIn()">Sign In</button></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
+<section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
+<section id="products" class="view hidden"><div class="panel"><h2>Products</h2><div id="productList">Loading products…</div></div></section>
+<section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code.</p><div id="teamList">Sign in to view your team.</div></div></section>
+<section id="admin" class="view hidden"><div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div><div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div><div class="panel"><h2>Add Product</h2><label>Product name</label><input id="newProduct" placeholder="Product name"><label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20"><label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple><label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5"><button class="primary" onclick="addOnlineProduct()">Save Product</button><div id="adminStatus" class="status">Admin action status will appear here.</div></div><div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
+<footer>GM Network • v12.0</footer></main>
+<div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
+<div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+// --- Global Variables ---
+const MY_EASYPAISA = '03082276093';
+const SUPABASE_URL = 'https://kgkeyrhjbwcoaiqlrqqd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_15GSe0dxAxr6whvPkNwZsw_fgJ0_tHs';
+
+let sb = null;
+let user = null;
+let isAdmin = false;
+let currentProduct = null;
+let myProfile = null;
+let totalComm = 0;
+let currentOrderId = null;
+let exchangeRates = { USD: 1, PKR: 278, INR: 83, EUR: 0.92, GBP: 0.79 };
+let currentCurrency = 'USD';
+
+const $ = id => document.getElementById(id);
+
+// --- Helper Functions ---
+function status(id, msg, type = '') {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove('error', 'ok', 'hidden');
+    if (type) el.classList.add(type);
+}
+
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function convertMoney(usdAmount) {
+    const rate = exchangeRates[currentCurrency] || 1;
+    const converted = Number(usdAmount) * rate;
+    if (currentCurrency === 'PKR') return '₨ ' + converted.toLocaleString('en-PK', { maximumFractionDigits: 0 });
+    if (currentCurrency === 'INR') return '₹ ' + converted.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    if (currentCurrency === 'EUR') return '€' + converted.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+    if (currentCurrency === 'GBP') return '£' + converted.toLocaleString('en-GB', { maximumFractionDigits: 2 });
+    return '$' + converted.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+async function fetchExchangeRates() {
+    try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        if (data.result === 'success' && data.rates) {
+            for (const c of ['PKR', 'INR', 'EUR', 'GBP']) exchangeRates[c] = data.rates[c];
+            $('currencyRateInfo').textContent = 'Rates By Exchange Rate API';
+        }
+    } catch (e) {
+        console.warn('Rate fetch failed:', e);
+    }
+}
+
+function changeCurrency(curr) {
+    currentCurrency = curr;
+    loadProducts();
+    if (myProfile) loadProfile();
+}
+
+function tab(id) {
+    if (id === 'admin' && !isAdmin) { alert('Admin access required.'); return; }
+    if (['my-account', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    
+    if (id === 'team') loadMyTeam();
+    if (id === 'account' && user) loadProfile();
+    if (id === 'my-account' && user) loadMyAccountPage();
+}
+
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
+
+// --- Initialization ---
+async function init() {
+    if (!window.supabase) {
+        status('connection', 'Could not load Supabase. Check your internet connection.', 'error');
+        return;
+    }
+    await fetchExchangeRates();
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    try {
+        const { data, error } = await sb.auth.getSession();
+        if (error) throw error;
+        user = data.session?.user || null;
+        await updateAuth();
+
+        sb.auth.onAuthStateChange((_event, session) => {
+            user = session?.user || null;
+            setTimeout(() => updateAuth(), 0);
+        });
+
+        await loadProducts();
+        status('connection', 'Backend connected.', 'ok');
+    } catch (e) {
+        status('connection', 'Connection error: ' + e.message, 'error');
+    }
+}
+
+async function updateAuth() {
+    isAdmin = false;
+    const adminTab = $('adminTab'), authPanel = $('authPanel'), profileBox = $('loggedInProfile');
+
+    if (!user) {
+        adminTab.classList.add('hidden');
+        authPanel.querySelector('.auth-box').classList.remove('hidden');
+        $('formSignIn').classList.remove('hidden');
+        $('formSignUp').classList.add('hidden');
+        profileBox.classList.add('hidden');
+        myProfile = null;
+        status('authStatus', 'Not signed in.');
+        return;
+    }
+
+    authPanel.querySelector('.auth-box').classList.add('hidden');
+    $('formSignIn').classList.add('hidden');
+    $('formSignUp').classList.add('hidden');
+    profileBox.classList.remove('hidden');
+    $('profEmail').textContent = user.email || '';
+
+    const { data, error } = await sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
+    isAdmin = !!data && !error;
+    adminTab.classList.toggle('hidden', !isAdmin);
+
+    await loadProfile();
+    status('authStatus', 'Signed in.', 'ok');
+
+    if (isAdmin) await loadAdmin();
+    if (!$('my-account').classList.contains('hidden')) await loadMyAccountPage();
+}
+
+// --- Auth Functions ---
+function switchAuth(type) {
+    if (user) return;
+    $('formSignIn').classList.toggle('hidden', type !== 'signin');
+    $('formSignUp').classList.toggle('hidden', type !== 'signup');
+    $('btnShowSignIn').classList.toggle('active', type === 'signin');
+    $('btnShowSignUp').classList.toggle('active', type === 'signup');
+}
+
+async function signIn() {
+    if (!sb) return alert('Backend is not connected.');
+    const email = $('loginEmail').value.trim(), password = $('loginPassword').value;
+    if (!email || !password) return alert('Enter email and password.');
+    status('authStatus', 'Signing in…');
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) status('authStatus', 'Sign-in failed: ' + error.message, 'error');
+}
+
+async function signUp() {
+    if (!sb) return alert('Backend is not connected.');
+    const email = $('regEmail').value.trim(), password = $('regPassword').value, fullName = $('regFullname').value.trim(), refCode = $('regRefCode').value.trim().toUpperCase();
+    if (!email || password.length < 6) return alert('Enter a valid email and password of at least 6 characters.');
+    if (!refCode) return alert('Referral code is required.');
+    
+    status('authStatus', 'Creating account…');
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) { status('authStatus', 'Sign-up failed: ' + error.message, 'error'); return; }
+    if (!data.user) { status('authStatus', 'No user returned.', 'error'); return; }
+
+    const { data: refData, error: refError } = await sb.rpc('handle_referral_signup', { referrer_code: refCode });
+    if (refError || !refData) { status('authStatus', 'Referral code validation failed.', 'error'); return; }
+
+    const memberCode = 'GM' + cryptoRandom(), myRefCode = 'REF' + cryptoRandom();
+    const { error: profileError } = await sb.from('profiles').insert({ id: data.user.id, full_name: fullName || 'Member', member_code: memberCode, referral_code: myRefCode, referred_by: refData, points: 0 });
+    
+    if (profileError) { status('authStatus', 'Profile setup failed: ' + profileError.message, 'error'); return; }
+    
+    status('authStatus', '✅ Account created! Your Member ID: ' + memberCode + '\n\nNow you can Sign In.', 'ok');
+    switchAuth('signin');
+}
+
+function cryptoRandom() {
+    return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+async function signOut() {
+    if (sb) await sb.auth.signOut();
+    user = null; isAdmin = false; myProfile = null; totalComm = 0;
+    ['nm', 'ns', 'nc'].forEach(id => $(id).textContent = '—');
+    tab('home');
+    await updateAuth();
+}
+
+// --- Profile & Account Functions ---
+async function loadProfile() {
+    if (!user || !sb) return;
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if (error) { status('authStatus', 'Profile could not load: ' + error.message, 'error'); return; }
+    if (!profile) { myProfile = null; $('profRefCode').textContent = '—'; return; }
+
+    myProfile = profile;
+    const { data: userOrders, error: ordersErr } = await sb.from('orders').select('id').eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']).limit(1);
+    
+    if (!ordersErr && userOrders && userOrders.length > 0) $('profRefCode').textContent = profile.referral_code || '—';
+    else $('profRefCode').textContent = '🔒 Locked';
+
+    $('profCoins').textContent = Number(profile.points || 0).toLocaleString();
+    $('nm').textContent = Number(profile.points || 0).toLocaleString();
+    
+    totalComm = Number(profile.total_commission || 0);
+    $('profCommission').textContent = convertMoney(Math.floor(totalComm));
+    $('nc').textContent = convertMoney(Math.floor(totalComm));
+
+    const { data: sales, error: salesError } = await sb.from('orders').select('id').eq('referrer_id', user.id).in('status', ['confirmed', 'delivered']);
+    $('ns').textContent = salesError ? '—' : String(sales?.length ?? 0);
+}
+
+async function loadMyAccountPage() {
+    if (!user || !sb) return;
+    $('accEmail').textContent = user.email || '—';
+    $('accName').textContent = myProfile?.full_name || 'Member';
+    $('accMemberId').textContent = myProfile?.member_code || '—';
+    $('accUuid').textContent = user.id;
+    $('accRefCode').textContent = $('profRefCode').textContent || '—';
+    $('accBankDetails').textContent = myProfile?.account_details || 'Not Set';
+    $('accCoins').textContent = Number(myProfile?.points || 0).toLocaleString();
+    $('accBalance').textContent = convertMoney(Math.floor(totalComm));
+    
+    const coins = Number(myProfile?.points || 0);
+    let level = 'Bronze 🥉', target = 3000, nextLevelName = 'Silver 🥈';
+    if (coins >= 50000) { level = 'Diamond 👑'; target = null; nextLevelName = ''; }
+    else if (coins >= 30000) { level = 'Platinum 💎'; target = 50000; nextLevelName = 'Diamond 👑'; }
+    else if (coins >= 12000) { level = 'Gold 🥇'; target = 30000; nextLevelName = 'Platinum 💎'; }
+    else if (coins >= 3000) { level = 'Silver 🥈'; target = 12000; nextLevelName = 'Gold 🥇'; }
+    
+    $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target ? `<p class="muted">Next level (${nextLevelName}): ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>` : '<p>You have reached the highest level! 🏆</p>'}</div>`;
+
+    const { data: orders, error } = await sb.from('orders').select('*, products(name)').eq('buyer_id', user.id).order('created_at', { ascending: false });
+    if (error) { $('accTransactions').textContent = 'Could not load transactions: ' + error.message; return; }
+    
+    $('accTransactions').innerHTML = (orders || []).map(o => {
+        const date = new Date(o.created_at).toLocaleDateString('en-GB');
+        const productName = o.products?.name || 'Unknown Product';
+        return `<div class="item" style="flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;width:100%;"><b>Order …${esc(String(o.id || '').slice(-4))}</b><span class="pill">${esc(o.status || 'unknown')}</span></div>
+      <div style="font-size:13px;color:var(--muted);width:100%;"><b>Product:</b> ${esc(productName)}<br><b>Amount:</b> ${convertMoney(o.unit_price_pkr)}<br><b>Date:</b> ${date}<br></div>
+      ${o.status === 'confirmed' ? `<button class="primary small-btn" data-mark-delivered="${esc(o.id)}" style="margin-top:5px;">I Received My Order</button>` : ''}
+    </div>`;
+    }).join('') || '<p class="muted">No transactions yet.</p>';
+    
+    $('accTransactions').querySelectorAll('[data-mark-delivered]').forEach(btn => btn.onclick = () => markAsDelivered(btn.dataset.markDelivered));
+}
+
+async function editBankDetails() {
+    if (!user) return alert('Please sign in first.');
+    const current = myProfile?.account_details || '';
+    const newAcc = prompt('Enter your Bank / Easypaisa / JazzCash Account Number and Name:', current);
+    if (newAcc === null || newAcc.trim() === '') return;
+
+    const { error } = await sb.from('profiles').update({ account_details: newAcc.trim() }).eq('id', user.id);
+    if (error) alert('Could not save account details: ' + error.message);
+    else {
+        alert('Account details saved successfully!');
+        myProfile.account_details = newAcc.trim();
+        $('accBankDetails').textContent = newAcc.trim();
+    }
+}
+
+// --- Products & Orders ---
+async function loadProducts() {
+    if (!sb) return;
+    const el = $('productList');
+    const { data, error } = await sb.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
+    if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
+    
+    el.innerHTML = (data || []).map(p => {
+        const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
+        return `<div class="product-card"><img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" onclick="openImageLightbox(this.src, JSON.parse(decodeURIComponent(this.dataset.images)))" data-images="${encodeURIComponent(JSON.stringify(imgs))}"><div class="thumbnails">${imgs.map((img, i) => `<img src="${esc(img)}" class="${i === 0 ? 'active' : ''}" onclick="const card=this.closest('.product-card');card.querySelector('.main-img').src=this.src;card.querySelectorAll('.thumbnails img').forEach(x=>x.classList.remove('active'));this.classList.add('active');">`).join('')}</div><div class="product-info"><h3>${esc(p.name)}</h3><div class="price">${convertMoney(p.price_pkr)}</div></div><div class="muted">Commission: ${Number(p.commission_percent) || 0}%</div><button class="primary buy-btn" data-product="${esc(p.id)}">Buy Now</button></div>`;
+    }).join('') || '<p class="muted">No active products yet.</p>';
+    
+    el.querySelectorAll('[data-product]').forEach((btn, i) => btn.addEventListener('click', () => {
+        const p = data[i];
+        openOrder(p.id, p.name, p.price_pkr);
+    }));
+    $('np').textContent = String((data || []).length);
+}
+
+async function loadMyTeam() {
+    const el = $('teamList');
+    if (!user) { el.textContent = 'Please sign in first.'; return; }
+    const { data, error } = await sb.from('profiles').select('full_name,member_code').eq('referred_by', user.id);
+    if (error) { el.innerHTML = '<span class="status error">Could not load team: ' + esc(error.message) + '</span>'; return; }
+    el.innerHTML = (data || []).map(x => `<div class="item"><span>${esc(x.full_name)}</span><span class="pill">${esc(x.member_code)}</span></div>`).join('') || '<p class="muted">No team members yet.</p>';
+}
+
+let lightboxImages = [], lightboxIndex = 0, lightboxTouchStart = null;
+function renderLightbox() { if (!lightboxImages.length) return; $('lightboxImage').src = lightboxImages[lightboxIndex]; $('lightboxCounter').textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length; $('lightboxThumbs').querySelectorAll('img').forEach((el, i) => { el.classList.toggle('active', i === lightboxIndex); if (i === lightboxIndex) el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }); }
+function moveLightbox(delta) { if (!lightboxImages.length) return; lightboxIndex = (lightboxIndex + delta + lightboxImages.length) % lightboxImages.length; renderLightbox(); }
+function openImageLightbox(src, allImages) { if (!src) return; lightboxImages = Array.isArray(allImages) && allImages.length ? allImages : [src]; lightboxIndex = Math.max(0, lightboxImages.indexOf(src)); const thumbs = $('lightboxThumbs'); thumbs.innerHTML = ''; lightboxImages.forEach((img, i) => { const t = document.createElement('img'); t.src = img; t.alt = 'Image ' + (i + 1); t.onclick = () => { lightboxIndex = i; renderLightbox(); }; thumbs.appendChild(t); }); $('imageLightbox').classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderLightbox(); }
+$('lightboxImage').addEventListener('touchstart', e => { lightboxTouchStart = e.changedTouches[0]?.clientX ?? null; }, { passive: true });
+$('lightboxImage').addEventListener('touchend', e => { if (lightboxTouchStart === null) return; const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchStart) - lightboxTouchStart; if (Math.abs(dx) > 45) moveLightbox(dx < 0 ? 1 : -1); lightboxTouchStart = null; }, { passive: true });
+function closeImageLightbox() { $('imageLightbox').classList.add('hidden'); $('lightboxImage').src = ''; $('lightboxThumbs').innerHTML = ''; document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(1); if (e.key === 'ArrowLeft' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(-1); if (e.key === 'Escape') { closeImageLightbox(); $('orderModal').classList.add('hidden'); $('withdrawModal').classList.add('hidden'); closeOrderDetailModal(); } });
+
+function openOrder(id, name, price) { if (!user) return alert('Please sign in first to place an order.'); if (!myProfile) return alert('Your profile is not ready.'); currentProduct = { id, name, price: Number(price) || 0 }; $('orderProductName').textContent = 'Product: ' + name + ' — ' + convertMoney(price); $('orderFormContent').classList.remove('hidden'); $('paymentContent').classList.add('hidden'); $('orderModal').classList.remove('hidden'); $('orderStatus').classList.add('hidden'); }
+function closeModal() { $('orderModal').classList.add('hidden'); }
+
+async function submitOrder() {
+    if (!user || !currentProduct || !sb) return;
+    const name = $('orderName').value.trim(), phone = $('orderPhone').value.trim(), address = $('orderAddress').value.trim();
+    if (!name || !phone || !address) return alert('Please fill in all fields.');
+    status('orderStatus', 'Placing order…');
+    
+    const orderPayload = { buyer_id: user.id, buyer_email: user.email || null, product_id: currentProduct.id, quantity: 1, unit_price_pkr: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null };
+    let result = await sb.from('orders').insert(orderPayload).select('id').single();
+    if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
+        result = await sb.from('orders').insert({ buyer_id: user.id, product_id: currentProduct.id, quantity: 1, unit_price_pkr: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null }).select('id').single();
+    }
+    
+    const { data: order, error } = result;
+    if (error) { status('orderStatus', 'Order failed: ' + error.message, 'error'); return; }
+    currentOrderId = order?.id || null;
+    $('orderFormContent').classList.add('hidden'); $('paymentContent').classList.remove('hidden'); $('payAmount').textContent = convertMoney(currentProduct.price);
+    const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId || ''} for ${currentProduct.name} (${convertMoney(currentProduct.price)}). My Name: ${name}, Phone: ${phone}. I will send the payment screenshot.`);
+    $('whatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
+    $('orderName').value = ''; $('orderPhone').value = ''; $('orderAddress').value = '';
+}
+
+async function uploadPaymentProof() {
+    if (!currentOrderId) return alert("Order ID not found. Please refresh.");
+    const fileInput = $('paymentScreenshot'), file = fileInput.files[0];
+    if (!file) return alert("Please select a screenshot of your payment first.");
+    status('uploadStatus', 'Uploading proof...');
+    const ext = file.name.split('.').pop(), path = `payments/${currentOrderId}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage.from('product-images').upload(path, file);
+    if (uploadError) { status('uploadStatus', 'Upload failed: ' + uploadError.message, 'error'); return; }
+    const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(path);
+    const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', currentOrderId);
+    if (updateError) status('uploadStatus', 'Database update failed: ' + updateError.message, 'error');
+    else { status('uploadStatus', '✅ Proof submitted successfully!', 'ok'); setTimeout(() => closeModal(), 3000); }
+}
+
+// --- Admin Functions ---
+async function loadAdmin() {
+    if (!isAdmin) return;
+    const [m, p, o, w] = await Promise.all([
+        sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
+        sb.from('products').select('*').order('created_at', { ascending: false }),
+        sb.from('orders').select('*').order('created_at', { ascending: false }).limit(20),
+        sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10)
+    ]);
+    $('am').textContent = '500'; $('ap').textContent = p.error ? '—' : String(p.data?.length || 0); $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
+    
+    $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => `<div class="item" data-order="${esc(x.id)}" style="cursor:pointer"><div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number)} • ${convertMoney(x.unit_price_pkr)}</small></div><span class="pill">${esc(x.status)}</span></div>`).join('') || 'No orders yet.';
+    $('adminOrders').querySelectorAll('[data-order]').forEach(el => { const x = (o.data || []).find(r => String(r.id) === el.dataset.order); if (x) el.onclick = () => showOrderDetails(x.id, x.phone_number, x.shipping_address, x.status, 'Order ID: ' + String(x.id).slice(-6), x.unit_price_pkr, x.buyer_id, x.payment_proof); });
+    
+    $('adminWithdrawals').innerHTML = w.error ? esc(w.error.message) : (w.data || []).map(x => `<div class="item"><div><b>${esc(x.profiles?.full_name || 'User')}</b><br><small>${esc(x.account_details)}</small></div><div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status || 'pending')}</span></div></div>`).join('') || 'No requests yet.';
+    
+    $('adminMembers').innerHTML = m.error ? esc(m.error.message) : (m.data || []).map(x => {
+        const coins = Number(x.points || 0), comm = Number(x.total_commission || 0); let level = 'Bronze 🥉';
+        if (coins >= 50000) level = 'Diamond 👑'; else if (coins >= 30000) level = 'Platinum 💎'; else if (coins >= 12000) level = 'Gold 🥇'; else if (coins >= 3000) level = 'Silver 🥈';
+        return `<div class="item"><div><b>${esc(x.full_name)}</b> <span class="pill" style="background:var(--gold);color:var(--g)">${level}</span><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${coins.toLocaleString()}</b> | Comm: <b>$${comm}</b></small></div><div style="display:flex;flex-direction:column;gap:5px"><button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins/Comm</button><button class="secondary small-btn" data-view-team="${esc(x.id)}" data-member-name="${esc(x.full_name || 'Member')}">View Team</button></div></div>`;
+    }).join('') || 'No members yet.';
+    
+    $('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn => { const member = (m.data || []).find(x => x.id === btn.dataset.editCoins); btn.onclick = () => editMemberPoints(btn.dataset.editCoins, Number(member?.points || 0)); });
+    $('adminMembers').querySelectorAll('[data-view-team]').forEach(btn => { btn.onclick = () => viewMemberTeam(btn.dataset.viewTeam, btn.dataset.memberName || 'Member'); });
+    
+    $('adminManageProducts').innerHTML = p.error ? esc(p.error.message) : (p.data || []).map(x => `<div class="item"><div><b>${esc(x.name)}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active ? 'Active' : 'Inactive'}</small></div><div class="row-actions"><button class="secondary" data-edit="${esc(x.id)}">Edit</button><button class="secondary" data-toggle="${esc(x.id)}">${x.active ? 'Deactivate' : 'Activate'}</button><button class="secondary" data-delete="${esc(x.id)}">Delete</button></div></div>`).join('') || 'No products yet.';
+    $('adminManageProducts').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editProduct(b.dataset.edit));
+    $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(b => { const x = p.data.find(x => x.id === b.dataset.toggle); b.onclick = () => toggleProduct(x.id, x.active); });
+    $('adminManageProducts').querySelectorAll('[data-delete]').forEach(b => b.onclick = () => deleteProduct(b.dataset.delete));
+}
+
+async function searchAdminMember() {
+    const query = $('adminSearchInput').value.trim();
+    if (!query) return alert('Please enter Member ID or Name.');
+    $('adminSearchResult').textContent = 'Searching...';
+    const { data, error } = await sb.from('profiles').select('*').or(`member_code.ilike.%${query}%,full_name.ilike.%${query}%`);
+    if (error) { $('adminSearchResult').textContent = 'Error: ' + error.message; return; }
+    if (!data || data.length === 0) { $('adminSearchResult').textContent = 'No member found.'; return; }
+    $('adminSearchResult').innerHTML = data.map(x => `<div class="item"><div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points || 0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission || 0)}</b></small></div><div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points || 0})">Edit Coins/Comm</button></div></div>`).join('');
+}
+
+async function editMemberPoints(userId, currentPoints) {
+    if (!isAdmin) return alert('Admin access required.');
+    const newPoints = prompt('Enter new coin balance for this member:', currentPoints);
+    if (newPoints === null || newPoints.trim() === '') return;
+    const pointsNum = Number(newPoints);
+    if (!Number.isInteger(pointsNum) || pointsNum < 0) return alert('Invalid number. Enter a whole number zero or greater.');
+    
+    const { data: profileData, error: fetchErr } = await sb.from('profiles').select('total_commission').eq('id', userId).single();
+    if (fetchErr) return alert('Could not load current data: ' + fetchErr.message);
+    const currentComm = Number(profileData.total_commission || 0), newCommStr = prompt('Enter new Total Commission in USD ($) for this member:', currentComm);
+    if (newCommStr === null || newCommStr.trim() === '') return;
+    const commNum = Number(newCommStr);
+    if (!Number.isFinite(commNum) || commNum < 0) return alert('Invalid commission amount. Enter a valid number.');
+    
+    const { data, error } = await sb.from('profiles').update({ points: pointsNum, total_commission: commNum }).eq('id', userId).select();
+    if (error) alert('Error updating data: ' + error.message);
+    else if (!data || data.length === 0) alert('Update failed silently. Please check your Supabase RLS policies.');
+    else {
+        alert('Coins and Commission updated successfully!');
+        await loadAdmin();
+        if (user && user.id === userId) { await loadProfile(); await loadMyAccountPage(); }
+    }
+}
+
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof) {
+    $('orderDetailName').textContent = name || ('Order …' + String(id).slice(-6));
+    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; $('orderDetailPrice').textContent = convertMoney(price);
+    $('orderDetailStatus').textContent = String(orderStatus || 'unknown').toUpperCase(); $('orderDetailUserId').textContent = buyerId ? '...' + String(buyerId).slice(-8) : '—'; $('orderDetailMemberCode').textContent = 'Loading…';
+    
+    if (buyerId) {
+        const { data: customerProfile, error: customerProfileError } = await sb.from('profiles').select('full_name,member_code').eq('id', buyerId).maybeSingle();
+        if (!customerProfileError && customerProfile) { $('orderDetailMemberCode').textContent = customerProfile.member_code || 'Member ID not assigned'; if (customerProfile.full_name) $('orderDetailName').textContent = customerProfile.full_name + ' • ' + String(id).slice(-6); }
+        else $('orderDetailMemberCode').textContent = 'Member profile not found';
+    } else $('orderDetailMemberCode').textContent = '—';
+
+    const proofBox = $('paymentProofBox'); proofBox.innerHTML = '';
+    if (paymentProof) proofBox.innerHTML = `<div class="item"><span>Payment Proof</span><a href="${esc(paymentProof)}" target="_blank" rel="noopener noreferrer" style="color:var(--g); font-weight:bold;">View Screenshot</a></div>`;
+    else proofBox.innerHTML = `<div class="item"><span>Payment Proof</span><b class="muted">Not uploaded</b></div>`;
+    
+    if (isAdmin) { const changeBox = document.createElement('div'); changeBox.className = 'item'; changeBox.innerHTML = `<span>Change Proof</span><input type="file" id="adminProofUpload" accept="image/*" style="width:auto;"><button class="primary small-btn" onclick="adminChangeProof('${esc(id)}')">Upload</button>`; proofBox.append(changeBox); }
+
+    const actionDiv = $('orderActionButtons'); actionDiv.innerHTML = '';
+    if (!isAdmin) {
+        if (user && user.id === buyerId && orderStatus === 'confirmed') { const btn = document.createElement('button'); btn.className = 'primary'; btn.textContent = 'I Received My Order'; btn.onclick = () => markAsDelivered(id); actionDiv.append(btn); }
+    } else {
+        const label = document.createElement('label'); label.textContent = 'Change Order Status:'; label.style.display = 'block'; label.style.margin = '12px 0 6px';
+        const select = document.createElement('select'); select.id = 'admin-status-dropdown'; select.style.width = '100%'; select.style.padding = '10px';
+        [['pending', 'Pending'], ['confirmed', 'Confirmed'], ['delivered', 'Delivered'], ['cancelled', 'Rejected / Cancelled'], ['refunded', 'Refunded']].forEach(([value, text]) => { const opt = document.createElement('option'); opt.value = value; opt.textContent = text; if (value === orderStatus) opt.selected = true; select.append(opt); });
+        const btn = document.createElement('button'); btn.className = 'primary'; btn.style.marginTop = '10px'; btn.textContent = 'Save Order Status'; btn.onclick = () => updateOrderStatus(id, select.value);
+        actionDiv.append(label, select, btn);
+    }
+    $('orderDetailModal').classList.remove('hidden');
+}
+
+function closeOrderDetailModal() { $('orderDetailModal').classList.add('hidden'); }
+
+async function adminChangeProof(orderId) {
+    const fileInput = $('adminProofUpload'), file = fileInput?.files?.[0];
+    if (!file) return alert('Please select a screenshot to upload.');
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `payments/admin-${orderId}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+    if (uploadError) return alert('Upload failed: ' + uploadError.message);
+    const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(path);
+    const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', orderId);
+    if (updateError) return alert('Database update failed: ' + updateError.message);
+    alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+    if (!isAdmin) return alert('Admin access required.');
+    const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
+    if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
+    newStatus = String(newStatus).toLowerCase();
+    if (!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
+    
+    const { data: currentOrder, error: orderReadError } = await sb.from('orders').select('status, buyer_id, unit_price_pkr').eq('id', orderId).single();
+    if (orderReadError || !currentOrder) return alert('Could not load order: ' + (orderReadError?.message || 'Order not found.'));
+    const previousStatus = currentOrder.status;
+    const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+    if (updateError) return alert('Error updating order: ' + updateError.message);
+
+    if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
+        const price = Number(currentOrder.unit_price_pkr), buyerId = currentOrder.buyer_id;
+        
+        // نیا فنکشن کال کریں (process_order_commissions)
+        const { error: commissionError } = await sb.rpc('process_order_commissions', { p_buyer_id: buyerId, p_order_amount: price });
+        
+        if (commissionError) {
+            alert('Order confirmed, but commission distribution failed: ' + commissionError.message);
+        } else {
+            alert('Order confirmed. Coins and 10% Direct Commission processed.');
+        }
+    } else {
+        alert('Order status updated to ' + newStatus);
+    }
+    
+    closeOrderDetailModal(); await loadAdmin();
+}
+
+async function markAsDelivered(orderId) {
+    if (!user || !sb) return alert('Please sign in to confirm delivery.');
+    if (!confirm('کیا آپ نے واقعی اپنا آرڈر وصول کر لیا ہے؟')) return;
+    const { data: order, error: readError } = await sb.from('orders').select('id,status,buyer_id').eq('id', orderId).eq('buyer_id', user.id).single();
+    if (readError || !order) return alert('آرڈر لوڈ نہیں ہو سکا: ' + (readError?.message || 'Order not found.'));
+    if (order.status !== 'confirmed') return alert('صرف confirmed آرڈر کی ڈیلیوری کنفرم کی جا سکتی ہے۔ موجودہ اسٹیٹس: ' + order.status);
+    const { data: updatedOrder, error } = await sb.from('orders').update({ status: 'delivered' }).eq('id', orderId).eq('buyer_id', user.id).eq('status', 'confirmed').select('id').maybeSingle();
+    if (error || !updatedOrder) return alert('ڈیلیوری اسٹیٹس اپڈیٹ نہیں ہوا: ' + (error?.message || 'آپ کو اجازت نہیں ہے۔'));
+    alert('شکریہ! آپ کا آرڈر ڈیلیور شدہ مارک ہو گیا ہے۔');
+    closeOrderDetailModal(); await loadMyAccountPage(); if (isAdmin) await loadAdmin();
+}
+
+async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_pkr || 0); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
+async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
+async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
+async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!confirm('Delete this product?')) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
+async function addOnlineProduct() { if (!isAdmin) return status('adminStatus', 'Admin access required.', 'error'); const name = $('newProduct').value.trim(), price = Number($('newPrice').value), rate = Number($('newRate').value), files = $('newImageFiles').files; if (!name || !Number.isFinite(price) || price < 1) return status('adminStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('adminStatus', 'Commission must be between 0 and 50%.', 'error'); status('adminStatus', 'Saving product…'); const images = []; if (files && files.length > 0) { for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('adminStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } } const { error } = await sb.from('products').insert({ name, price_pkr: price, commission_percent: rate, images, image_url: images[0] || null, active: true }); if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error'); $('newProduct').value = ''; $('newPrice').value = ''; $('newImageFiles').value = ''; $('newRate').value = '5'; status('adminStatus', 'Product saved.', 'ok'); await loadProducts(); await loadAdmin(); }
+async function viewMemberTeam(userId, name) { if (!isAdmin) return alert('Admin access required.'); const { data, error } = await sb.from('profiles').select('full_name, member_code').eq('referred_by', userId).order('created_at', { ascending: true }); if (error) return alert('Error loading team: ' + error.message); if (!data || data.length === 0) return alert(`Team of ${name}: No members yet.`); let teamList = `Team of ${name}:\n\n`; data.forEach((member, i) => { teamList += `${i + 1}. ${member.full_name || 'Member'} (${member.member_code || 'No code'})\n`; }); alert(teamList); }
+
+function copyText(text) { if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => alert('Copied: ' + text)).catch(() => prompt('Copy this text:', text)); else prompt('Copy this text:', text); }
+function copyRefCode() { if (myProfile?.referral_code && $('profRefCode').textContent === myProfile.referral_code) copyText(myProfile.referral_code); else alert('Referral code is locked. Buy a product to unlock it.'); }
+function copyAccount() { copyText(MY_EASYPAISA); }
+function openWithdraw() { if (totalComm < 10) return alert('Minimum withdrawal is $10. Available: ' + convertMoney(totalComm)); $('withdrawModal').classList.remove('hidden'); $('wdAmount').value = Math.floor(totalComm); $('wdStatus').classList.add('hidden'); if (myProfile?.account_details) { $('wdAccount').value = myProfile.account_details; } }
+async function submitWithdraw() { if (!user) return alert('Please sign in first.'); const amount = Number($('wdAmount').value), acc = $('wdAccount').value.trim(); if (!amount || !acc) return alert('Please fill in all fields.'); if (amount < 10) return alert('Minimum withdrawal is $10.'); if (amount > totalComm) return alert('Amount exceeds your earnings.'); status('wdStatus', 'Submitting…'); const { error } = await sb.from('withdrawals').insert({ user_id: user.id, amount, account_details: acc, status: 'pending' }); if (error) status('wdStatus', 'Request failed: ' + error.message, 'error'); else { status('wdStatus', 'Request submitted. Admin will review it.', 'ok'); setTimeout(() => $('withdrawModal').classList.add('hidden'), 1800); } }
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

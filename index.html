@@ -60,7 +60,13 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
 <section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
 <section id="products" class="view hidden"><div class="panel"><h2>Products</h2><div id="productList">Loading products…</div></div></section>
 <section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code.</p><div id="teamList">Sign in to view your team.</div></div></section>
-<section id="admin" class="view hidden"><div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div><div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div><div class="panel"><h2>Add Product</h2><label>Product name</label><input id="newProduct" placeholder="Product name"><label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20"><label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple><label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5"><button class="primary" onclick="addOnlineProduct()">Save Product</button><div id="adminStatus" class="status">Admin action status will appear here.</div></div><div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
+<section id="admin" class="view hidden">
+<div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div>
+<div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div>
+<!-- نیا سیکشن: پاس ورڈ ری سیٹ -->
+<div class="panel"><h2>Reset Member Password</h2><p class="muted">Enter member's email to send a password reset link.</p><label>Member Email</label><input id="resetEmail" type="email" placeholder="member@example.com"><button class="primary" onclick="sendPasswordReset()">Send Reset Link</button><div id="resetStatus" class="status hidden"></div></div>
+<!-- -->
+<div class="panel"><h2>Add Product</h2><label>Product name</label><input id="newProduct" placeholder="Product name"><label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20"><label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple><label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5"><button class="primary" onclick="addOnlineProduct()">Save Product</button><div id="adminStatus" class="status">Admin action status will appear here.</div></div><div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
@@ -71,7 +77,6 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
 <script>
 'use strict';
 
-// --- Global Variables ---
 const MY_EASYPAISA = '03082276093';
 const SUPABASE_URL = 'https://kgkeyrhjbwcoaiqlrqqd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_15GSe0dxAxr6whvPkNwZsw_fgJ0_tHs';
@@ -88,7 +93,6 @@ let currentCurrency = 'USD';
 
 const $ = id => document.getElementById(id);
 
-// --- Helper Functions ---
 function status(id, msg, type = '') {
     const el = $(id);
     if (!el) return;
@@ -143,7 +147,6 @@ function tab(id) {
 
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
 
-// --- Initialization ---
 async function init() {
     if (!window.supabase) {
         status('connection', 'Could not load Supabase. Check your internet connection.', 'error');
@@ -202,7 +205,6 @@ async function updateAuth() {
     if (!$('my-account').classList.contains('hidden')) await loadMyAccountPage();
 }
 
-// --- Auth Functions ---
 function switchAuth(type) {
     if (user) return;
     $('formSignIn').classList.toggle('hidden', type !== 'signin');
@@ -255,7 +257,6 @@ async function signOut() {
     await updateAuth();
 }
 
-// --- Profile & Account Functions ---
 async function loadProfile() {
     if (!user || !sb) return;
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
@@ -330,7 +331,6 @@ async function editBankDetails() {
     }
 }
 
-// --- Products & Orders ---
 async function loadProducts() {
     if (!sb) return;
     const el = $('productList');
@@ -404,7 +404,6 @@ async function uploadPaymentProof() {
     else { status('uploadStatus', '✅ Proof submitted successfully!', 'ok'); setTimeout(() => closeModal(), 3000); }
 }
 
-// --- Admin Functions ---
 async function loadAdmin() {
     if (!isAdmin) return;
     const [m, p, o, w] = await Promise.all([
@@ -520,46 +519,10 @@ async function updateOrderStatus(orderId, newStatus) {
     newStatus = String(newStatus).toLowerCase();
     if (!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
 
-    const { data: currentOrder, error: orderReadError } = await sb.from('orders')
-        .select('status, buyer_id, unit_price_pkr, commission_processed')
-        .eq('id', orderId).single();
-    if (orderReadError || !currentOrder) return alert('Could not load order: ' + (orderReadError?.message || 'Order not found.'));
-
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
-    if (newStatus === 'confirmed') {
-        const price = Number(currentOrder.unit_price_pkr);
-        const buyerId = currentOrder.buyer_id;
-
-        // کمیشن صرف اسی وقت چلائیں جب اس آرڈر کا کمیشن پہلے پروسیس نہ ہوا ہو۔
-        const { data: checkOrder, error: checkError } = await sb.from('orders')
-            .select('commission_processed').eq('id', orderId).single();
-        if (checkError) {
-            alert('Order confirmed, but commission status could not be checked: ' + checkError.message);
-        } else if (!checkOrder?.commission_processed) {
-            const { error: commissionError } = await sb.rpc('process_order_commissions', {
-                p_buyer_id: buyerId,
-                p_order_amount: price
-            });
-            if (commissionError) {
-                alert('Order confirmed, but commission distribution failed: ' + commissionError.message);
-            } else {
-                const { error: markError } = await sb.from('orders')
-                    .update({ commission_processed: true }).eq('id', orderId);
-                if (markError) {
-                    alert('Commission RPC succeeded, but the order flag could not be saved: ' + markError.message + '. Please verify commissions before retrying.');
-                } else {
-                    alert('Order confirmed. Coins and 10% Commission distributed.');
-                }
-            }
-        } else {
-            alert('Order confirmed. Commission already processed for this order.');
-        }
-    } else {
-        alert('Order status updated to ' + newStatus);
-    }
-
+    alert('Order status updated to ' + newStatus);
     closeOrderDetailModal(); await loadAdmin();
 }
 
@@ -587,6 +550,16 @@ function copyRefCode() { if (myProfile?.referral_code && $('profRefCode').textCo
 function copyAccount() { copyText(MY_EASYPAISA); }
 function openWithdraw() { if (totalComm < 10) return alert('Minimum withdrawal is $10. Available: ' + convertMoney(totalComm)); $('withdrawModal').classList.remove('hidden'); $('wdAmount').value = Math.floor(totalComm); $('wdStatus').classList.add('hidden'); if (myProfile?.account_details) { $('wdAccount').value = myProfile.account_details; } }
 async function submitWithdraw() { if (!user) return alert('Please sign in first.'); const amount = Number($('wdAmount').value), acc = $('wdAccount').value.trim(); if (!amount || !acc) return alert('Please fill in all fields.'); if (amount < 10) return alert('Minimum withdrawal is $10.'); if (amount > totalComm) return alert('Amount exceeds your earnings.'); status('wdStatus', 'Submitting…'); const { error } = await sb.from('withdrawals').insert({ user_id: user.id, amount, account_details: acc, status: 'pending' }); if (error) status('wdStatus', 'Request failed: ' + error.message, 'error'); else { status('wdStatus', 'Request submitted. Admin will review it.', 'ok'); setTimeout(() => $('withdrawModal').classList.add('hidden'), 1800); } }
+
+async function sendPasswordReset() {
+    if (!isAdmin) return alert('Admin access required.');
+    const email = $('resetEmail').value.trim();
+    if (!email) return alert('Please enter member email.');
+    status('resetStatus', 'Sending reset link...');
+    const { error } = await sb.auth.resetPasswordForEmail(email);
+    if (error) status('resetStatus', 'Failed: ' + error.message, 'error');
+    else status('resetStatus', '✅ Reset link sent to ' + email, 'ok');
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

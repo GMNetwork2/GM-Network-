@@ -519,28 +519,47 @@ async function updateOrderStatus(orderId, newStatus) {
     if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
     newStatus = String(newStatus).toLowerCase();
     if (!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
-    
-    const { data: currentOrder, error: orderReadError } = await sb.from('orders').select('status, buyer_id, unit_price_pkr').eq('id', orderId).single();
+
+    const { data: currentOrder, error: orderReadError } = await sb.from('orders')
+        .select('status, buyer_id, unit_price_pkr, commission_processed')
+        .eq('id', orderId).single();
     if (orderReadError || !currentOrder) return alert('Could not load order: ' + (orderReadError?.message || 'Order not found.'));
-    const previousStatus = currentOrder.status;
+
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
-    if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
-        const price = Number(currentOrder.unit_price_pkr), buyerId = currentOrder.buyer_id;
-        
-        // نیا فنکشن کال کریں (process_order_commissions)
-        const { error: commissionError } = await sb.rpc('process_order_commissions', { p_buyer_id: buyerId, p_order_amount: price });
-        
-        if (commissionError) {
-            alert('Order confirmed, but commission distribution failed: ' + commissionError.message);
+    if (newStatus === 'confirmed') {
+        const price = Number(currentOrder.unit_price_pkr);
+        const buyerId = currentOrder.buyer_id;
+
+        // کمیشن صرف اسی وقت چلائیں جب اس آرڈر کا کمیشن پہلے پروسیس نہ ہوا ہو۔
+        const { data: checkOrder, error: checkError } = await sb.from('orders')
+            .select('commission_processed').eq('id', orderId).single();
+        if (checkError) {
+            alert('Order confirmed, but commission status could not be checked: ' + checkError.message);
+        } else if (!checkOrder?.commission_processed) {
+            const { error: commissionError } = await sb.rpc('process_order_commissions', {
+                p_buyer_id: buyerId,
+                p_order_amount: price
+            });
+            if (commissionError) {
+                alert('Order confirmed, but commission distribution failed: ' + commissionError.message);
+            } else {
+                const { error: markError } = await sb.from('orders')
+                    .update({ commission_processed: true }).eq('id', orderId);
+                if (markError) {
+                    alert('Commission RPC succeeded, but the order flag could not be saved: ' + markError.message + '. Please verify commissions before retrying.');
+                } else {
+                    alert('Order confirmed. Coins and 10% Commission distributed.');
+                }
+            }
         } else {
-            alert('Order confirmed. Coins and 10% Direct Commission processed.');
+            alert('Order confirmed. Commission already processed for this order.');
         }
     } else {
         alert('Order status updated to ' + newStatus);
     }
-    
+
     closeOrderDetailModal(); await loadAdmin();
 }
 

@@ -69,7 +69,6 @@ body { overflow-x: hidden; }
 .pv-dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .3s}
 .pv-dot.active{background:var(--g)}
 
-
 /* Fix QR Code Size */
 .qr-img {
     max-width: 100% !important;
@@ -78,7 +77,6 @@ body { overflow-x: hidden; }
     margin: 0 auto;
     border-radius: 10px;
 }
-
 </style>
 </head>
 <body>
@@ -194,14 +192,16 @@ body { overflow-x: hidden; }
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
 <div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
-<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>  <!-- Product detail, checkout, and payment-proof screens -->
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
+
+<!-- Product View Page (Full Screen) -->
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
     <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
         <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);">←</button>
         <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2><div style="width:24px;"></div>
     </div>
     <div class="pv-slider-container"><div id="pvImageSlider" class="pv-slider"></div><div id="pvSliderDots" class="pv-dots"></div></div>
-    <div style="padding:20px;padding-bottom:120px;">
+    <div style="padding:20px;padding-bottom:100px;">
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
         <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
@@ -213,7 +213,7 @@ body { overflow-x: hidden; }
         <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;"><span style="font-size:20px;">🚚</span><span>Free shipping. Dispatched within 24 hours.</span></div>
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">You May Also Like</h3>
-        <div class="banner-slider" id="relatedProductsSlider"><!-- Related products will be injected here --></div>
+        <div class="banner-slider" id="relatedProductsSlider"></div>
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">Customer Reviews</h3>
         <div id="pvpReviewMessage" style="color:var(--muted);font-size:14px;margin-bottom:15px;">There are no reviews yet. Be the first to review!</div>
@@ -248,11 +248,64 @@ body { overflow-x: hidden; }
             </div>
         </div>
 
-        <!-- Product Page Footer -->
-        <div style="text-align:center;font-size:11px;color:var(--muted);padding:20px 0 10px;border-top:1px solid var(--line);">
-            <p style="margin:0;">GM Network • Your Trusted Partner</p>
-            <p style="margin:5px 0 0;">© 2026 All Rights Reserved</p>
+        <!-- ============================================== -->
+        <!-- PROFESSIONAL FOOTER (WhatsApp Style) -->
+        <!-- ============================================== -->
+        <div style="background: #1c1c1c; color: #fff; padding: 30px 20px; margin: 30px -20px -20px -20px;">
+            <!-- Logo -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 25px;">
+                <div style="background: var(--gold); color: var(--g); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;">GM</div>
+                <span style="font-size: 20px; font-weight: bold; color: #fff;">GM Network</span>
+            </div>
+
+            <!-- Menu Columns -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 13px; color: #ccc;">
+                <div>
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 14px;">What we do</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0; line-height: 2;">
+                        <li>Features</li><li>Blog</li><li>Security</li><li>For Business</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 14px;">Who we are</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0; line-height: 2;">
+                        <li>About us</li><li>Careers</li><li>Brand Center</li><li>Privacy</li>
+                    </ul>
+                </div>
+                <div style="margin-top: 15px;">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 14px;">Use GM Network</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0; line-height: 2;">
+                        <li>Mobile App</li><li>Desktop</li><li>Tablet</li><li>Web</li>
+                    </ul>
+                </div>
+                <div style="margin-top: 15px;">
+                    <h4 style="color: #fff; margin-bottom: 10px; font-size: 14px;">Need help?</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0; line-height: 2;">
+                        <li>Contact Us</li><li>Help Center</li><li>Apps</li><li>Security Advisories</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Social Icons -->
+            <div style="display: flex; gap: 15px; margin-top: 30px; justify-content: center;">
+                <span style="width: 35px; height: 35px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center;">X</span>
+                <span style="width: 35px; height: 35px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center;">▶</span>
+                <span style="width: 35px; height: 35px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center;">📷</span>
+                <span style="width: 35px; height: 35px; border: 1px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center;">f</span>
+            </div>
+
+            <!-- Bottom Copyright -->
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #333; font-size: 11px; color: #888; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <p style="margin: 0;">Sitemap</p>
+                    <p style="margin: 3px 0;">Terms & Privacy Policy</p>
+                    <p style="margin: 0;">© 2026 GM Network LLC</p>
+                </div>
+                <div style="font-weight: bold; color: #fff;">English ▼</div>
+            </div>
         </div>
+        <!-- Footer End -->
+
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 15px;background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:10px;">
         <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button>
@@ -260,6 +313,7 @@ body { overflow-x: hidden; }
     </div>
 </div>
 
+<!-- Checkout Page -->
 <div id="checkoutPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:500;overflow-y:auto;">
     <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
         <button type="button" onclick="backToProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);margin-right:10px;">←</button><h2 style="margin:0;font-size:18px;">Checkout</h2>
@@ -282,6 +336,7 @@ body { overflow-x: hidden; }
     </div>
 </div>
 
+<!-- Payment Proof Page -->
 <div id="paymentProofPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:600;overflow-y:auto;">
     <div style="padding:30px 20px;max-width:500px;margin:0 auto;text-align:center;">
         <h2 style="color:var(--g);font-size:24px;margin-bottom:10px;">Order Placed!</h2><p style="color:var(--muted);margin-bottom:20px;">Please complete the payment to confirm your order.</p>
@@ -290,9 +345,7 @@ body { overflow-x: hidden; }
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
         <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    </div>  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 
@@ -607,6 +660,89 @@ async function editBankDetails() {
         alert('Account details saved successfully!');
         myProfile.account_details = newAcc.trim();
         $('accBankDetails').textContent = newAcc.trim();
+    }
+}
+
+async function copyRefCode() {
+    const code = String(myProfile?.referral_code || '').trim();
+    if (!user || !code || $('profRefCode').textContent === '🔒 Locked') {
+        return alert('Your referral code is not available yet. Complete an eligible order first.');
+    }
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(code);
+        } else {
+            const field = document.createElement('textarea');
+            field.value = code;
+            field.style.position = 'fixed';
+            field.style.opacity = '0';
+            document.body.appendChild(field);
+            field.select();
+            const copied = document.execCommand('copy');
+            field.remove();
+            if (!copied) throw new Error('Clipboard unavailable');
+        }
+        alert('Referral code copied: ' + code);
+    } catch (e) {
+        prompt('Copy your referral code:', code);
+    }
+}
+
+function openWithdraw() {
+    if (!user || !sb) return alert('Please sign in first.');
+    $('wdAmount').value = '';
+    $('wdAccount').value = myProfile?.account_details || '';
+    status('wdStatus', 'Available commission: ' + convertMoney(totalComm));
+    $('withdrawModal').classList.remove('hidden');
+}
+
+async function submitWithdraw() {
+    if (!user || !sb) return status('wdStatus', 'Please sign in first.', 'error');
+    const amount = Number($('wdAmount').value);
+    const accountDetails = $('wdAccount').value.trim();
+    if (!Number.isFinite(amount) || amount < 10) return status('wdStatus', 'Minimum withdrawal is $10.', 'error');
+    if (amount > Number(totalComm || 0)) return status('wdStatus', 'Insufficient available commission. Your balance is ' + convertMoney(totalComm) + '.', 'error');
+    if (!accountDetails) return status('wdStatus', 'Enter your bank or wallet account details.', 'error');
+
+    const btn = $('withdrawModal').querySelector('button.primary');
+    btn.disabled = true;
+    status('wdStatus', 'Submitting withdrawal request…');
+    try {
+        const { error } = await sb.from('withdrawals').insert({
+            user_id: user.id,
+            amount,
+            account_details: accountDetails,
+            status: 'pending'
+        });
+        if (error) throw error;
+        status('wdStatus', 'Withdrawal request submitted. It is pending admin review.', 'ok');
+        $('wdAmount').value = '';
+        $('wdAccount').value = accountDetails;
+        if (isAdmin) await loadAdmin();
+    } catch (e) {
+        status('wdStatus', 'Could not submit request: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function sendPasswordReset() {
+    if (!isAdmin || !sb) return status('resetStatus', 'Admin access and backend connection are required.', 'error');
+    const email = $('resetEmail').value.trim();
+    if (!email) return status('resetStatus', 'Enter the member email address.', 'error');
+    const btn = $('resetStatus').previousElementSibling;
+    if (btn) btn.disabled = true;
+    status('resetStatus', 'Sending password reset link…');
+    try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href.split('#')[0]
+        });
+        if (error) throw error;
+        status('resetStatus', 'Password reset email requested. Ask the member to check their inbox and spam folder.', 'ok');
+    } catch (e) {
+        status('resetStatus', 'Could not send reset email: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -1231,21 +1367,25 @@ async function submitCheckout() {
             payment_method: paymentMethod
         };
         let result = await sb.from('orders').insert(orderPayload).select('id').single();
+        
+        // اگر پہلی بار میں کوئی کالم نہ ملے تو پرانا طریقہ استعمال کریں
         if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
             const fallbackPayload = { ...orderPayload };
             delete fallbackPayload.buyer_email;
             delete fallbackPayload.payment_method;
             result = await sb.from('orders').insert(fallbackPayload).select('id').single();
         }
+        
+        // ⚠️ یہاں ایرر صاف دکھائیں گے
         if (result.error) throw new Error('Order failed: ' + result.error.message);
         currentOrderId = result.data.id;
 
         if (paymentMethod === 'wallet') {
-            // Conditional balance update helps prevent two simultaneous checkouts spending the same balance.
             const oldBalance = Number(wallet.balance || 0);
             const newBalance = oldBalance - Number(checkoutData.price || 0);
             const { data: updatedWallet, error: debitError } = await sb.from('wallets')
                 .update({ balance: newBalance }).eq('id', wallet.id).eq('balance', oldBalance).select('balance').maybeSingle();
+            
             if (debitError || !updatedWallet) {
                 alert('Order was created, but wallet payment could not be completed. Please contact admin with Order ID: ' + currentOrderId);
                 $('checkoutPage').classList.add('hidden');
@@ -1254,16 +1394,20 @@ async function submitCheckout() {
                 status('proofStatus', 'Wallet debit failed. Do not pay twice; contact admin with Order ID ' + currentOrderId + '.', 'error');
                 return;
             }
+            
             const { error: txnError } = await sb.from('wallet_transactions').insert({
                 wallet_id: wallet.id, user_id: user.id, amount: checkoutData.price,
                 type: 'purchase', status: 'completed', order_id: currentOrderId
             });
             if (txnError) console.error('Wallet transaction log failed:', txnError.message);
+            
             const { error: confirmError } = await sb.from('orders').update({ status: 'confirmed' }).eq('id', currentOrderId);
             if (confirmError) console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
+            
             alert(confirmError
                 ? 'Wallet was charged, but order status could not be updated. Please contact admin with Order ID: ' + currentOrderId
                 : 'Order placed and wallet payment processed successfully.');
+            
             $('checkoutPage').classList.add('hidden');
             $('productViewPage').classList.add('hidden');
             document.body.style.overflow = '';
@@ -1278,7 +1422,8 @@ async function submitCheckout() {
             $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
         }
     } catch (e) {
-        alert(e.message || 'Could not place order. Please try again.');
+        // یہاں ایرر میسج دکھے گا
+        alert('Error: ' + e.message);
     } finally {
         btn.textContent = 'Confirm Order';
         btn.disabled = false;

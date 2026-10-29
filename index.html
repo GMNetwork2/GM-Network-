@@ -512,13 +512,46 @@ async function adminChangeProof(orderId) {
 
 async function updateOrderStatus(orderId, newStatus) {
     if (!isAdmin) return alert('Admin access required.');
-    
-    // صرف اسٹیٹس اپڈیٹ کریں
+    const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
+    if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
+    newStatus = String(newStatus).toLowerCase();
+    if (!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
+
+    // 1. آرڈر کا اسٹیٹس تبدیل کریں
+    const { data: currentOrder, error: readError } = await sb.from('orders').select('buyer_id, unit_price_pkr').eq('id', orderId).single();
+    if (readError || !currentOrder) return alert('Order not found.');
+
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
+    // 2. اگر کنفرم کیا ہے تو کمیشن تقسیم کریں
+    if (newStatus === 'confirmed') {
+        const price = Number(currentOrder.unit_price_pkr);
+        const buyerId = currentOrder.buyer_id;
+
+        const { data: buyerData } = await sb.from('profiles').select('*').eq('id', buyerId).single();
+
+        if (buyerData) {
+            // خریدار کو کوائنز
+            await sb.from('profiles').update({
+                points: Number(buyerData.points || 0) + price
+            }).eq('id', buyerId);
+
+            // ڈائریکٹ ریفرر کو کمیشن اور کوائنز
+            if (buyerData.referred_by) {
+                const { data: refData } = await sb.from('profiles').select('*').eq('id', buyerData.referred_by).single();
+                if (refData) {
+                    await sb.from('profiles').update({
+                        total_commission: Number(refData.total_commission || 0) + (price * 0.10),
+                        points: Number(refData.points || 0) + price
+                    }).eq('id', refData.id);
+                }
+            }
+        }
+    }
+
     alert('Order status updated to ' + newStatus);
-    closeOrderDetailModal(); 
+    closeOrderDetailModal();
     await loadAdmin();
 }
 

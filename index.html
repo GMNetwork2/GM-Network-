@@ -69,6 +69,16 @@ body { overflow-x: hidden; }
 .pv-dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .3s}
 .pv-dot.active{background:var(--g)}
 
+
+/* Fix QR Code Size */
+.qr-img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+
 </style>
 </head>
 <body>
@@ -180,7 +190,7 @@ body { overflow-x: hidden; }
     </div>
 </div>
 
-<div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
+<div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
 <div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
@@ -208,6 +218,41 @@ body { overflow-x: hidden; }
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">Customer Reviews</h3>
         <div id="pvpReviewMessage" style="color:var(--muted);font-size:14px;margin-bottom:15px;">There are no reviews yet. Be the first to review!</div>
         <button type="button" class="secondary" onclick="writeProductReview()" style="width:100%;padding:12px;font-weight:bold;">Write a Review</button>
+
+        <!-- Trust Badges -->
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+        <div style="display:flex;justify-content:space-around;text-align:center;padding:15px 0;margin-bottom:20px;gap:8px;">
+            <div><div style="font-size:30px;margin-bottom:5px;">🚚</div><div style="font-size:12px;font-weight:bold;">Fast Delivery</div></div>
+            <div><div style="font-size:30px;margin-bottom:5px;">🔄</div><div style="font-size:12px;font-weight:bold;">7 Days Return</div></div>
+            <div><div style="font-size:30px;margin-bottom:5px;">🛡️</div><div style="font-size:12px;font-weight:bold;">Secure Payment</div></div>
+        </div>
+
+        <!-- Why Choose Us -->
+        <div style="background:var(--bg);padding:20px;border-radius:15px;margin-bottom:20px;">
+            <h3 style="font-size:16px;margin-top:0;color:var(--g);">Why Choose GM Network?</h3>
+            <ul style="padding-left:20px;font-size:13px;color:var(--muted);line-height:1.8;">
+                <li>100% Original Products Guaranteed.</li>
+                <li>Cash on Delivery available (Coming Soon).</li>
+                <li>Earn coins on every purchase.</li>
+                <li>24/7 Customer Support via WhatsApp.</li>
+            </ul>
+        </div>
+
+        <!-- WhatsApp Support -->
+        <div style="background:#E8F5E9;border:1px solid #C8E6C9;padding:20px;border-radius:15px;display:flex;align-items:center;gap:15px;margin-bottom:20px;">
+            <div style="font-size:40px;background:#25D366;color:white;border-radius:50%;width:60px;height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">💬</div>
+            <div>
+                <h4 style="margin:0 0 5px;font-size:15px;color:var(--g);">Need Help?</h4>
+                <p style="margin:0;font-size:12px;color:var(--muted);">Have questions about this product? Contact us on WhatsApp for instant help.</p>
+                <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;color:#128C7E;font-weight:bold;text-decoration:underline;font-size:13px;">Chat Now →</a>
+            </div>
+        </div>
+
+        <!-- Product Page Footer -->
+        <div style="text-align:center;font-size:11px;color:var(--muted);padding:20px 0 10px;border-top:1px solid var(--line);">
+            <p style="margin:0;">GM Network • Your Trusted Partner</p>
+            <p style="margin:5px 0 0;">© 2026 All Rights Reserved</p>
+        </div>
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 15px;background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:10px;">
         <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button>
@@ -241,7 +286,7 @@ body { overflow-x: hidden; }
     <div style="padding:30px 20px;max-width:500px;margin:0 auto;text-align:center;">
         <h2 style="color:var(--g);font-size:24px;margin-bottom:10px;">Order Placed!</h2><p style="color:var(--muted);margin-bottom:20px;">Please complete the payment to confirm your order.</p>
         <div style="background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:12px;margin-bottom:20px;"><p style="margin:0;font-size:14px;">Total Amount to Pay:</p><h2 id="payTotalAmount" style="color:var(--g);font-size:28px;margin:5px 0 0;"></h2></div>
-        <div class="qr-container" style="padding:15px;background:#fff;border:1px solid var(--line);border-radius:12px;"><img src="qr.png" alt="QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p style="font-size:13px;margin-top:10px;">Scan to pay MUHAMMAD HAMID</p></div>
+        <div class="qr-container" style="padding:15px;background:#fff;border:1px solid var(--line);border-radius:12px;"><img src="qr.png" class="qr-img" alt="QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p style="font-size:13px;margin-top:10px;">Scan to pay MUHAMMAD HAMID</p></div>
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
         <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>

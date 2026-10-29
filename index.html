@@ -83,7 +83,15 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
     <div class="panel" style="margin-top:12px"><h2>Welcome</h2><p class="muted section-note">Sign in to view your profile, referral code, team and earnings.</p><div id="connection" class="status">Connecting to backend…</div></div>
 </section>
 
-<section id="account" class="view hidden"><div class="panel" id="authPanel"><div class="auth-box"><button class="secondary active" id="btnShowSignIn" onclick="switchAuth('signin')">Sign In</button><button class="secondary" id="btnShowSignUp" onclick="switchAuth('signup')">Sign Up</button></div><div id="formSignIn"><h2>Sign in to your account</h2><label>Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password"><button class="primary" onclick="signIn()">Sign In</button><p style="text-align:center;margin-top:15px;font-size:13px;"><a href="#" onclick="forgotPassword(); return false;" style="color:var(--g);text-decoration:underline;font-weight:bold;">Forgot Password?</a></p></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
+<section id="account" class="view hidden"><div class="panel" id="authPanel"><div class="auth-box"><button class="secondary active" id="btnShowSignIn" onclick="switchAuth('signin')">Sign In</button><button class="secondary" id="btnShowSignUp" onclick="switchAuth('signup')">Sign Up</button></div><div id="formSignIn"><h2>Sign in to your account</h2><label>Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password"><button class="primary" onclick="signIn()">Sign In</button><p style="text-align:center;margin-top:15px;font-size:13px;"><a href="#" onclick="forgotPassword(); return false;" style="color:var(--g);text-decoration:underline;font-weight:bold;">Forgot Password?</a></p>
+<div id="resetPasswordForm" class="hidden" style="margin-top:20px;border-top:1px solid var(--line);padding-top:15px;">
+<h3 style="font-size:16px;margin-top:0;">Reset Password</h3>
+<p class="muted" style="font-size:12px;">Enter the 6-digit code sent to your email and your new password.</p>
+<label>OTP Code</label><input id="resetOtp" type="text" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+<label>New Password</label><input id="newPassword" type="password" placeholder="At least 6 characters" autocomplete="new-password">
+<button class="primary" onclick="confirmPasswordReset()">Reset Password</button>
+<div id="loginResetStatus" class="status hidden"></div>
+</div></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
 <section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
 <section id="products" class="view hidden"><div class="panel"><h2>Products</h2><div id="productList">Loading products…</div></div></section>
 <section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
@@ -260,18 +268,46 @@ async function signIn() {
 async function forgotPassword() {
     if (!sb) return alert('Backend is not connected.');
     const email = $('loginEmail').value.trim();
-    if (!email) return alert('برائے مہربانی پہلے اپنا ای میل ایڈریس لکھیں۔');
+    if (!email) return alert('Please enter your email address first.');
 
-    status('authStatus', 'ری سیٹ لنک بھیجا جا رہا ہے...');
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-    });
-
+    status('authStatus', 'Sending password reset code...');
+    const { error } = await sb.auth.resetPasswordForEmail(email);
     if (error) {
         status('authStatus', 'Failed: ' + error.message, 'error');
-    } else {
-        status('authStatus', '✅ پاس ورڈ ری سیٹ لنک آپ کے ای میل پر بھیج دیا گیا ہے۔ اپنا ان باکس (اور اسپیم فولڈر) چیک کریں۔', 'ok');
+        return;
     }
+    $('resetPasswordForm').classList.remove('hidden');
+    status('authStatus', '✅ Password reset email requested. Check your inbox and spam folder for the 6-digit code. If the email contains a link instead, your Supabase email template must be configured to send an OTP code.', 'ok');
+}
+
+async function confirmPasswordReset() {
+    if (!sb) return alert('Backend is not connected.');
+    const email = $('loginEmail').value.trim();
+    const otp = $('resetOtp').value.trim();
+    const newPassword = $('newPassword').value;
+    if (!email) return status('loginResetStatus', 'Please enter your email address above.', 'error');
+    if (!/^\d{6}$/.test(otp)) return status('loginResetStatus', 'Enter the 6-digit code from your email.', 'error');
+    if (newPassword.length < 6) return status('loginResetStatus', 'Password must be at least 6 characters.', 'error');
+
+    status('loginResetStatus', 'Verifying code...');
+    const { error: verifyError } = await sb.auth.verifyOtp({ email, token: otp, type: 'recovery' });
+    if (verifyError) {
+        status('loginResetStatus', 'Invalid or expired code: ' + verifyError.message, 'error');
+        return;
+    }
+
+    status('loginResetStatus', 'Updating password...');
+    const { error: updateError } = await sb.auth.updateUser({ password: newPassword });
+    if (updateError) {
+        status('loginResetStatus', 'Could not update password: ' + updateError.message, 'error');
+        return;
+    }
+
+    $('resetPasswordForm').classList.add('hidden');
+    $('resetOtp').value = '';
+    $('newPassword').value = '';
+    status('authStatus', '✅ Password updated successfully. You can now sign in with your new password.', 'ok');
+    await sb.auth.signOut();
 }
 
 async function signUp() {

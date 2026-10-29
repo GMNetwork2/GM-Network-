@@ -75,7 +75,7 @@ body { overflow-x: hidden; }
 <header><div class="brand"><div class="logo">GM</div><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div></header>
 <main>
 <div class="currency-selector"><span class="muted">Currency:</span><select id="currencySelect" onchange="changeCurrency(this.value)"><option value="USD">USD ($)</option><option value="PKR">PKR (₨)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select><span id="currencyRateInfo" class="muted" style="font-size:11px"></span></div>
-<nav class="tabs" id="tabs"><button class="active" data-tab="home">Dashboard</button><button data-tab="account">Account/Profile</button><button data-tab="my-account">My Account</button><button data-tab="products">Products</button><button data-tab="team">My Team</button><button data-tab="about">About</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button></nav>
+<nav class="tabs" id="tabs"><button class="active" data-tab="home">Dashboard</button><button data-tab="account">Account/Profile</button><button data-tab="my-account">My Account</button><button data-tab="my-wallet">My Wallet</button><button data-tab="products">Products</button><button data-tab="team">My Team</button><button data-tab="about">About</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button></nav>
 
 <section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 29,999 Coins<br>💎 Platinum: 30,000 - 49,999 Coins<br>👑 Diamond: 50,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
 
@@ -102,6 +102,26 @@ body { overflow-x: hidden; }
 <div id="loginResetStatus" class="status hidden"></div>
 </div></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
 <section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
+
+<section id="my-wallet" class="view hidden">
+    <div class="panel">
+        <h2>My Wallet</h2>
+        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;">
+            <p style="margin:0;font-size:14px;color:#d9e9e1;">Available Balance</p>
+            <h1 id="walletBalance" style="margin:10px 0 0;font-size:36px;color:var(--gold);">$0.00</h1>
+        </div>
+        <h3>Add Money to Wallet</h3>
+        <p class="muted" style="font-size:12px;">Send money to Easypaisa: 03082276093 (Muhammad Hamid), then upload your payment screenshot. Deposits remain pending until an admin verifies them.</p>
+        <label for="walletDepositAmount">Amount (USD)</label>
+        <input id="walletDepositAmount" type="number" min="1" step="0.01" placeholder="e.g. 10">
+        <label for="walletScreenshot">Payment Screenshot</label>
+        <input id="walletScreenshot" type="file" accept="image/*">
+        <button class="primary" type="button" onclick="requestWalletDeposit()" id="walletDepositBtn">Submit Deposit Request</button>
+        <div id="walletStatus" class="status hidden"></div>
+        <h3 style="margin-top:30px;">Recent Transactions</h3>
+        <div id="walletTransactions" class="muted">Sign in to view transactions.</div>
+    </div>
+</section>
 
 <section id="products" class="view hidden">
     <div class="panel">
@@ -208,6 +228,11 @@ body { overflow-x: hidden; }
         <label for="coNameInput">Full Name</label><input id="coNameInput" autocomplete="name" placeholder="Your name">
         <label for="coPhoneInput">Phone Number</label><input id="coPhoneInput" type="tel" autocomplete="tel" placeholder="+92 300 1234567">
         <label for="coAddressInput">Complete Address</label><textarea id="coAddressInput" rows="3" autocomplete="street-address" placeholder="House, street, city, area"></textarea>
+        <div style="margin-top:20px;padding:15px;border:1px solid var(--line);border-radius:10px;">
+            <h4 style="margin-top:0;">Payment Method</h4>
+            <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><input type="radio" name="paymentMethod" value="wallet" checked style="width:auto;"> Pay from Wallet (<span id="checkoutWalletBal">$0</span>)</label>
+            <label style="display:flex;align-items:center;gap:10px;"><input type="radio" name="paymentMethod" value="manual" style="width:auto;"> Manual Payment (Easypaisa/JazzCash)</label>
+        </div>
         <button class="primary" type="button" onclick="submitCheckout()" id="coSubmitBtn" style="margin-top:20px;padding:15px;font-size:16px;">Confirm Order</button>
     </div>
 </div>
@@ -286,13 +311,14 @@ function changeCurrency(curr) {
 
 function tab(id) {
     if (id === 'admin' && !isAdmin) { alert('Admin access required.'); return; }
-    if (['my-account', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
+    if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
     document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
     
     if (id === 'team') loadMyTeam();
     if (id === 'account' && user) loadProfile();
     if (id === 'my-account' && user) loadMyAccountPage();
+    if (id === 'my-wallet' && user) loadMyWallet();
 }
 
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
@@ -1105,54 +1131,183 @@ function openCheckoutPage() {
     $('coImage').src = checkoutData.image || $('pvImageSlider').querySelector('img')?.src || '';
     $('coName').textContent = checkoutData.name;
     $('coPrice').textContent = convertMoney(checkoutData.price);
+    const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+    if (selectedPayment) selectedPayment.checked = true;
+    loadCheckoutWalletBalance();
     $('productViewPage').classList.add('hidden');
     $('checkoutPage').classList.remove('hidden');
 }
 
+async function loadCheckoutWalletBalance() {
+    if (!user || !sb) return;
+    const balanceEl = $('checkoutWalletBal');
+    if (!balanceEl) return;
+    const { data, error } = await sb.from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+    if (error) {
+        balanceEl.textContent = 'Unavailable';
+        return;
+    }
+    balanceEl.textContent = convertMoney(Number(data?.balance || 0));
+}
+
 async function submitCheckout() {
-    if (!user || !checkoutData || !sb) return;
+    if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
     const name = $('coNameInput').value.trim();
     const phone = $('coPhoneInput').value.trim();
     const address = $('coAddressInput').value.trim();
     if (!name || !phone || !address) return alert('Please fill in all shipping details.');
+
+    const methodInput = document.querySelector('input[name="paymentMethod"]:checked');
+    const paymentMethod = methodInput?.value === 'wallet' ? 'wallet' : 'manual';
+    let wallet = null;
+    if (paymentMethod === 'wallet') {
+        const { data, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
+        if (error) return alert('Could not check wallet balance: ' + error.message);
+        wallet = data;
+        if (!wallet || Number(wallet.balance || 0) < Number(checkoutData.price || 0)) {
+            return alert('Insufficient wallet balance. Please add funds or choose manual payment.');
+        }
+    }
+
     const btn = $('coSubmitBtn');
     btn.textContent = 'Processing…';
     btn.disabled = true;
-    const orderPayload = {
-        buyer_id: user.id,
-        buyer_email: user.email || null,
-        product_id: checkoutData.id,
-        quantity: 1,
-        unit_price_pkr: checkoutData.price,
-        phone_number: phone,
-        shipping_address: address,
-        status: 'pending',
-        referrer_id: myProfile?.referred_by || null
-    };
-    let result = await sb.from('orders').insert(orderPayload).select('id').single();
-    if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
-        result = await sb.from('orders').insert({
-            buyer_id: user.id, product_id: checkoutData.id, quantity: 1,
-            unit_price_pkr: checkoutData.price, phone_number: phone,
-            shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null
-        }).select('id').single();
-    }
-    if (result.error) {
-        alert('Order failed: ' + result.error.message);
+    try {
+        const orderPayload = {
+            buyer_id: user.id,
+            buyer_email: user.email || null,
+            product_id: checkoutData.id,
+            quantity: 1,
+            unit_price_pkr: checkoutData.price,
+            phone_number: phone,
+            shipping_address: address,
+            status: 'pending',
+            referrer_id: myProfile?.referred_by || null,
+            payment_method: paymentMethod
+        };
+        let result = await sb.from('orders').insert(orderPayload).select('id').single();
+        if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
+            const fallbackPayload = { ...orderPayload };
+            delete fallbackPayload.buyer_email;
+            delete fallbackPayload.payment_method;
+            result = await sb.from('orders').insert(fallbackPayload).select('id').single();
+        }
+        if (result.error) throw new Error('Order failed: ' + result.error.message);
+        currentOrderId = result.data.id;
+
+        if (paymentMethod === 'wallet') {
+            // Conditional balance update helps prevent two simultaneous checkouts spending the same balance.
+            const oldBalance = Number(wallet.balance || 0);
+            const newBalance = oldBalance - Number(checkoutData.price || 0);
+            const { data: updatedWallet, error: debitError } = await sb.from('wallets')
+                .update({ balance: newBalance }).eq('id', wallet.id).eq('balance', oldBalance).select('balance').maybeSingle();
+            if (debitError || !updatedWallet) {
+                alert('Order was created, but wallet payment could not be completed. Please contact admin with Order ID: ' + currentOrderId);
+                $('checkoutPage').classList.add('hidden');
+                $('paymentProofPage').classList.remove('hidden');
+                $('payTotalAmount').textContent = convertMoney(checkoutData.price);
+                status('proofStatus', 'Wallet debit failed. Do not pay twice; contact admin with Order ID ' + currentOrderId + '.', 'error');
+                return;
+            }
+            const { error: txnError } = await sb.from('wallet_transactions').insert({
+                wallet_id: wallet.id, user_id: user.id, amount: checkoutData.price,
+                type: 'purchase', status: 'completed', order_id: currentOrderId
+            });
+            if (txnError) console.error('Wallet transaction log failed:', txnError.message);
+            const { error: confirmError } = await sb.from('orders').update({ status: 'confirmed' }).eq('id', currentOrderId);
+            if (confirmError) console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
+            alert(confirmError
+                ? 'Wallet was charged, but order status could not be updated. Please contact admin with Order ID: ' + currentOrderId
+                : 'Order placed and wallet payment processed successfully.');
+            $('checkoutPage').classList.add('hidden');
+            $('productViewPage').classList.add('hidden');
+            document.body.style.overflow = '';
+            checkoutData = null;
+            await loadMyWallet();
+            tab('my-wallet');
+        } else {
+            $('checkoutPage').classList.add('hidden');
+            $('paymentProofPage').classList.remove('hidden');
+            $('payTotalAmount').textContent = convertMoney(checkoutData.price);
+            const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
+            $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
+        }
+    } catch (e) {
+        alert(e.message || 'Could not place order. Please try again.');
+    } finally {
         btn.textContent = 'Confirm Order';
         btn.disabled = false;
-        return;
     }
-    currentOrderId = result.data.id;
-    $('checkoutPage').classList.add('hidden');
-    $('paymentProofPage').classList.remove('hidden');
-    $('payTotalAmount').textContent = convertMoney(checkoutData.price);
-    const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
-    $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
-    btn.textContent = 'Confirm Order';
-    btn.disabled = false;
 }
 
+async function loadMyWallet() {
+    if (!user || !sb) return;
+    status('walletStatus', 'Loading wallet…');
+    const { data: wallet, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
+    if (error) {
+        status('walletStatus', 'Could not load wallet: ' + error.message, 'error');
+        $('walletBalance').textContent = convertMoney(0);
+        $('walletTransactions').textContent = 'Wallet could not be loaded.';
+        return;
+    }
+    const currentBalance = Number(wallet?.balance || 0);
+    $('walletBalance').textContent = convertMoney(currentBalance);
+    if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(currentBalance);
+    const { data: txns, error: txnError } = await sb.from('wallet_transactions')
+        .select('id,type,amount,status,created_at')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(10);
+    if (txnError) {
+        $('walletTransactions').textContent = 'Could not load transactions: ' + txnError.message;
+    } else {
+        $('walletTransactions').innerHTML = (txns || []).map(t => `
+            <div class="item" style="cursor:default;">
+                <div><b>${t.type === 'deposit' ? '➕ Deposit' : '➖ Purchase'}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
+                <div style="text-align:right;"><b style="color:${t.type === 'deposit' ? 'green' : 'red'};">${t.type === 'deposit' ? '+' : '-'}${esc(convertMoney(t.amount))}</b><br><span class="pill">${esc(t.status || 'pending')}</span></div>
+            </div>`).join('') || '<p>No transactions yet.</p>';
+    }
+    $('walletStatus').classList.add('hidden');
+}
+
+async function requestWalletDeposit() {
+    if (!user || !sb) return alert('Please sign in first.');
+    const amount = Number($('walletDepositAmount').value);
+    const file = $('walletScreenshot').files?.[0];
+    if (!Number.isFinite(amount) || amount < 1) return alert('Please enter a valid amount (minimum $1).');
+    if (!file) return alert('Please upload a payment screenshot.');
+    if (!file.type.startsWith('image/')) return alert('Please choose an image file.');
+    if (file.size > 5 * 1024 * 1024) return alert('Screenshot must be 5 MB or smaller.');
+
+    const btn = $('walletDepositBtn');
+    btn.disabled = true;
+    status('walletStatus', 'Uploading screenshot…');
+    try {
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `wallet-deposits/${user.id}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+        if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
+        const publicUrl = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+        let { data: wallet, error: walletError } = await sb.from('wallets').select('id').eq('user_id', user.id).maybeSingle();
+        if (walletError) throw new Error('Could not check wallet: ' + walletError.message);
+        if (!wallet) {
+            const created = await sb.from('wallets').insert({ user_id: user.id, balance: 0 }).select('id').single();
+            if (created.error) throw new Error('Could not create wallet: ' + created.error.message);
+            wallet = created.data;
+        }
+        const { error: txnError } = await sb.from('wallet_transactions').insert({
+            wallet_id: wallet.id, user_id: user.id, amount, type: 'deposit', status: 'pending', screenshot_url: publicUrl
+        });
+        if (txnError) throw new Error('Request failed: ' + txnError.message);
+        status('walletStatus', 'Deposit request submitted. Admin must verify the payment before your balance changes.', 'ok');
+        $('walletDepositAmount').value = '';
+        $('walletScreenshot').value = '';
+        await loadMyWallet();
+        status('walletStatus', 'Deposit request submitted. Admin must verify the payment before your balance changes.', 'ok');
+    } catch (e) {
+        status('walletStatus', e.message || 'Deposit request failed.', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
 async function submitPaymentProof() {
     if (!currentOrderId) return alert('Order ID not found.');
     const fileInput = $('paymentProofInput');

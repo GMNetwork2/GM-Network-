@@ -23,31 +23,29 @@ button.secondary{background:#eaf3ed;border:1px solid #cbded1;border-radius:9px;p
 .hidden{display:none!important}.pill{display:inline-block;background:#e9f4ed;color:#1b6548;border-radius:20px;padding:3px 8px;font-size:11px;white-space:nowrap}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{padding:10px;border-radius:10px;background:#eef5ef;margin-top:10px;font-size:13px;overflow-wrap:anywhere;white-space:pre-line}
 .status.error{background:#ffe8e8;color:#8b1a1a}.status.ok{background:#e1f5e6;color:#135c2e}
-.product-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}
-.product-card .main-img{width:100%;height:220px;object-fit:contain;border-radius:10px;background:#f9f9f9;cursor:pointer}
-.product-card .thumbnails{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:5px}
-.product-card .thumbnails img{width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}
-.product-card .thumbnails img.active{border-color:var(--g)}
-.product-info{display:flex;justify-content:space-between;align-items:flex-start;margin-top:12px;gap:10px}
-.product-info h3{margin:0;font-size:16px}.product-info .price{font-size:18px;font-weight:bold;color:var(--g)}
-.buy-btn{margin-top:10px;width:100%}
-.image-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:15px}
-.image-lightbox img{max-width:100%;max-height:75vh;object-fit:contain}.image-lightbox .lightbox-thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;max-width:100%;width:100%;justify-content:flex-start}.image-lightbox .lightbox-thumbs img{width:60px;height:60px;min-width:60px;max-height:60px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}.image-lightbox .lightbox-thumbs img.active{border-color:var(--gold)}.image-lightbox .close-lightbox{position:absolute;top:14px;right:14px;background:#fff;color:#123c32;border:0;border-radius:50%;width:44px;height:44px;font-size:27px;cursor:pointer}
-.lightbox-nav{position:absolute;top:48%;transform:translateY(-50%);z-index:2;width:46px;height:54px;border:0;border-radius:12px;background:#ffffffd9;color:#123c32;font-size:32px;font-weight:bold;cursor:pointer}.lightbox-prev{left:10px}.lightbox-next{right:10px}.lightbox-counter{color:#fff;font-size:13px}.image-lightbox #lightboxImage{touch-action:pan-y;user-select:none}
-.payment-choice{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;text-align:left}.pay-note{font-size:12px;color:var(--muted);line-height:1.5}
-.modal{position:fixed;inset:0;background:#0008;display:flex;justify-content:center;align-items:center;z-index:100;padding:15px}
-.modal-content{background:#fff;padding:20px;border-radius:15px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto}
-.auth-box{display:flex;gap:10px;margin-bottom:20px}.auth-box button{flex:1;margin:0}.auth-box button.active{background:var(--g);color:#fff}
-.pay-btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:10px;font-weight:bold;margin-top:10px;color:#fff;cursor:pointer}
-.copy-box{background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:10px;margin:15px 0;text-align:center;cursor:pointer}
-.row-actions{display:flex;gap:6px;flex-wrap:wrap}.small-btn{padding:5px!important;font-size:12px!important;width:auto!important;margin:0!important}.section-note{line-height:1.5}
-.currency-selector{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:10px}
-.currency-selector select{width:auto;padding:8px;font-size:14px;border-radius:8px}
-.qr-container{text-align:center;margin:15px 0;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px}
-.qr-container img{max-width:180px;width:100%;border-radius:10px}
-.search-box{display:flex;gap:8px;margin-bottom:12px}
-.search-box input{flex:1;padding:10px;border:1px solid var(--line);border-radius:8px}
-.search-box button{padding:10px 15px;background:var(--g);color:#fff;border:0;border-radius:8px;cursor:pointer}
+
+/* --- NEW PRODUCT GRID & CARD CSS --- */
+.product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.product-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #fff; display: flex; flex-direction: column; position: relative; }
+.product-card .main-img { width: 100%; height: 150px; object-fit: contain; border-radius: 8px; background: #f9f9f9; cursor: pointer; }
+.product-card .thumbnails { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
+.product-card .thumbnails img { width: 35px; height: 35px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
+.product-card .thumbnails img.active { border-color: var(--g); }
+.product-info { display: flex; flex-direction: column; margin-top: 8px; flex-grow: 1; }
+.product-info h3 { margin: 0; font-size: 14px; font-weight: bold; }
+.product-info .price { font-size: 16px; font-weight: bold; color: #cc0000; margin-top: 4px; }
+.product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.product-info .stars { color: #000; font-size: 12px; margin-top: 2px; }
+.buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
+
+/* Banner CSS */
+.banner-slider { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
+.banner-slider img { height: 130px; border-radius: 12px; object-fit: cover; cursor: pointer; }
+.banner-placeholder { height: 130px; min-width: 200px; border-radius: 12px; background: #ccc; display: flex; align-items: center; justify-content: center; color: #555; font-weight: bold; text-align: center; padding: 10px; }
+
+/* WhatsApp Floating Button */
+.whatsapp-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; color: #fff; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; text-decoration: none; }
+.whatsapp-float:hover { background: #128C7E; }
 
 /* --- NEW EXPANDABLE TEAM TREE CSS --- */
 .team-tree-container { margin-top: 15px; }
@@ -93,14 +91,50 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
 <div id="loginResetStatus" class="status hidden"></div>
 </div></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
 <section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
-<section id="products" class="view hidden"><div class="panel"><h2>Products</h2><div id="productList">Loading products…</div></div></section>
+
+<section id="products" class="view hidden">
+    <div class="panel">
+        <div class="banner-slider" id="bannerSlider">
+            <div class="banner-placeholder">Banner 1<br>(Upload via Admin)</div>
+            <div class="banner-placeholder">Banner 2<br>(Upload via Admin)</div>
+        </div>
+        <h2 style="font-size:20px; margin-bottom:10px;">Premium Products</h2>
+        <div class="product-grid" id="productList">Loading products…</div>
+    </div>
+</section>
+
 <section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
+
 <section id="admin" class="view hidden">
 <div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div>
 <div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div>
 <div class="panel"><h2>Reset Member Password</h2><p class="muted">Enter member's email to send a password reset link.</p><label>Member Email</label><input id="resetEmail" type="email" placeholder="member@example.com"><button class="primary" onclick="sendPasswordReset()">Send Reset Link</button><div id="resetStatus" class="status hidden"></div></div>
-<div class="panel"><h2>Add Product</h2><label>Product name</label><input id="newProduct" placeholder="Product name"><label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20"><label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple><label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5"><button class="primary" onclick="addOnlineProduct()">Save Product</button><div id="adminStatus" class="status">Admin action status will appear here.</div></div><div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
+
+<div class="panel"><h2>Add Product</h2>
+    <label>Product name</label><input id="newProduct" placeholder="Product name">
+    <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
+    <label>Description (optional)</label><textarea id="newDescription" rows="3" placeholder="Write product details here..."></textarea>
+    <label>Starting Rating (e.g. 4.5)</label><input id="newBaseRating" type="number" step="0.1" min="0" max="5" value="4.5">
+    <label>Starting Reviews Count (e.g. 120)</label><input id="newBaseReviewsCount" type="number" min="0" value="10">
+    <label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple>
+    <label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5">
+    <button class="primary" onclick="addOnlineProduct()">Save Product</button>
+    <div id="adminStatus" class="status">Admin action status will appear here.</div>
+</div>
+
+<div class="panel"><h2>Manage Banners (Home Screen)</h2>
+    <p class="muted" style="font-size:12px;">Upload up to 2 banners for the Products page.</p>
+    <label>Upload Banner 1</label><input type="file" id="bannerImg1" accept="image/*">
+    <label>Upload Banner 2</label><input type="file" id="bannerImg2" accept="image/*">
+    <button class="primary" onclick="saveBanners()">Save Banners</button>
+    <div id="bannerStatus" class="status hidden"></div>
+</div>
+
+<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
+
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/923082276093" target="_blank" class="whatsapp-float">💬</a>
 
 <!-- Team Viewer Modal for Admin -->
 <div id="teamViewerModal" class="modal hidden">
@@ -113,10 +147,9 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
 
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
-<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
-<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 
@@ -151,7 +184,7 @@ function esc(v) {
 function convertMoney(usdAmount) {
     const rate = exchangeRates[currentCurrency] || 1;
     const converted = Number(usdAmount) * rate;
-    if (currentCurrency === 'PKR') return '₨ ' + converted.toLocaleString('en-PK', { maximumFractionDigits: 0 });
+    if (currentCurrency === 'PKR') return 'Rs. ' + converted.toLocaleString('en-PK', { maximumFractionDigits: 0 });
     if (currentCurrency === 'INR') return '₹ ' + converted.toLocaleString('en-IN', { maximumFractionDigits: 0 });
     if (currentCurrency === 'EUR') return '€' + converted.toLocaleString('de-DE', { maximumFractionDigits: 2 });
     if (currentCurrency === 'GBP') return '£' + converted.toLocaleString('en-GB', { maximumFractionDigits: 2 });
@@ -364,13 +397,11 @@ async function loadProfile() {
     $('profCommission').textContent = convertMoney(Math.floor(totalComm));
     $('nc').textContent = convertMoney(Math.floor(totalComm));
 
-    // Self Purchases
     const { data: selfOrders } = await sb.from('orders').select('unit_price_pkr').eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']);
     const selfSalesCount = selfOrders ? selfOrders.length : 0;
     let selfCoinsFromOrders = 0;
     if (selfOrders) selfOrders.forEach(o => selfCoinsFromOrders += Number(o.unit_price_pkr));
 
-    // Team Purchases
     const { data: teamOrders } = await sb.from('orders').select('unit_price_pkr').eq('referrer_id', user.id).in('status', ['confirmed', 'delivered']);
     const teamSalesCount = teamOrders ? teamOrders.length : 0;
     let teamCoinsFromOrders = 0;
@@ -441,7 +472,10 @@ async function loadProducts() {
     
     el.innerHTML = (data || []).map(p => {
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-        return `<div class="product-card"><img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" onclick="openImageLightbox(this.src, JSON.parse(decodeURIComponent(this.dataset.images)))" data-images="${encodeURIComponent(JSON.stringify(imgs))}"><div class="thumbnails">${imgs.map((img, i) => `<img src="${esc(img)}" class="${i === 0 ? 'active' : ''}" onclick="const card=this.closest('.product-card');card.querySelector('.main-img').src=this.src;card.querySelectorAll('.thumbnails img').forEach(x=>x.classList.remove('active'));this.classList.add('active');">`).join('')}</div><div class="product-info"><h3>${esc(p.name)}</h3><div class="price">${convertMoney(p.price_pkr)}</div></div><div class="muted">Commission: ${Number(p.commission_percent) || 0}%</div><button class="primary buy-btn" data-product="${esc(p.id)}">Buy Now</button></div>`;
+        const baseRating = p.base_rating || 5.0;
+        const baseReviews = p.base_reviews_count || 0;
+        const starsHtml = '★'.repeat(Math.round(baseRating)) + '☆'.repeat(5 - Math.round(baseRating));
+        return `<div class="product-card"><img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" onclick="openImageLightbox(this.src, JSON.parse(decodeURIComponent(this.dataset.images)))" data-images="${encodeURIComponent(JSON.stringify(imgs))}"><div class="thumbnails">${imgs.map((img, i) => `<img src="${esc(img)}" class="${i === 0 ? 'active' : ''}" onclick="const card=this.closest('.product-card');card.querySelector('.main-img').src=this.src;card.querySelectorAll('.thumbnails img').forEach(x=>x.classList.remove('active'));this.classList.add('active');">`).join('')}</div><div class="product-info"><h3>${esc(p.name)}</h3><div class="stars">${starsHtml} (${baseRating})</div><div class="reviews">${baseReviews} Reviews</div><div class="price">${convertMoney(p.price_pkr)}</div></div><button class="primary buy-btn" data-product="${esc(p.id)}">Buy Now</button></div>`;
     }).join('') || '<p class="muted">No active products yet.</p>';
     
     el.querySelectorAll('[data-product]').forEach((btn, i) => btn.addEventListener('click', () => {
@@ -450,8 +484,6 @@ async function loadProducts() {
     }));
     $('np').textContent = String((data || []).length);
 }
-
-// --- NEW EXPANDABLE TREE LOGIC FOR MY TEAM ---
 
 async function loadMyTeam() {
     const el = $('teamList');

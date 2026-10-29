@@ -910,7 +910,7 @@ async function loadAdmin() {
     $('ap').textContent = p.error ? '—' : String(p.data?.length || 0);
     $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
 
-    // 1. Recent Orders
+    // 1. Recent Orders — payment_proof is passed to the order details modal
     $('adminOrders').innerHTML = o.error
         ? esc(o.error.message)
         : (o.data || []).map(x => `
@@ -926,9 +926,14 @@ async function loadAdmin() {
         const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
         if (order) {
             el.onclick = () => showOrderDetails(
-                order.id, order.phone_number, order.shipping_address, order.status,
-                'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr,
-                order.buyer_id, order.payment_proof || null
+                order.id,
+                order.phone_number,
+                order.shipping_address,
+                order.status,
+                'Order ID: ' + String(order.id).slice(-6),
+                order.unit_price_pkr,
+                order.buyer_id,
+                order.payment_proof || null
             );
         }
     });

@@ -168,14 +168,10 @@ body { overflow-x: hidden; }
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
     <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
         <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);">←</button>
-        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2>
-        <div style="width:24px;"></div>
+        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2><div style="width:24px;"></div>
     </div>
-    <div class="pv-slider-container">
-        <div id="pvImageSlider" class="pv-slider"></div>
-        <div id="pvSliderDots" class="pv-dots"></div>
-    </div>
-    <div style="padding:20px;padding-bottom:100px;">
+    <div class="pv-slider-container"><div id="pvImageSlider" class="pv-slider"></div><div id="pvSliderDots" class="pv-dots"></div></div>
+    <div style="padding:20px;padding-bottom:120px;">
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
         <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
@@ -184,9 +180,19 @@ body { overflow-x: hidden; }
             <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;cursor:pointer;font-weight:bold;font-size:16px;"><span>Description</span><span>+</span></div>
             <div id="pvpDescription" class="hidden" style="padding-top:15px;font-size:15px;color:var(--muted);line-height:1.6;">No description available.</div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;"><span style="font-size:20px;">🚚</span><span>Free shipping. Dispatched within 24 hours.</span></div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;"><span style="font-size:20px;">🚚</span><span>Free shipping. Dispatched within 24 hours.</span></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+        <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">You May Also Like</h3>
+        <div class="banner-slider" id="relatedProductsSlider"><!-- Related products will be injected here --></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+        <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">Customer Reviews</h3>
+        <div id="pvpReviewMessage" style="color:var(--muted);font-size:14px;margin-bottom:15px;">There are no reviews yet. Be the first to review!</div>
+        <button type="button" class="secondary" onclick="writeProductReview()" style="width:100%;padding:12px;font-weight:bold;">Write a Review</button>
     </div>
-    <div style="position:fixed;bottom:0;left:0;right:0;padding:15px;background:#fff;border-top:1px solid var(--line);z-index:10;"><button class="primary" type="button" onclick="openCheckoutPage()" style="margin:0;padding:15px;font-size:18px;font-weight:800;">Buy Now</button></div>
+    <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 15px;background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:10px;">
+        <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button>
+        <button class="primary" type="button" onclick="openCheckoutPage()" style="flex:1;margin:0;padding:12px;font-size:16px;font-weight:bold;">Buy Now</button>
+    </div>
 </div>
 
 <div id="checkoutPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:500;overflow-y:auto;">
@@ -992,15 +998,16 @@ async function addOnlineProduct() {
 
 // NEW PROFESSIONAL FLOW: Product details -> Checkout -> Payment proof
 function openProductView(index) {
-    const p = window.allProductsData?.[index];
+    const products = window.allProductsData || [];
+    const p = products[index];
     if (!p) return;
 
     const imgs = Array.isArray(p.images) && p.images.length
         ? p.images.filter(Boolean)
         : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
-    const baseRating = Number(p.base_rating ?? 5.0) || 0;
-    const baseReviews = Number(p.base_reviews_count ?? 0) || 0;
-    const roundedRating = Math.max(0, Math.min(5, Math.round(baseRating)));
+    const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
+    const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
+    const roundedRating = Math.round(baseRating);
     const starsHtml = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
 
     // Build the swipeable product image slider and matching dots.
@@ -1037,11 +1044,46 @@ function openProductView(index) {
     if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
     $('pvpDescription').classList.add('hidden');
 
-    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0] };
+    // Related products: show up to three others, excluding the current product.
+    const relatedSlider = $('relatedProductsSlider');
+    relatedSlider.innerHTML = '';
+    const related = products.map((prod, i) => ({ prod, index: i })).filter(item => item.index !== index).slice(0, 3);
+    if (related.length) {
+        related.forEach(({ prod: rp, index: relatedIndex }) => {
+            const rImgs = Array.isArray(rp.images) && rp.images.length
+                ? rp.images.filter(Boolean)
+                : (rp.image_url ? [rp.image_url] : ['https://placehold.co/300x300?text=GM']);
+            const card = document.createElement('div');
+            card.style.cssText = 'min-width:140px;max-width:140px;flex:0 0 140px;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:#fff;';
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.innerHTML = `<img src="${esc(rImgs[0])}" alt="${esc(rp.name || 'Product')}" loading="lazy" style="width:100%;height:100px;object-fit:contain;border-radius:8px;background:#f9f9f9;"><div style="font-size:12px;font-weight:bold;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(rp.name || 'Product')}</div><div style="color:#cc0000;font-size:14px;font-weight:bold;">${esc(convertMoney(rp.price_pkr))}</div>`;
+            card.onclick = () => openProductView(relatedIndex);
+            card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openProductView(relatedIndex); } };
+            const relatedImage = card.querySelector('img');
+            relatedImage.onerror = function () { this.onerror = null; this.src = 'https://placehold.co/300x300?text=Image'; };
+            relatedSlider.appendChild(card);
+        });
+    } else {
+        relatedSlider.innerHTML = '<div class="muted" style="font-size:13px;">No other products found.</div>';
+    }
+
+    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0], productIndex: index };
     $('productViewPage').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     const waBtn = document.querySelector('.whatsapp-float');
     if (waBtn) waBtn.style.display = 'none';
+}
+
+function addToCartFromView() {
+    if (!checkoutData) return;
+    // Cart storage is not implemented yet; don't imply an order/cart was saved.
+    alert('Add to Cart is not available yet. Please use Buy Now to place this order.');
+}
+
+function writeProductReview() {
+    if (!checkoutData) return;
+    alert('Customer reviews are not connected yet. Please contact support if you need help with this product.');
 }
 
 function closeProductView() {

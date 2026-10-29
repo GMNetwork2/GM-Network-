@@ -512,17 +512,13 @@ async function adminChangeProof(orderId) {
 
 async function updateOrderStatus(orderId, newStatus) {
     if (!isAdmin) return alert('Admin access required.');
-    const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
-    if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
-    newStatus = String(newStatus).toLowerCase();
-    if (!confirm('Are you sure you want to mark this order as ' + newStatus + '?')) return;
-
-    // صرف اسٹیٹس اپڈیٹ کریں (باقی کام ڈیٹا بیس کا ٹرگر خود کرے گا)
+    
+    // صرف اسٹیٹس اپڈیٹ کریں
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
     alert('Order status updated to ' + newStatus);
-    closeOrderDetailModal();
+    closeOrderDetailModal(); 
     await loadAdmin();
 }
 

@@ -154,7 +154,57 @@ body { overflow-x: hidden; }
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
 <div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
-<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>  <!-- Product detail, checkout, and payment-proof screens -->
+<div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
+    <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
+        <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);">←</button>
+        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2><div style="width:24px;"></div>
+    </div>
+    <div style="width:100%;height:350px;background:#f9f9f9;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="openImageLightbox($('pvpImage').src, [])">
+        <img id="pvpImage" src="" alt="Product image" style="width:100%;height:100%;object-fit:contain;">
+    </div>
+    <div style="padding:20px;padding-bottom:100px;">
+        <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
+        <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+        <div style="border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:15px;">
+            <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;cursor:pointer;font-weight:bold;font-size:16px;"><span>Description</span><span>+</span></div>
+            <div id="pvpDescription" class="hidden" style="padding-top:15px;font-size:15px;color:var(--muted);line-height:1.6;">No description available.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;"><span style="font-size:20px;">🚚</span><span>Free shipping. Dispatched within 24 hours.</span></div>
+    </div>
+    <div style="position:fixed;bottom:0;left:0;right:0;padding:15px;background:#fff;border-top:1px solid var(--line);z-index:10;"><button class="primary" type="button" onclick="openCheckoutPage()" style="margin:0;padding:15px;font-size:18px;font-weight:800;">Buy Now</button></div>
+</div>
+
+<div id="checkoutPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:500;overflow-y:auto;">
+    <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
+        <button type="button" onclick="backToProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);margin-right:10px;">←</button><h2 style="margin:0;font-size:18px;">Checkout</h2>
+    </div>
+    <div style="padding:20px;max-width:600px;margin:0 auto;">
+        <div style="display:flex;gap:15px;margin-bottom:25px;background:#f9f9f9;padding:10px;border-radius:10px;">
+            <img id="coImage" src="" alt="Selected product" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#fff;">
+            <div><h3 id="coName" style="margin:0 0 5px;font-size:16px;"></h3><div id="coPrice" style="color:#cc0000;font-size:18px;font-weight:bold;"></div></div>
+        </div>
+        <h3 style="margin-bottom:15px;font-size:16px;">Shipping Details</h3>
+        <label for="coNameInput">Full Name</label><input id="coNameInput" autocomplete="name" placeholder="Your name">
+        <label for="coPhoneInput">Phone Number</label><input id="coPhoneInput" type="tel" autocomplete="tel" placeholder="+92 300 1234567">
+        <label for="coAddressInput">Complete Address</label><textarea id="coAddressInput" rows="3" autocomplete="street-address" placeholder="House, street, city, area"></textarea>
+        <button class="primary" type="button" onclick="submitCheckout()" id="coSubmitBtn" style="margin-top:20px;padding:15px;font-size:16px;">Confirm Order</button>
+    </div>
+</div>
+
+<div id="paymentProofPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:600;overflow-y:auto;">
+    <div style="padding:30px 20px;max-width:500px;margin:0 auto;text-align:center;">
+        <h2 style="color:var(--g);font-size:24px;margin-bottom:10px;">Order Placed!</h2><p style="color:var(--muted);margin-bottom:20px;">Please complete the payment to confirm your order.</p>
+        <div style="background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:12px;margin-bottom:20px;"><p style="margin:0;font-size:14px;">Total Amount to Pay:</p><h2 id="payTotalAmount" style="color:var(--g);font-size:28px;margin:5px 0 0;"></h2></div>
+        <div class="qr-container" style="padding:15px;background:#fff;border:1px solid var(--line);border-radius:12px;"><img src="qr.png" alt="QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p style="font-size:13px;margin-top:10px;">Scan to pay MUHAMMAD HAMID</p></div>
+        <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
+        <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 
@@ -169,6 +219,7 @@ let currentProduct = null;
 let myProfile = null;
 let totalComm = 0;
 let currentOrderId = null;
+let checkoutData = null;
 let exchangeRates = { USD: 1, PKR: 278, INR: 83, EUR: 0.92, GBP: 0.79 };
 let currentCurrency = 'USD';
 
@@ -475,20 +526,25 @@ async function loadProducts() {
     const el = $('productList');
     const { data, error } = await sb.from('products').select('*').eq('active', true).order('created_at', { ascending: false });
     if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
-    
-    el.innerHTML = (data || []).map(p => {
+
+    window.allProductsData = data || [];
+    el.innerHTML = window.allProductsData.map((p, index) => {
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-        const baseRating = p.base_rating || 5.0;
-        const baseReviews = p.base_reviews_count || 0;
-        const starsHtml = '★'.repeat(Math.round(baseRating)) + '☆'.repeat(5 - Math.round(baseRating));
-        return `<div class="product-card"><img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" onclick="openImageLightbox(this.src, JSON.parse(decodeURIComponent(this.dataset.images)))" data-images="${encodeURIComponent(JSON.stringify(imgs))}"><div class="thumbnails">${imgs.map((img, i) => `<img src="${esc(img)}" class="${i === 0 ? 'active' : ''}" onclick="const card=this.closest('.product-card');card.querySelector('.main-img').src=this.src;card.querySelectorAll('.thumbnails img').forEach(x=>x.classList.remove('active'));this.classList.add('active');">`).join('')}</div><div class="product-info"><h3>${esc(p.name)}</h3><div class="stars">${starsHtml} (${baseRating})</div><div class="reviews">${baseReviews} Reviews</div><div class="price">${convertMoney(p.price_pkr)}</div></div><button class="primary buy-btn" data-product="${esc(p.id)}">Buy Now</button></div>`;
+        const baseRating = p.base_rating ?? 5.0;
+        const baseReviews = p.base_reviews_count ?? 0;
+        const starsHtml = '★'.repeat(Math.max(0, Math.min(5, Math.round(Number(baseRating) || 0))) + 0) + '☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(Number(baseRating) || 0))));
+        return `<div class="product-card" onclick="openProductView(${index})" style="cursor:pointer;">
+            <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
+            <div class="product-info">
+                <h3>${esc(p.name)}</h3>
+                <div class="stars">${starsHtml} (${esc(baseRating)})</div>
+                <div class="reviews">${esc(baseReviews)} Reviews</div>
+                <div class="price">${convertMoney(p.price_pkr)}</div>
+            </div>
+            <button class="primary buy-btn" type="button" style="pointer-events:none;">View Details</button>
+        </div>`;
     }).join('') || '<p class="muted">No active products yet.</p>';
-    
-    el.querySelectorAll('[data-product]').forEach((btn, i) => btn.addEventListener('click', () => {
-        const p = data[i];
-        openOrder(p.id, p.name, p.price_pkr);
-    }));
-    $('np').textContent = String((data || []).length);
+    $('np').textContent = String(window.allProductsData.length);
 }
 
 async function loadMyTeam() {
@@ -920,6 +976,130 @@ async function addOnlineProduct() {
     status('adminStatus', 'Product saved successfully.', 'ok');
     await loadProducts();
     await loadAdmin();
+}
+
+// NEW PROFESSIONAL FLOW: Product details -> Checkout -> Payment proof
+function openProductView(index) {
+    const p = window.allProductsData?.[index];
+    if (!p) return;
+    const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
+    const baseRating = p.base_rating ?? 5.0;
+    const baseReviews = p.base_reviews_count ?? 0;
+    const roundedRating = Math.max(0, Math.min(5, Math.round(Number(baseRating) || 0)));
+    const starsHtml = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
+    $('pvpImage').src = imgs[0];
+    $('pvpName').textContent = p.name || 'Product';
+    $('pvpStars').textContent = starsHtml + ' (' + baseRating + ')';
+    $('pvpReviews').textContent = baseReviews + ' Reviews';
+    $('pvpPrice').textContent = convertMoney(p.price_pkr);
+    $('pvpDescription').textContent = p.description || 'No description available for this product.';
+    const descriptionRow = $('pvpDescription').previousElementSibling;
+    if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
+    $('pvpDescription').classList.add('hidden');
+    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0 };
+    $('productViewPage').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProductView() {
+    $('productViewPage').classList.add('hidden');
+    document.body.style.overflow = '';
+    checkoutData = null;
+}
+
+function backToProductView() {
+    $('checkoutPage').classList.add('hidden');
+    $('productViewPage').classList.remove('hidden');
+}
+
+function openCheckoutPage() {
+    if (!user) return alert('Please sign in to place an order.');
+    if (!checkoutData) return;
+    $('coImage').src = $('pvpImage').src;
+    $('coName').textContent = checkoutData.name;
+    $('coPrice').textContent = convertMoney(checkoutData.price);
+    $('productViewPage').classList.add('hidden');
+    $('checkoutPage').classList.remove('hidden');
+}
+
+async function submitCheckout() {
+    if (!user || !checkoutData || !sb) return;
+    const name = $('coNameInput').value.trim();
+    const phone = $('coPhoneInput').value.trim();
+    const address = $('coAddressInput').value.trim();
+    if (!name || !phone || !address) return alert('Please fill in all shipping details.');
+    const btn = $('coSubmitBtn');
+    btn.textContent = 'Processing…';
+    btn.disabled = true;
+    const orderPayload = {
+        buyer_id: user.id,
+        buyer_email: user.email || null,
+        product_id: checkoutData.id,
+        quantity: 1,
+        unit_price_pkr: checkoutData.price,
+        phone_number: phone,
+        shipping_address: address,
+        status: 'pending',
+        referrer_id: myProfile?.referred_by || null
+    };
+    let result = await sb.from('orders').insert(orderPayload).select('id').single();
+    if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
+        result = await sb.from('orders').insert({
+            buyer_id: user.id, product_id: checkoutData.id, quantity: 1,
+            unit_price_pkr: checkoutData.price, phone_number: phone,
+            shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null
+        }).select('id').single();
+    }
+    if (result.error) {
+        alert('Order failed: ' + result.error.message);
+        btn.textContent = 'Confirm Order';
+        btn.disabled = false;
+        return;
+    }
+    currentOrderId = result.data.id;
+    $('checkoutPage').classList.add('hidden');
+    $('paymentProofPage').classList.remove('hidden');
+    $('payTotalAmount').textContent = convertMoney(checkoutData.price);
+    const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
+    $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
+    btn.textContent = 'Confirm Order';
+    btn.disabled = false;
+}
+
+async function submitPaymentProof() {
+    if (!currentOrderId) return alert('Order ID not found.');
+    const fileInput = $('paymentProofInput');
+    const file = fileInput.files?.[0];
+    if (!file) return alert('Please select a payment screenshot first.');
+    if (!sb) return status('proofStatus', 'Backend is not connected.', 'error');
+    status('proofStatus', 'Uploading screenshot…');
+    $('proofSubmitBtn').disabled = true;
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const path = `payments/${currentOrderId}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+    if (uploadError) {
+        status('proofStatus', 'Upload failed: ' + uploadError.message, 'error');
+        $('proofSubmitBtn').disabled = false;
+        return;
+    }
+    const publicUrl = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+    const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', currentOrderId);
+    if (updateError) {
+        status('proofStatus', 'Database update failed: ' + updateError.message, 'error');
+        $('proofSubmitBtn').disabled = false;
+        return;
+    }
+    status('proofStatus', 'Payment proof submitted successfully! Your order is under review.', 'ok');
+    setTimeout(() => {
+        $('paymentProofPage').classList.add('hidden');
+        document.body.style.overflow = '';
+        $('paymentProofInput').value = '';
+        $('proofStatus').classList.add('hidden');
+        $('proofSubmitBtn').disabled = false;
+        checkoutData = null;
+        tab('home');
+        if (isAdmin) loadAdmin();
+    }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

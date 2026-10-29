@@ -98,6 +98,8 @@ body { overflow-x: hidden; }
         <div class="banner-slider" id="bannerSlider">
             <div class="banner-placeholder">Banner 1<br>(Upload via Admin)</div>
             <div class="banner-placeholder">Banner 2<br>(Upload via Admin)</div>
+            <div class="banner-placeholder">Banner 3<br>(Upload via Admin)</div>
+            <div class="banner-placeholder">Banner 4<br>(Upload via Admin)</div>
         </div>
         <h2 style="font-size:20px; margin-bottom:10px;">Premium Products</h2>
         <div class="product-grid" id="productList">Loading products…</div>
@@ -124,9 +126,11 @@ body { overflow-x: hidden; }
 </div>
 
 <div class="panel"><h2>Manage Banners (Home Screen)</h2>
-    <p class="muted" style="font-size:12px;">Upload up to 2 banners for the Products page.</p>
+    <p class="muted" style="font-size:12px;">Upload up to 4 banners for the Products page.</p>
     <label>Upload Banner 1</label><input type="file" id="bannerImg1" accept="image/*">
     <label>Upload Banner 2</label><input type="file" id="bannerImg2" accept="image/*">
+    <label>Upload Banner 3</label><input type="file" id="bannerImg3" accept="image/*">
+    <label>Upload Banner 4</label><input type="file" id="bannerImg4" accept="image/*">
     <button class="primary" onclick="saveBanners()">Save Banners</button>
     <div id="bannerStatus" class="status hidden"></div>
 </div>
@@ -244,6 +248,7 @@ async function init() {
         });
 
         await loadProducts();
+        await loadBanners();
         status('connection', 'Backend connected.', 'ok');
     } catch (e) {
         status('connection', 'Connection error: ' + e.message, 'error');
@@ -800,6 +805,73 @@ async function editProduct(id) { if (!isAdmin) return alert('Admin access requir
 async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!confirm('Delete this product?')) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
+// --- BANNER MANAGEMENT SYSTEM ---
+async function loadBanners() {
+    const el = $('bannerSlider');
+    if (!el || !sb) return;
+    const { data, error } = await sb.from('products').select('images').eq('name', 'WEBSITE_BANNERS').maybeSingle();
+    if (error) {
+        console.warn('Could not load banners:', error.message);
+        return;
+    }
+    const images = Array.isArray(data?.images) ? data.images.filter(Boolean).slice(-4) : [];
+    if (images.length) {
+        el.innerHTML = images.map((img, i) => `<img src="${esc(img)}" alt="Banner ${i + 1}" loading="lazy">`).join('');
+    } else {
+        el.innerHTML = [1, 2, 3, 4].map(n => `<div class="banner-placeholder">Banner ${n}<br>(Upload via Admin)</div>`).join('');
+    }
+}
+
+async function saveBanners() {
+    if (!isAdmin) return alert('Admin access required.');
+    if (!sb) return status('bannerStatus', 'Backend is not connected.', 'error');
+    status('bannerStatus', 'Saving banners…');
+
+    const files = [
+        $('bannerImg1')?.files?.[0],
+        $('bannerImg2')?.files?.[0],
+        $('bannerImg3')?.files?.[0],
+        $('bannerImg4')?.files?.[0]
+    ].filter(Boolean).slice(0, 4);
+
+    if (files.length === 0) return status('bannerStatus', 'Please select at least one image to upload.', 'error');
+
+    const imageUrls = [];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `banners/banner-${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
+        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, {
+            upsert: false,
+            contentType: file.type || 'image/jpeg'
+        });
+        if (uploadError) return status('bannerStatus', 'Upload failed: ' + uploadError.message, 'error');
+        const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+        if (url) imageUrls.push(url);
+    }
+
+    const { data: existing, error: readError } = await sb.from('products')
+        .select('id, images').eq('name', 'WEBSITE_BANNERS').maybeSingle();
+    if (readError) return status('bannerStatus', 'Could not check existing banners: ' + readError.message, 'error');
+
+    // Keep no more than four banners; the newest uploaded images take priority.
+    const updatedImages = [...(existing?.images || []), ...imageUrls].slice(-4);
+    if (existing) {
+        const { error } = await sb.from('products').update({ images: updatedImages, image_url: updatedImages[0] || null }).eq('id', existing.id);
+        if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
+    } else {
+        const { error } = await sb.from('products').insert({
+            name: 'WEBSITE_BANNERS', price_pkr: 0, commission_percent: 0,
+            active: false, images: updatedImages, image_url: updatedImages[0] || null
+        });
+        if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
+    }
+
+    ['bannerImg1', 'bannerImg2', 'bannerImg3', 'bannerImg4'].forEach(id => { const input = $(id); if (input) input.value = ''; });
+    status('bannerStatus', 'Banners saved successfully!', 'ok');
+    await loadBanners();
+}
+
 async function addOnlineProduct() {
     if (!isAdmin) return status('adminStatus', 'Admin access required.', 'error');
     const name = $('newProduct').value.trim();

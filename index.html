@@ -24,18 +24,19 @@ button.secondary{background:#eaf3ed;border:1px solid #cbded1;border-radius:9px;p
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{padding:10px;border-radius:10px;background:#eef5ef;margin-top:10px;font-size:13px;overflow-wrap:anywhere;white-space:pre-line}
 .status.error{background:#ffe8e8;color:#8b1a1a}.status.ok{background:#e1f5e6;color:#135c2e}
 
-/* --- NEW PRODUCT GRID & CARD CSS --- */
-.product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.product-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #fff; display: flex; flex-direction: column; position: relative; }
-.product-card .main-img { width: 100%; height: 150px; object-fit: contain; border-radius: 8px; background: #f9f9f9; cursor: pointer; }
+/* --- RESPONSIVE PRODUCT GRID & CARD CSS --- */
+body { overflow-x: hidden; }
+.product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; }
+.product-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box; overflow: hidden; }
+.product-card .main-img { width: 100%; height: 140px; object-fit: contain; border-radius: 8px; background: #f9f9f9; cursor: pointer; }
 .product-card .thumbnails { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
 .product-card .thumbnails img { width: 35px; height: 35px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
 .product-card .thumbnails img.active { border-color: var(--g); }
-.product-info { display: flex; flex-direction: column; margin-top: 8px; flex-grow: 1; }
-.product-info h3 { margin: 0; font-size: 14px; font-weight: bold; }
+.product-info { display: flex; flex-direction: column; margin-top: 8px; flex-grow: 1; min-width: 0; }
+.product-info h3 { margin: 0; font-size: 13px; font-weight: bold; word-break: break-word; white-space: normal; line-height: 1.2; }
 .product-info .price { font-size: 16px; font-weight: bold; color: #cc0000; margin-top: 4px; }
+.product-info .stars { color: #000; font-size: 12px; margin-top: 4px; font-weight: bold; }
 .product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.product-info .stars { color: #000; font-size: 12px; margin-top: 2px; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
 
 /* Banner CSS */
@@ -799,22 +800,54 @@ async function editProduct(id) { if (!isAdmin) return alert('Admin access requir
 async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!confirm('Delete this product?')) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
-async function addOnlineProduct() { if (!isAdmin) return status('adminStatus', 'Admin access required.', 'error'); const name = $('newProduct').value.trim(), price = Number($('newPrice').value), rate = Number($('newRate').value), files = $('newImageFiles').files; if (!name || !Number.isFinite(price) || price < 1) return status('adminStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('adminStatus', 'Commission must be between 0 and 50%.', 'error'); status('adminStatus', 'Saving product…'); const images = []; if (files && files.length > 0) { for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('adminStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } } const { error } = await sb.from('products').insert({ name, price_pkr: price, commission_percent: rate, images, image_url: images[0] || null, active: true }); if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error'); $('newProduct').value = ''; $('newPrice').value = ''; $('newImageFiles').value = ''; $('newRate').value = '5'; status('adminStatus', 'Product saved.', 'ok'); await loadProducts(); await loadAdmin(); }
+async function addOnlineProduct() {
+    if (!isAdmin) return status('adminStatus', 'Admin access required.', 'error');
+    const name = $('newProduct').value.trim();
+    const price = Number($('newPrice').value);
+    const rate = Number($('newRate').value);
+    const description = $('newDescription').value.trim();
+    const baseRating = Number($('newBaseRating').value) || 4.5;
+    const baseReviewsCount = Number($('newBaseReviewsCount').value) || 112;
+    const files = $('newImageFiles').files;
 
-function copyText(text) { if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => alert('Copied: ' + text)).catch(() => prompt('Copy this text:', text)); else prompt('Copy this text:', text); }
-function copyRefCode() { if (myProfile?.referral_code && $('profRefCode').textContent === myProfile.referral_code) copyText(myProfile.referral_code); else alert('Referral code is locked. Buy a product to unlock it.'); }
-function copyAccount() { copyText(MY_EASYPAISA); }
-function openWithdraw() { if (totalComm < 10) return alert('Minimum withdrawal is $10. Available: ' + convertMoney(totalComm)); $('withdrawModal').classList.remove('hidden'); $('wdAmount').value = Math.floor(totalComm); $('wdStatus').classList.add('hidden'); if (myProfile?.account_details) { $('wdAccount').value = myProfile.account_details; } }
-async function submitWithdraw() { if (!user) return alert('Please sign in first.'); const amount = Number($('wdAmount').value), acc = $('wdAccount').value.trim(); if (!amount || !acc) return alert('Please fill in all fields.'); if (amount < 10) return alert('Minimum withdrawal is $10.'); if (amount > totalComm) return alert('Amount exceeds your earnings.'); status('wdStatus', 'Submitting…'); const { error } = await sb.from('withdrawals').insert({ user_id: user.id, amount, account_details: acc, status: 'pending' }); if (error) status('wdStatus', 'Request failed: ' + error.message, 'error'); else { status('wdStatus', 'Request submitted. Admin will review it.', 'ok'); setTimeout(() => $('withdrawModal').classList.add('hidden'), 1800); } }
+    if (!name || !Number.isFinite(price) || price < 1) return status('adminStatus', 'Enter a product name and valid price.', 'error');
+    if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('adminStatus', 'Commission must be between 0 and 50%.', 'error');
 
-async function sendPasswordReset() {
-    if (!isAdmin) return alert('Admin access required.');
-    const email = $('resetEmail').value.trim();
-    if (!email) return alert('Please enter member email.');
-    status('resetStatus', 'Sending reset link...');
-    const { error } = await sb.auth.resetPasswordForEmail(email);
-    if (error) status('resetStatus', 'Failed: ' + error.message, 'error');
-    else status('resetStatus', '✅ Reset link sent to ' + email, 'ok');
+    status('adminStatus', 'Saving product…');
+    const images = [];
+    if (files && files.length > 0) {
+        for (let i = 0; i < Math.min(4, files.length); i++) {
+            const file = files[i];
+            const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+            const path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+            if (uploadError) return status('adminStatus', 'Image upload failed: ' + uploadError.message, 'error');
+            const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+            if (url) images.push(url);
+        }
+    }
+
+    const { error } = await sb.from('products').insert({
+        name,
+        price_pkr: price,
+        commission_percent: rate,
+        images,
+        image_url: images[0] || null,
+        active: true,
+        description: description || null,
+        base_rating: baseRating,
+        base_reviews_count: baseReviewsCount
+    });
+
+    if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error');
+    $('newProduct').value = '';
+    $('newPrice').value = '';
+    $('newImageFiles').value = '';
+    $('newRate').value = '5';
+    $('newDescription').value = '';
+    status('adminStatus', 'Product saved successfully.', 'ok');
+    await loadProducts();
+    await loadAdmin();
 }
 
 document.addEventListener('DOMContentLoaded', init);

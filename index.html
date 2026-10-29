@@ -59,6 +59,16 @@ body { overflow-x: hidden; }
 .team-member-header .toggle-btn { background: var(--g); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .team-member-children { display: none; padding: 10px 10px 10px 20px; border-left: 3px solid var(--g2); margin: 5px 0 5px 15px; background: #fafcfb; }
 .team-member-children.open { display: block; }
+
+/* --- NEW PRODUCT IMAGE SLIDER CSS --- */
+.pv-slider-container{position:relative;width:100%;height:350px;background:#f9f9f9;overflow:hidden}
+.pv-slider{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}
+.pv-slider::-webkit-scrollbar{display:none}
+.pv-slider img{width:100%;height:100%;flex-shrink:0;scroll-snap-align:center;object-fit:contain;cursor:pointer}
+.pv-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.pv-dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .3s}
+.pv-dot.active{background:var(--g)}
+
 </style>
 </head>
 <body>
@@ -158,10 +168,12 @@ body { overflow-x: hidden; }
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
     <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
         <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);">←</button>
-        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2><div style="width:24px;"></div>
+        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2>
+        <div style="width:24px;"></div>
     </div>
-    <div style="width:100%;height:350px;background:#f9f9f9;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="openImageLightbox($('pvpImage').src, [])">
-        <img id="pvpImage" src="" alt="Product image" style="width:100%;height:100%;object-fit:contain;">
+    <div class="pv-slider-container">
+        <div id="pvImageSlider" class="pv-slider"></div>
+        <div id="pvSliderDots" class="pv-dots"></div>
     </div>
     <div style="padding:20px;padding-bottom:100px;">
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
@@ -982,29 +994,62 @@ async function addOnlineProduct() {
 function openProductView(index) {
     const p = window.allProductsData?.[index];
     if (!p) return;
-    const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-    const baseRating = p.base_rating ?? 5.0;
-    const baseReviews = p.base_reviews_count ?? 0;
-    const roundedRating = Math.max(0, Math.min(5, Math.round(Number(baseRating) || 0)));
+
+    const imgs = Array.isArray(p.images) && p.images.length
+        ? p.images.filter(Boolean)
+        : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
+    const baseRating = Number(p.base_rating ?? 5.0) || 0;
+    const baseReviews = Number(p.base_reviews_count ?? 0) || 0;
+    const roundedRating = Math.max(0, Math.min(5, Math.round(baseRating)));
     const starsHtml = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
-    $('pvpImage').src = imgs[0];
+
+    // Build the swipeable product image slider and matching dots.
+    const slider = $('pvImageSlider');
+    const dotsContainer = $('pvSliderDots');
+    slider.innerHTML = '';
+    dotsContainer.innerHTML = '';
+    imgs.forEach((img, i) => {
+        const imgEl = document.createElement('img');
+        imgEl.src = img;
+        imgEl.alt = (p.name || 'Product') + ' image ' + (i + 1);
+        imgEl.loading = i === 0 ? 'eager' : 'lazy';
+        imgEl.onerror = function () { this.onerror = null; this.src = 'https://placehold.co/600x600?text=Image+Unavailable'; };
+        imgEl.onclick = () => openImageLightbox(img, imgs);
+        slider.appendChild(imgEl);
+
+        const dot = document.createElement('div');
+        dot.className = 'pv-dot' + (i === 0 ? ' active' : '');
+        dotsContainer.appendChild(dot);
+    });
+    slider.scrollLeft = 0;
+    slider.onscroll = () => {
+        const width = slider.clientWidth || 1;
+        const activeIndex = Math.max(0, Math.min(imgs.length - 1, Math.round(slider.scrollLeft / width)));
+        Array.from(dotsContainer.children).forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
+    };
+
     $('pvpName').textContent = p.name || 'Product';
-    $('pvpStars').textContent = starsHtml + ' (' + baseRating + ')';
+    $('pvpStars').textContent = starsHtml + ' (' + baseRating.toFixed(1) + ')';
     $('pvpReviews').textContent = baseReviews + ' Reviews';
     $('pvpPrice').textContent = convertMoney(p.price_pkr);
     $('pvpDescription').textContent = p.description || 'No description available for this product.';
     const descriptionRow = $('pvpDescription').previousElementSibling;
     if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
     $('pvpDescription').classList.add('hidden');
-    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0 };
+
+    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0] };
     $('productViewPage').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    const waBtn = document.querySelector('.whatsapp-float');
+    if (waBtn) waBtn.style.display = 'none';
 }
 
 function closeProductView() {
     $('productViewPage').classList.add('hidden');
     document.body.style.overflow = '';
     checkoutData = null;
+    const waBtn = document.querySelector('.whatsapp-float');
+    if (waBtn) waBtn.style.display = 'flex';
 }
 
 function backToProductView() {
@@ -1015,7 +1060,7 @@ function backToProductView() {
 function openCheckoutPage() {
     if (!user) return alert('Please sign in to place an order.');
     if (!checkoutData) return;
-    $('coImage').src = $('pvpImage').src;
+    $('coImage').src = checkoutData.image || $('pvImageSlider').querySelector('img')?.src || '';
     $('coName').textContent = checkoutData.name;
     $('coPrice').textContent = convertMoney(checkoutData.price);
     $('productViewPage').classList.add('hidden');

@@ -114,6 +114,30 @@ body { overflow-x: hidden; }
 .site-footer .f-social a:hover{background:var(--g2)}
 .site-footer .f-copy{text-align:center;font-size:11px;color:#666;padding-top:16px;border-top:1px solid #333}
 @media(max-width:600px){header{padding-right:70px}}
+/* Popup Modal Scroll Fix for Mobile */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+}
+.modal.hidden { display: none !important; }
+.modal-content {
+    background: #fff;
+    border-radius: 15px;
+    padding: 20px;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
 </style>
 </head>
 <body>
@@ -1051,7 +1075,10 @@ async function loadAdmin() {
         $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
             const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
             if (order) {
-                el.onclick = () => showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null);
+                el.onclick = function(e) {
+                    e.preventDefault();
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null);
+                };
             }
         });
     }
@@ -1175,6 +1202,7 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
         actionDiv.append(label, select, btn);
     }
     $('orderDetailModal').classList.remove('hidden');
+    $('orderDetailModal').scrollTop = 0; // Reset modal scroll position on open
 }
 
 function closeOrderDetailModal() { $('orderDetailModal').classList.add('hidden'); }

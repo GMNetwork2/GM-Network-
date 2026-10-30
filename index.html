@@ -38,15 +38,50 @@ body { overflow-x: hidden; }
 .product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
 
-/* Banner carousel: smooth, responsive and swipe-friendly */
-#bannerSlider { display:flex; gap:0; overflow-x:auto; overflow-y:hidden; padding:0; margin-bottom:15px; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:none; border-radius:12px; touch-action:pan-x pan-y; }
-#bannerSlider::-webkit-scrollbar { display:none; }
-#bannerSlider > img, #bannerSlider > .banner-placeholder { flex:0 0 100%; width:100%; height:auto; aspect-ratio: 16 / 6; min-width:0; max-height:240px; scroll-snap-align:start; border-radius:12px; object-fit:cover; }
-#bannerSlider > .banner-placeholder { background:#e7eee9; }
-/* Related products keep their own horizontal scrolling layout. */
+/* Banner slider - four automatic slides */
+#bannerSlider {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0;
+    margin-bottom: 15px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: 12px;
+    animation: slideBanner 15s infinite ease-in-out;
+}
+#bannerSlider:hover { animation-play-state: paused; }
+#bannerSlider::-webkit-scrollbar { display: none; }
+#bannerSlider > img, #bannerSlider > .banner-placeholder {
+    flex: 0 0 100%;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 6;
+    max-height: 240px;
+    scroll-snap-align: start;
+    border-radius: 12px;
+    object-fit: cover;
+}
+#bannerSlider > .banner-placeholder {
+    background: #e7eee9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+}
+@keyframes slideBanner {
+    0%, 20% { transform: translateX(0); }
+    25%, 45% { transform: translateX(-100%); }
+    50%, 70% { transform: translateX(-200%); }
+    75%, 95% { transform: translateX(-300%); }
+    100% { transform: translateX(0); }
+}
+/* Related products retain their independent horizontal layout. */
 #relatedProductsSlider { display:flex; gap:10px; overflow-x:auto; padding-bottom:10px; margin-bottom:15px; }
 #relatedProductsSlider img { height:130px; border-radius:12px; object-fit:cover; cursor:pointer; }
-#bannerSlider > .banner-placeholder { display:flex; align-items:center; justify-content:center; color:#555; font-weight:bold; text-align:center; padding:10px; }
 
 .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; color: #fff; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; text-decoration: none; }
 .whatsapp-float:hover { background: #128C7E; }
@@ -1361,23 +1396,7 @@ async function loadBanners() {
     } else {
         el.innerHTML = [1, 2, 3, 4].map(n => `<div class="banner-placeholder">Banner ${n}<br>(Upload via Admin)</div>`).join('');
     }
-    startBannerAutoSlide();
-}
-
-let bannerAutoTimer = null;
-function startBannerAutoSlide() {
-    const slider = $('bannerSlider');
-    if (bannerAutoTimer) clearInterval(bannerAutoTimer);
-    if (!slider) return;
-    slider.scrollLeft = 0;
-    if (slider.children.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    bannerAutoTimer = setInterval(() => {
-        if (document.hidden || !$('products') || $('products').classList.contains('hidden')) return;
-        const slideWidth = slider.clientWidth;
-        if (!slideWidth) return;
-        const next = Math.round(slider.scrollLeft / slideWidth) + 1;
-        slider.scrollTo({left: next >= slider.children.length ? 0 : next * slideWidth, behavior:'smooth'});
-    }, 3500);
+    // Automatic banner movement is handled by CSS keyframes.
 }
 
 async function saveBanners() {

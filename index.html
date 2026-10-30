@@ -1132,6 +1132,7 @@ async function loadAdmin() {
                 </div>
                 <div style="display:flex;flex-direction:column;gap:5px">
                     <button class="secondary small-btn" data-edit-coins="${esc(x.id)}">Edit Coins/Comm</button>
+                    <button class="secondary small-btn" onclick="adminResetMemberPassword('${esc(x.id)}')">Reset Password</button>
                     <button class="secondary small-btn" data-view-team="${esc(x.id)}" data-member-name="${esc(x.full_name || 'Member')}">View Team</button>
                 </div>
             </div>`;
@@ -1175,6 +1176,32 @@ async function searchAdminMember() {
     if (error) { $('adminSearchResult').textContent = 'Error: ' + error.message; return; }
     if (!data || data.length === 0) { $('adminSearchResult').textContent = 'No member found.'; return; }
     $('adminSearchResult').innerHTML = data.map(x => `<div class="item"><div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points || 0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission || 0)}</b></small></div><div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points || 0})">Edit Coins/Comm</button></div></div>`).join('');
+}
+
+// Admin member password reset
+async function adminResetMemberPassword(userId) {
+    if (!isAdmin) return alert('Admin access required.');
+
+    const newPassword = prompt('Enter NEW PASSWORD for this member (at least 6 characters):');
+    if (newPassword === null) return; // User cancelled
+    if (newPassword.length < 6) return alert('Password must be at least 6 characters long.');
+
+    alert('Changing password, please wait...');
+
+    try {
+        // Supabase Admin API requires a service-role key and must run on a trusted server.
+        const { data, error } = await sb.auth.admin.updateUserById(userId, {
+            password: newPassword
+        });
+
+        if (error) {
+            alert('Standard reset failed. Please use a secure Supabase Edge Function or Supabase Dashboard. Error: ' + error.message);
+        } else {
+            alert('Password updated successfully! Member can now login with the new password.');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
 }
 
 async function editMemberPoints(userId, currentPoints) {

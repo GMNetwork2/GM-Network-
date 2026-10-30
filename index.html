@@ -24,7 +24,6 @@ button.secondary{background:#eaf3ed;border:1px solid #cbded1;border-radius:9px;p
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{padding:10px;border-radius:10px;background:#eef5ef;margin-top:10px;font-size:13px;overflow-wrap:anywhere;white-space:pre-line}
 .status.error{background:#ffe8e8;color:#8b1a1a}.status.ok{background:#e1f5e6;color:#135c2e}
 
-/* --- RESPONSIVE PRODUCT GRID & CARD CSS --- */
 body { overflow-x: hidden; }
 .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; }
 .product-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box; overflow: hidden; }
@@ -39,16 +38,13 @@ body { overflow-x: hidden; }
 .product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
 
-/* Banner CSS */
 .banner-slider { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
 .banner-slider img { height: 130px; border-radius: 12px; object-fit: cover; cursor: pointer; }
 .banner-placeholder { height: 130px; min-width: 200px; border-radius: 12px; background: #ccc; display: flex; align-items: center; justify-content: center; color: #555; font-weight: bold; text-align: center; padding: 10px; }
 
-/* WhatsApp Floating Button */
 .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; color: #fff; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; text-decoration: none; }
 .whatsapp-float:hover { background: #128C7E; }
 
-/* --- NEW EXPANDABLE TEAM TREE CSS --- */
 .team-tree-container { margin-top: 15px; }
 .team-member-node { margin-bottom: 8px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
 .team-member-header { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9fbf9; cursor: pointer; transition: background 0.2s; }
@@ -60,7 +56,6 @@ body { overflow-x: hidden; }
 .team-member-children { display: none; padding: 10px 10px 10px 20px; border-left: 3px solid var(--g2); margin: 5px 0 5px 15px; background: #fafcfb; }
 .team-member-children.open { display: block; }
 
-/* --- NEW PRODUCT IMAGE SLIDER CSS --- */
 .pv-slider-container{position:relative;width:100%;height:350px;background:#f9f9f9;overflow:hidden}
 .pv-slider{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}
 .pv-slider::-webkit-scrollbar{display:none}
@@ -69,25 +64,97 @@ body { overflow-x: hidden; }
 .pv-dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .3s}
 .pv-dot.active{background:var(--g)}
 
-/* Fix QR Code Size */
-.qr-img {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block;
-    margin: 0 auto;
-    border-radius: 10px;
-}
+.qr-img { max-width: 100% !important; height: auto !important; display: block; margin: 0 auto; border-radius: 10px; }
+
+/* ============ HAMBURGER MENU ============ */
+.menu-toggle{position:fixed;top:16px;right:16px;z-index:1001;background:var(--g);color:#fff;border:0;width:44px;height:44px;border-radius:12px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.menu-toggle:hover{background:var(--g2)}
+.side-menu{position:fixed;top:0;right:-300px;width:280px;height:100vh;background:#fff;z-index:1002;transition:right .3s ease;box-shadow:-4px 0 20px rgba(0,0,0,.15);overflow-y:auto;padding-bottom:20px}
+.side-menu.open{right:0}
+.side-menu-header{background:linear-gradient(130deg,var(--g),var(--g2));color:#fff;padding:20px;display:flex;align-items:center;gap:12px;position:relative}
+.side-menu-header .logo{width:44px;height:44px}
+.side-menu-close{position:absolute;top:14px;right:14px;background:transparent;border:0;color:#fff;font-size:26px;cursor:pointer}
+.side-menu nav{padding:10px 0}
+.side-menu nav button{display:block;width:100%;text-align:left;padding:14px 20px;background:none;border:0;font:inherit;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line);font-size:15px}
+.side-menu nav button:hover,.side-menu nav button.active{background:#eef5ef;color:var(--g);font-weight:700;border-left:4px solid var(--g)}
+.side-menu nav button.admin-only{display:none}
+.menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none}
+.menu-overlay.open{display:block}
+
+/* ============ LANDING PAGE ============ */
+.hero{position:relative;border-radius:20px;overflow:hidden;margin-bottom:15px;background:linear-gradient(135deg,var(--g),var(--g2));color:#fff;padding:40px 25px;text-align:center}
+.hero h1{font-size:28px;margin:0 0 10px;line-height:1.25;color:#fff}
+.hero p{font-size:15px;color:#d9e9e1;margin:0 0 20px;max-width:500px;margin-left:auto;margin-right:auto}
+.hero .hero-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:15px}
+.hero .hero-badges span{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 14px;font-size:12px}
+.hero-btn{display:inline-block;background:var(--gold);color:var(--g);padding:13px 30px;border-radius:30px;font-weight:800;text-decoration:none;font-size:15px;cursor:pointer;border:0}
+.hero-btn:hover{background:#ffd66e}
+.section-title{font-size:20px;font-weight:800;color:var(--g);margin:20px 0 12px;display:flex;align-items:center;gap:8px}
+.feature-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
+.feature-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 14px;text-align:center}
+.feature-card .ico{font-size:30px;margin-bottom:8px;display:block}
+.feature-card h4{margin:0 0 5px;font-size:14px;color:var(--ink)}
+.feature-card p{margin:0;font-size:11px;color:var(--muted);line-height:1.5}
+.cta-band{background:linear-gradient(135deg,var(--g),var(--g2));color:#fff;border-radius:16px;padding:25px 20px;text-align:center;margin:20px 0}
+.cta-band h3{margin:0 0 8px;font-size:19px;color:#fff}
+.cta-band p{margin:0 0 15px;font-size:13px;color:#d9e9e1}
+
+/* ============ MAIN FOOTER ============ */
+.site-footer{background:#111;color:#fff;padding:35px 20px 25px;margin-top:25px;border-radius:20px 20px 0 0}
+.site-footer .f-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
+.site-footer .f-logo .logo{background:var(--gold);color:var(--g);width:44px;height:44px;border-radius:11px;font-size:20px;box-shadow:0 0 15px rgba(240,189,85,.4)}
+.site-footer .f-tag{text-align:center;color:#aaa;font-size:12px;margin:0 0 22px}
+.site-footer .f-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;color:#aaa;margin-bottom:22px}
+.site-footer .f-cols h4{color:#fff;margin:0 0 10px;font-size:13px}
+.site-footer .f-cols ul{list-style:none;padding:0;margin:0;line-height:2}
+.site-footer .f-cols a{color:#aaa;text-decoration:none}
+.site-footer .f-cols a:hover{color:var(--gold)}
+.site-footer .f-social{display:flex;gap:12px;justify-content:center;margin-bottom:18px}
+.site-footer .f-social a{width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:16px}
+.site-footer .f-social a:hover{background:var(--g2)}
+.site-footer .f-copy{text-align:center;font-size:11px;color:#666;padding-top:16px;border-top:1px solid #333}
+@media(max-width:600px){header{padding-right:70px}}
 </style>
 </head>
 <body>
 <header><div class="brand"><div class="logo">GM</div><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div></header>
+
+<button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Open menu">☰</button>
+<div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+<aside class="side-menu" id="sideMenu" aria-label="Main menu">
+    <div class="side-menu-header">
+        <div class="logo">GM</div>
+        <div><b style="font-size:16px;">GM Network</b><br><small style="font-size:11px;opacity:.85;">Main Menu</small></div>
+        <button class="side-menu-close" onclick="toggleMenu()" aria-label="Close menu">×</button>
+    </div>
+    <nav>
+        <button data-menu="home" class="active" onclick="menuTab('home')">🏠 Dashboard</button>
+        <button data-menu="account" onclick="menuTab('account')">👤 Account / Profile</button>
+        <button data-menu="my-account" onclick="menuTab('my-account')">🆔 My Account</button>
+        <button data-menu="my-wallet" onclick="menuTab('my-wallet')">💰 My Wallet</button>
+        <button data-menu="products" onclick="menuTab('products')">🛍️ Products</button>
+        <button data-menu="team" onclick="menuTab('team')">👥 My Team</button>
+        <button data-menu="about" onclick="menuTab('about')">ℹ️ About</button>
+        <button data-menu="admin" id="adminMenuBtn" class="admin-only" onclick="menuTab('admin')">⚙️ Admin Panel</button>
+    </nav>
+</aside>  
 <main>
 <div class="currency-selector"><span class="muted">Currency:</span><select id="currencySelect" onchange="changeCurrency(this.value)"><option value="USD">USD ($)</option><option value="PKR">PKR (₨)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select><span id="currencyRateInfo" class="muted" style="font-size:11px"></span></div>
-<nav class="tabs" id="tabs"><button class="active" data-tab="home">Dashboard</button><button data-tab="account">Account/Profile</button><button data-tab="my-account">My Account</button><button data-tab="my-wallet">My Wallet</button><button data-tab="products">Products</button><button data-tab="team">My Team</button><button data-tab="about">About</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button></nav>
 
 <section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 29,999 Coins<br>💎 Platinum: 30,000 - 49,999 Coins<br>👑 Diamond: 50,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
 
 <section id="home" class="view">
+    <div class="hero">
+        <h1>Welcome to GM Network</h1>
+        <p>Buy premium products, refer friends, and earn coins & commissions. Your trusted referral-based marketplace.</p>
+        <button class="hero-btn" onclick="tab('products')">🛍️ Shop Now</button>
+        <div class="hero-badges">
+            <span>✅ 100% Original</span>
+            <span>🚚 Fast Delivery</span>
+            <span>💎 Premium Quality</span>
+        </div>
+    </div>
+
     <div class="stats">
         <div class="stat"><small>Coins (Self)</small><strong id="nm_self">—</strong></div>
         <div class="stat"><small>Coins (Team)</small><strong id="nm_team">—</strong></div>
@@ -97,7 +164,73 @@ body { overflow-x: hidden; }
         <div class="stat"><small>Sales (Team)</small><strong id="ns_team">—</strong></div>
         <div class="stat"><small>My Commission</small><strong id="nc">—</strong></div>
     </div>
-    <div class="panel" style="margin-top:12px"><h2>Welcome</h2><p class="muted section-note">Sign in to view your profile, referral code, team and earnings.</p><div id="connection" class="status">Connecting to backend…</div></div>
+
+    <h2 class="section-title">✨ Why Choose GM Network?</h2>
+    <div class="feature-grid">
+        <div class="feature-card"><span class="ico">🛍️</span><h4>Premium Products</h4><p>Hand-picked quality products at great prices.</p></div>
+        <div class="feature-card"><span class="ico">💰</span><h4>Earn Coins</h4><p>Get coins on every purchase and level up.</p></div>
+        <div class="feature-card"><span class="ico">👥</span><h4>Referral Rewards</h4><p>Earn 10% commission on direct referrals.</p></div>
+        <div class="feature-card"><span class="ico">🔒</span><h4>Secure Payments</h4><p>Safe Easypaisa/JazzCash & wallet payments.</p></div>
+    </div>
+
+    <h2 class="section-title">🚀 How It Works</h2>
+    <div class="panel">
+        <p class="muted" style="line-height:1.9;margin:0;">
+            <b>1.</b> Sign up using a friend's referral code.<br>
+            <b>2.</b> Buy products to unlock your own referral code.<br>
+            <b>3.</b> Share your code and earn commissions when friends buy.<br>
+            <b>4.</b> Level up from Bronze 🥉 to Diamond 👑 as you earn.
+        </p>
+    </div>
+
+    <div class="cta-band">
+        <h3>Ready to Start Earning?</h3>
+        <p>Join thousands of happy members on GM Network today.</p>
+        <button class="hero-btn" onclick="tab('account')">Create Free Account</button>
+    </div>
+
+    <div class="panel">
+        <h2>Welcome</h2>
+        <p class="muted section-note">Sign in to view your profile, referral code, team and earnings.</p>
+        <div id="connection" class="status">Connecting to backend…</div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="f-logo"><div class="logo">GM</div><span style="font-size:22px;font-weight:900;">GM Network</span></div>
+        <p class="f-tag">Your Trusted Partner for Premium Products</p>
+        <div class="f-cols">
+            <div>
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#" onclick="tab('about');return false;">About Us</a></li>
+                    <li><a href="#" onclick="tab('products');return false;">Products</a></li>
+                    <li><a href="#" onclick="tab('account');return false;">Sign In</a></li>
+                    <li><a href="#" onclick="alert('Privacy Policy: We respect your privacy. Your data is securely stored and never shared with third parties.');return false;">Privacy Policy</a></li>
+                    <li><a href="#" onclick="alert('Terms & Conditions: By using GM Network you agree to our fair-use policy, referral rules, and commission structure.');return false;">Terms &amp; Conditions</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Customer Service</h4>
+                <ul>
+                    <li><a href="#" onclick="tab('about');return false;">Help Center</a></li>
+                    <li><a href="#" onclick="tab('my-account');return false;">Track Order</a></li>
+                    <li><a href="#" onclick="alert('Returns accepted within 7 days of delivery. Contact us on WhatsApp for assistance.');return false;">Returns &amp; Refunds</a></li>
+                    <li><a href="#" onclick="tab('about');return false;">FAQs</a></li>
+                    <li><a href="https://wa.me/923082276093" target="_blank" rel="noopener">Contact Support</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="f-social">
+            <a href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">f</a>
+            <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
+            <a href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube">▶</a>
+            <a href="https://wa.me/923082276093" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+        </div>
+        <div class="f-copy">
+            <p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p>
+            <p style="margin:5px 0 0;">Made with ❤️ for our customers.</p>
+        </div>
+    </footer>
 </section>
 
 <section id="account" class="view hidden"><div class="panel" id="authPanel"><div class="auth-box"><button class="secondary active" id="btnShowSignIn" onclick="switchAuth('signin')">Sign In</button><button class="secondary" id="btnShowSignUp" onclick="switchAuth('signup')">Sign Up</button></div><div id="formSignIn"><h2>Sign in to your account</h2><label>Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password"><button class="primary" onclick="signIn()">Sign In</button><p style="text-align:center;margin-top:15px;font-size:13px;"><a href="#" onclick="forgotPassword(); return false;" style="color:var(--g);text-decoration:underline;font-weight:bold;">Forgot Password?</a></p>
@@ -109,6 +242,7 @@ body { overflow-x: hidden; }
 <button class="primary" onclick="confirmPasswordReset()">Reset Password</button>
 <div id="loginResetStatus" class="status hidden"></div>
 </div></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
+
 <section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
 
 <section id="my-wallet" class="view hidden">
@@ -129,8 +263,7 @@ body { overflow-x: hidden; }
         <h3 style="margin-top:30px;">Recent Transactions</h3>
         <div id="walletTransactions" class="muted">Sign in to view transactions.</div>
     </div>
-</section>
-
+</section>  
 <section id="products" class="view hidden">
     <div class="panel">
         <div class="banner-slider" id="bannerSlider">
@@ -147,7 +280,7 @@ body { overflow-x: hidden; }
 <section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
 
 <section id="admin" class="view hidden">
-<div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div>
+<div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button type="button" onclick="searchAdminMember()">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div>
 <div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div>
 <div class="panel"><h2>Reset Member Password</h2><p class="muted">Enter member's email to send a password reset link.</p><label>Member Email</label><input id="resetEmail" type="email" placeholder="member@example.com"><button class="primary" onclick="sendPasswordReset()">Send Reset Link</button><div id="resetStatus" class="status hidden"></div></div>
 
@@ -218,16 +351,12 @@ body { overflow-x: hidden; }
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">Customer Reviews</h3>
         <div id="pvpReviewMessage" style="color:var(--muted);font-size:14px;margin-bottom:15px;">There are no reviews yet. Be the first to review!</div>
         <button type="button" class="secondary" onclick="writeProductReview()" style="width:100%;padding:12px;font-weight:bold;">Write a Review</button>
-
-        <!-- Trust Badges -->
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <div style="display:flex;justify-content:space-around;text-align:center;padding:15px 0;margin-bottom:20px;gap:8px;">
             <div><div style="font-size:30px;margin-bottom:5px;">🚚</div><div style="font-size:12px;font-weight:bold;">Fast Delivery</div></div>
             <div><div style="font-size:30px;margin-bottom:5px;">🔄</div><div style="font-size:12px;font-weight:bold;">7 Days Return</div></div>
             <div><div style="font-size:30px;margin-bottom:5px;">🛡️</div><div style="font-size:12px;font-weight:bold;">Secure Payment</div></div>
         </div>
-
-        <!-- Why Choose Us -->
         <div style="background:var(--bg);padding:20px;border-radius:15px;margin-bottom:20px;">
             <h3 style="font-size:16px;margin-top:0;color:var(--g);">Why Choose GM Network?</h3>
             <ul style="padding-left:20px;font-size:13px;color:var(--muted);line-height:1.8;">
@@ -237,8 +366,6 @@ body { overflow-x: hidden; }
                 <li>24/7 Customer Support via WhatsApp.</li>
             </ul>
         </div>
-
-        <!-- WhatsApp Support -->
         <div style="background:#E8F5E9;border:1px solid #C8E6C9;padding:20px;border-radius:15px;display:flex;align-items:center;gap:15px;margin-bottom:20px;">
             <div style="font-size:40px;background:#25D366;color:white;border-radius:50%;width:60px;height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">💬</div>
             <div>
@@ -247,12 +374,7 @@ body { overflow-x: hidden; }
                 <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;color:#128C7E;font-weight:bold;text-decoration:underline;font-size:13px;">Chat Now →</a>
             </div>
         </div>
-
-        <!-- ============================================== -->
-        <!-- PROFESSIONAL FOOTER WITH LOGO AND TRUST BADGES -->
-        <!-- ============================================== -->
         <footer style="background:#111;color:#fff;padding:40px 20px;margin:30px -20px -20px;border-radius:20px 20px 0 0;">
-            <!-- Logo Section -->
             <div style="text-align:center;margin-bottom:30px;">
                 <div style="display:inline-flex;align-items:center;gap:10px;">
                     <div style="background:var(--gold);color:var(--g);width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;box-shadow:0 0 15px rgba(240,189,85,.5);">GM</div>
@@ -260,37 +382,27 @@ body { overflow-x: hidden; }
                 </div>
                 <p style="color:#aaa;font-size:13px;margin-top:10px;">Your Trusted Partner for Premium Products</p>
             </div>
-
-            <!-- Trust Badges -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:30px;">
                 <div style="background:#222;border-radius:10px;padding:15px;text-align:center;border:1px solid #333;"><div style="font-size:28px;margin-bottom:5px;">🔒</div><div style="font-size:12px;font-weight:bold;">Secure Shopping</div></div>
                 <div style="background:#222;border-radius:10px;padding:15px;text-align:center;border:1px solid #333;"><div style="font-size:28px;margin-bottom:5px;">🚚</div><div style="font-size:12px;font-weight:bold;">Fast Delivery</div></div>
                 <div style="background:#222;border-radius:10px;padding:15px;text-align:center;border:1px solid #333;"><div style="font-size:28px;margin-bottom:5px;">💎</div><div style="font-size:12px;font-weight:bold;">Premium Quality</div></div>
                 <div style="background:#222;border-radius:10px;padding:15px;text-align:center;border:1px solid #333;"><div style="font-size:28px;margin-bottom:5px;">🤝</div><div style="font-size:12px;font-weight:bold;">Trusted Service</div></div>
             </div>
-
-            <!-- Menu Columns -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;color:#aaa;margin-bottom:30px;">
-                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Quick Links</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li>About Us</li><li>Contact Us</li><li>Privacy Policy</li><li>Terms &amp; Conditions</li></ul></div>
+                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Quick Links</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li><a href="#" onclick="tab('about');return false;" style="color:#aaa;text-decoration:none;">About Us</a></li><li>Contact Us</li><li>Privacy Policy</li><li>Terms &amp; Conditions</li></ul></div>
                 <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Customer Service</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li>Help Center</li><li>Track Order</li><li>Returns &amp; Refunds</li><li>FAQs</li></ul></div>
             </div>
-
-            <!-- Social Icons -->
             <div style="display:flex;gap:15px;justify-content:center;margin-bottom:20px;">
-                <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">f</a>
-                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">📷</a>
-                <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">▶</a>
-                <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">💬</a>
+                <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">f</a>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">📷</a>
+                <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">▶</a>
+                <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">💬</a>
             </div>
-
-            <!-- Bottom Copyright -->
             <div style="text-align:center;font-size:11px;color:#666;padding-top:20px;border-top:1px solid #333;">
                 <p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p>
                 <p style="margin:5px 0 0;">Made with ❤️ for our customers.</p>
             </div>
         </footer>
-        <!-- Footer End -->
-
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 15px;background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:10px;">
         <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button>
@@ -330,7 +442,8 @@ body { overflow-x: hidden; }
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
         <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>
-</div>  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</div>  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 
@@ -396,7 +509,7 @@ function tab(id) {
     if (id === 'admin' && !isAdmin) { alert('Admin access required.'); return; }
     if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
-    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
     
     if (id === 'team') loadMyTeam();
     if (id === 'account' && user) loadProfile();
@@ -404,7 +517,21 @@ function tab(id) {
     if (id === 'my-wallet' && user) loadMyWallet();
 }
 
-document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.tab)));
+function toggleMenu() {
+    const menu = $('sideMenu');
+    const overlay = $('menuOverlay');
+    if (!menu || !overlay) return;
+    menu.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+function menuTab(id) {
+    const menu = $('sideMenu');
+    const overlay = $('menuOverlay');
+    if (menu) menu.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
+    tab(id);
+}
 
 async function init() {
     if (!window.supabase) {
@@ -435,10 +562,12 @@ async function init() {
 
 async function updateAuth() {
     isAdmin = false;
-    const adminTab = $('adminTab'), authPanel = $('authPanel'), profileBox = $('loggedInProfile');
+    const adminTab = $('adminTab'), adminMenuBtn = $('adminMenuBtn');
+    const authPanel = $('authPanel'), profileBox = $('loggedInProfile');
 
     if (!user) {
-        adminTab.classList.add('hidden');
+        if (adminTab) adminTab.classList.add('hidden');
+        if (adminMenuBtn) adminMenuBtn.style.display = 'none';
         authPanel.querySelector('.auth-box').classList.remove('hidden');
         $('formSignIn').classList.remove('hidden');
         $('formSignUp').classList.add('hidden');
@@ -456,7 +585,8 @@ async function updateAuth() {
 
     const { data, error } = await sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
     isAdmin = !!data && !error;
-    adminTab.classList.toggle('hidden', !isAdmin);
+    if (adminTab) adminTab.classList.toggle('hidden', !isAdmin);
+    if (adminMenuBtn) adminMenuBtn.style.display = isAdmin ? 'block' : 'none';
 
     await loadProfile();
     status('authStatus', 'Signed in.', 'ok');
@@ -494,7 +624,7 @@ async function forgotPassword() {
         return;
     }
     $('resetPasswordForm').classList.remove('hidden');
-    status('authStatus', '✅ Password reset email requested. Check your inbox and spam folder for the 6-digit code. If the email contains a link instead, your Supabase email template must be configured to send an OTP code.', 'ok');
+    status('authStatus', '✅ Password reset email requested. Check your inbox.', 'ok');
 }
 
 async function confirmPasswordReset() {
@@ -523,7 +653,7 @@ async function confirmPasswordReset() {
     $('resetPasswordForm').classList.add('hidden');
     $('resetOtp').value = '';
     $('newPassword').value = '';
-    status('authStatus', '✅ Password updated successfully. You can now sign in with your new password.', 'ok');
+    status('authStatus', '✅ Password updated successfully. You can now sign in.', 'ok');
     await sb.auth.signOut();
 }
 
@@ -557,7 +687,7 @@ function cryptoRandom() {
 async function signOut() {
     if (sb) await sb.auth.signOut();
     user = null; isAdmin = false; myProfile = null; totalComm = 0;
-    ['nm', 'ns', 'nc', 'nm_self', 'nm_team', 'ns_self', 'ns_team'].forEach(id => $(id).textContent = '—');
+    ['nm', 'ns', 'nc', 'nm_self', 'nm_team', 'ns_self', 'ns_team'].forEach(id => { if($(id)) $(id).textContent = '—'; });
     tab('home');
     await updateAuth();
 }
@@ -566,20 +696,22 @@ async function loadProfile() {
     if (!user || !sb) return;
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) { status('authStatus', 'Profile could not load: ' + error.message, 'error'); return; }
-    if (!profile) { myProfile = null; $('profRefCode').textContent = '—'; return; }
+    if (!profile) { myProfile = null; if($('profRefCode')) $('profRefCode').textContent = '—'; return; }
 
     myProfile = profile;
     
     const { data: userOrders, error: ordersErr } = await sb.from('orders').select('id').eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']).limit(1);
-    if (!ordersErr && userOrders && userOrders.length > 0) $('profRefCode').textContent = profile.referral_code || '—';
-    else $('profRefCode').textContent = '🔒 Locked';
+    if($('profRefCode')) {
+        if (!ordersErr && userOrders && userOrders.length > 0) $('profRefCode').textContent = profile.referral_code || '—';
+        else $('profRefCode').textContent = '🔒 Locked';
+    }
 
-    $('profCoins').textContent = Number(profile.points || 0).toLocaleString();
-    $('nm').textContent = Number(profile.points || 0).toLocaleString();
+    if($('profCoins')) $('profCoins').textContent = Number(profile.points || 0).toLocaleString();
+    if($('nm')) $('nm').textContent = Number(profile.points || 0).toLocaleString();
     
     totalComm = Number(profile.total_commission || 0);
-    $('profCommission').textContent = convertMoney(Math.floor(totalComm));
-    $('nc').textContent = convertMoney(Math.floor(totalComm));
+    if($('profCommission')) $('profCommission').textContent = convertMoney(Math.floor(totalComm));
+    if($('nc')) $('nc').textContent = convertMoney(Math.floor(totalComm));
 
     const { data: selfOrders } = await sb.from('orders').select('unit_price_pkr').eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']);
     const selfSalesCount = selfOrders ? selfOrders.length : 0;
@@ -591,22 +723,22 @@ async function loadProfile() {
     let teamCoinsFromOrders = 0;
     if (teamOrders) teamOrders.forEach(o => teamCoinsFromOrders += Number(o.unit_price_pkr));
 
-    $('nm_self').textContent = selfCoinsFromOrders.toLocaleString();
-    $('nm_team').textContent = teamCoinsFromOrders.toLocaleString();
-    $('ns_self').textContent = String(selfSalesCount);
-    $('ns_team').textContent = String(teamSalesCount);
+    if($('nm_self')) $('nm_self').textContent = selfCoinsFromOrders.toLocaleString();
+    if($('nm_team')) $('nm_team').textContent = teamCoinsFromOrders.toLocaleString();
+    if($('ns_self')) $('ns_self').textContent = String(selfSalesCount);
+    if($('ns_team')) $('ns_team').textContent = String(teamSalesCount);
 }
 
 async function loadMyAccountPage() {
     if (!user || !sb) return;
-    $('accEmail').textContent = user.email || '—';
-    $('accName').textContent = myProfile?.full_name || 'Member';
-    $('accMemberId').textContent = myProfile?.member_code || '—';
-    $('accUuid').textContent = user.id;
-    $('accRefCode').textContent = $('profRefCode').textContent || '—';
-    $('accBankDetails').textContent = myProfile?.account_details || 'Not Set';
-    $('accCoins').textContent = Number(myProfile?.points || 0).toLocaleString();
-    $('accBalance').textContent = convertMoney(Math.floor(totalComm));
+    if($('accEmail')) $('accEmail').textContent = user.email || '—';
+    if($('accName')) $('accName').textContent = myProfile?.full_name || 'Member';
+    if($('accMemberId')) $('accMemberId').textContent = myProfile?.member_code || '—';
+    if($('accUuid')) $('accUuid').textContent = user.id;
+    if($('accRefCode')) $('accRefCode').textContent = $('profRefCode').textContent || '—';
+    if($('accBankDetails')) $('accBankDetails').textContent = myProfile?.account_details || 'Not Set';
+    if($('accCoins')) $('accCoins').textContent = Number(myProfile?.points || 0).toLocaleString();
+    if($('accBalance')) $('accBalance').textContent = convertMoney(Math.floor(totalComm));
     
     const coins = Number(myProfile?.points || 0);
     let level = 'Bronze 🥉', target = 3000, nextLevelName = 'Silver 🥈';
@@ -615,22 +747,24 @@ async function loadMyAccountPage() {
     else if (coins >= 12000) { level = 'Gold 🥇'; target = 30000; nextLevelName = 'Platinum 💎'; }
     else if (coins >= 3000) { level = 'Silver 🥈'; target = 12000; nextLevelName = 'Gold 🥇'; }
     
-    $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target ? `<p class="muted">Next level (${nextLevelName}): ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>` : '<p>You have reached the highest level! 🏆</p>'}</div>`;
+    if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target ? `<p class="muted">Next level (${nextLevelName}): ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>` : '<p>You have reached the highest level! 🏆</p>'}</div>`;
 
     const { data: orders, error } = await sb.from('orders').select('*, products(name)').eq('buyer_id', user.id).order('created_at', { ascending: false });
-    if (error) { $('accTransactions').textContent = 'Could not load transactions: ' + error.message; return; }
+    if (error) { if($('accTransactions')) $('accTransactions').textContent = 'Could not load transactions: ' + error.message; return; }
     
-    $('accTransactions').innerHTML = (orders || []).map(o => {
-        const date = new Date(o.created_at).toLocaleDateString('en-GB');
-        const productName = o.products?.name || 'Unknown Product';
-        return `<div class="item" style="flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;width:100%;"><b>Order …${esc(String(o.id || '').slice(-4))}</b><span class="pill">${esc(o.status || 'unknown')}</span></div>
-      <div style="font-size:13px;color:var(--muted);width:100%;"><b>Product:</b> ${esc(productName)}<br><b>Amount:</b> ${convertMoney(o.unit_price_pkr)}<br><b>Date:</b> ${date}<br></div>
-      ${o.status === 'confirmed' ? `<button class="primary small-btn" data-mark-delivered="${esc(o.id)}" style="margin-top:5px;">I Received My Order</button>` : ''}
-    </div>`;
-    }).join('') || '<p class="muted">No transactions yet.</p>';
-    
-    $('accTransactions').querySelectorAll('[data-mark-delivered]').forEach(btn => btn.onclick = () => markAsDelivered(btn.dataset.markDelivered));
+    if($('accTransactions')) {
+        $('accTransactions').innerHTML = (orders || []).map(o => {
+            const date = new Date(o.created_at).toLocaleDateString('en-GB');
+            const productName = o.products?.name || 'Unknown Product';
+            return `<div class="item" style="flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;width:100%;"><b>Order …${esc(String(o.id || '').slice(-4))}</b><span class="pill">${esc(o.status || 'unknown')}</span></div>
+          <div style="font-size:13px;color:var(--muted);width:100%;"><b>Product:</b> ${esc(productName)}<br><b>Amount:</b> ${convertMoney(o.unit_price_pkr)}<br><b>Date:</b> ${date}<br></div>
+          ${o.status === 'confirmed' ? `<button class="primary small-btn" data-mark-delivered="${esc(o.id)}" style="margin-top:5px;">I Received My Order</button>` : ''}
+        </div>`;
+        }).join('') || '<p class="muted">No transactions yet.</p>';
+        
+        $('accTransactions').querySelectorAll('[data-mark-delivered]').forEach(btn => btn.onclick = () => markAsDelivered(btn.dataset.markDelivered));
+    }
 }
 
 async function editBankDetails() {
@@ -644,7 +778,7 @@ async function editBankDetails() {
     else {
         alert('Account details saved successfully!');
         myProfile.account_details = newAcc.trim();
-        $('accBankDetails').textContent = newAcc.trim();
+        if($('accBankDetails')) $('accBankDetails').textContent = newAcc.trim();
     }
 }
 
@@ -686,7 +820,7 @@ async function submitWithdraw() {
     const amount = Number($('wdAmount').value);
     const accountDetails = $('wdAccount').value.trim();
     if (!Number.isFinite(amount) || amount < 10) return status('wdStatus', 'Minimum withdrawal is $10.', 'error');
-    if (amount > Number(totalComm || 0)) return status('wdStatus', 'Insufficient available commission. Your balance is ' + convertMoney(totalComm) + '.', 'error');
+    if (amount > Number(totalComm || 0)) return status('wdStatus', 'Insufficient available commission.', 'error');
     if (!accountDetails) return status('wdStatus', 'Enter your bank or wallet account details.', 'error');
 
     const btn = $('withdrawModal').querySelector('button.primary');
@@ -700,7 +834,7 @@ async function submitWithdraw() {
             status: 'pending'
         });
         if (error) throw error;
-        status('wdStatus', 'Withdrawal request submitted. It is pending admin review.', 'ok');
+        status('wdStatus', 'Withdrawal request submitted.', 'ok');
         $('wdAmount').value = '';
         $('wdAccount').value = accountDetails;
         if (isAdmin) await loadAdmin();
@@ -712,18 +846,16 @@ async function submitWithdraw() {
 }
 
 async function sendPasswordReset() {
-    if (!isAdmin || !sb) return status('resetStatus', 'Admin access and backend connection are required.', 'error');
+    if (!isAdmin || !sb) return status('resetStatus', 'Admin access required.', 'error');
     const email = $('resetEmail').value.trim();
     if (!email) return status('resetStatus', 'Enter the member email address.', 'error');
     const btn = $('resetStatus').previousElementSibling;
     if (btn) btn.disabled = true;
     status('resetStatus', 'Sending password reset link…');
     try {
-        const { error } = await sb.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.href.split('#')[0]
-        });
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
         if (error) throw error;
-        status('resetStatus', 'Password reset email requested. Ask the member to check their inbox and spam folder.', 'ok');
+        status('resetStatus', 'Password reset email requested.', 'ok');
     } catch (e) {
         status('resetStatus', 'Could not send reset email: ' + (e.message || 'Unknown error'), 'error');
     } finally {
@@ -754,7 +886,7 @@ async function loadProducts() {
             <button class="primary buy-btn" type="button" style="pointer-events:none;">View Details</button>
         </div>`;
     }).join('') || '<p class="muted">No active products yet.</p>';
-    $('np').textContent = String(window.allProductsData.length);
+    if($('np')) $('np').textContent = String(window.allProductsData.length);
 }
 
 async function loadMyTeam() {
@@ -853,14 +985,13 @@ let lightboxImages = [], lightboxIndex = 0, lightboxTouchStart = null;
 function renderLightbox() { if (!lightboxImages.length) return; $('lightboxImage').src = lightboxImages[lightboxIndex]; $('lightboxCounter').textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length; $('lightboxThumbs').querySelectorAll('img').forEach((el, i) => { el.classList.toggle('active', i === lightboxIndex); if (i === lightboxIndex) el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }); }
 function moveLightbox(delta) { if (!lightboxImages.length) return; lightboxIndex = (lightboxIndex + delta + lightboxImages.length) % lightboxImages.length; renderLightbox(); }
 function openImageLightbox(src, allImages) { if (!src) return; lightboxImages = Array.isArray(allImages) && allImages.length ? allImages : [src]; lightboxIndex = Math.max(0, lightboxImages.indexOf(src)); const thumbs = $('lightboxThumbs'); thumbs.innerHTML = ''; lightboxImages.forEach((img, i) => { const t = document.createElement('img'); t.src = img; t.alt = 'Image ' + (i + 1); t.onclick = () => { lightboxIndex = i; renderLightbox(); }; thumbs.appendChild(t); }); $('imageLightbox').classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderLightbox(); }
-$('lightboxImage').addEventListener('touchstart', e => { lightboxTouchStart = e.changedTouches[0]?.clientX ?? null; }, { passive: true });
-$('lightboxImage').addEventListener('touchend', e => { if (lightboxTouchStart === null) return; const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchStart) - lightboxTouchStart; if (Math.abs(dx) > 45) moveLightbox(dx < 0 ? 1 : -1); lightboxTouchStart = null; }, { passive: true });
+$('lightboxImage')?.addEventListener('touchstart', e => { lightboxTouchStart = e.changedTouches[0]?.clientX ?? null; }, { passive: true });
+$('lightboxImage')?.addEventListener('touchend', e => { if (lightboxTouchStart === null) return; const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchStart) - lightboxTouchStart; if (Math.abs(dx) > 45) moveLightbox(dx < 0 ? 1 : -1); lightboxTouchStart = null; }, { passive: true });
 function closeImageLightbox() { $('imageLightbox').classList.add('hidden'); $('lightboxImage').src = ''; $('lightboxThumbs').innerHTML = ''; document.body.style.overflow = ''; }
-document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(1); if (e.key === 'ArrowLeft' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(-1); if (e.key === 'Escape') { closeImageLightbox(); $('orderModal').classList.add('hidden'); $('withdrawModal').classList.add('hidden'); closeOrderDetailModal(); $('teamViewerModal').classList.add('hidden'); } });
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(1); if (e.key === 'ArrowLeft' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(-1); if (e.key === 'Escape') { closeImageLightbox(); $('orderModal')?.classList.add('hidden'); $('withdrawModal')?.classList.add('hidden'); closeOrderDetailModal(); $('teamViewerModal')?.classList.add('hidden'); } });
 
 function openOrder(id, name, price) { if (!user) return alert('Please sign in first to place an order.'); if (!myProfile) return alert('Your profile is not ready.'); currentProduct = { id, name, price: Number(price) || 0 }; $('orderProductName').textContent = 'Product: ' + name + ' — ' + convertMoney(price); $('orderFormContent').classList.remove('hidden'); $('paymentContent').classList.add('hidden'); $('orderModal').classList.remove('hidden'); $('orderStatus').classList.add('hidden'); }
-function closeModal() { $('orderModal').classList.add('hidden'); }
-
+function closeModal() { $('orderModal').classList.add('hidden'); }  
 async function submitOrder() {
     if (!user || !currentProduct || !sb) return;
     const name = $('orderName').value.trim(), phone = $('orderPhone').value.trim(), address = $('orderAddress').value.trim();
@@ -906,59 +1037,38 @@ async function loadAdmin() {
         sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10)
     ]);
 
-    $('am').textContent = '500';
-    $('ap').textContent = p.error ? '—' : String(p.data?.length || 0);
-    $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
+    if($('am')) $('am').textContent = '500';
+    if($('ap')) $('ap').textContent = p.error ? '—' : String(p.data?.length || 0);
+    if($('ao')) $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
 
-    // 1. Recent Orders — payment_proof is passed to the order details modal
-    $('adminOrders').innerHTML = o.error
-        ? esc(o.error.message)
-        : (o.data || []).map(x => `
+    if($('adminOrders')) {
+        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => `
             <div class="item" data-order="${esc(x.id)}" style="cursor:pointer">
-                <div>
-                    <b>Order …${esc(String(x.id).slice(-4))}</b><br>
-                    <small>${esc(x.phone_number || '—')} • ${convertMoney(x.unit_price_pkr)}</small>
-                </div>
+                <div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number || '—')} • ${convertMoney(x.unit_price_pkr)}</small></div>
                 <span class="pill">${esc(x.status || 'pending')}</span>
             </div>`).join('') || 'No orders yet.';
 
-    $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
-        const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
-        if (order) {
-            el.onclick = () => showOrderDetails(
-                order.id,
-                order.phone_number,
-                order.shipping_address,
-                order.status,
-                'Order ID: ' + String(order.id).slice(-6),
-                order.unit_price_pkr,
-                order.buyer_id,
-                order.payment_proof || null
-            );
-        }
-    });
+        $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
+            const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
+            if (order) {
+                el.onclick = () => showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null);
+            }
+        });
+    }
 
-    // 2. Withdrawal requests
-    $('adminWithdrawals').innerHTML = w.error
-        ? esc(w.error.message)
-        : (w.data || []).map(x => `
+    if($('adminWithdrawals')) {
+        $('adminWithdrawals').innerHTML = w.error ? esc(w.error.message) : (w.data || []).map(x => `
             <div class="item">
                 <div><b>${esc(x.profiles?.full_name || 'User')}</b><br><small>${esc(x.account_details || '—')}</small></div>
                 <div><b>${convertMoney(x.amount)}</b><br><span class="pill">${esc(x.status || 'pending')}</span></div>
             </div>`).join('') || 'No requests yet.';
+    }
 
-    // 3. Recent members
-    $('adminMembers').innerHTML = m.error
-        ? esc(m.error.message)
-        : (m.data || []).map(x => {
-            const coins = Number(x.points || 0);
-            const comm = Number(x.total_commission || 0);
+    if($('adminMembers')) {
+        $('adminMembers').innerHTML = m.error ? esc(m.error.message) : (m.data || []).map(x => {
+            const coins = Number(x.points || 0); const comm = Number(x.total_commission || 0);
             let level = 'Bronze 🥉';
-            if (coins >= 50000) level = 'Diamond 👑';
-            else if (coins >= 30000) level = 'Platinum 💎';
-            else if (coins >= 12000) level = 'Gold 🥇';
-            else if (coins >= 3000) level = 'Silver 🥈';
-
+            if (coins >= 50000) level = 'Diamond 👑'; else if (coins >= 30000) level = 'Platinum 💎'; else if (coins >= 12000) level = 'Gold 🥇'; else if (coins >= 3000) level = 'Silver 🥈';
             return `<div class="item">
                 <div>
                     <b>${esc(x.full_name || 'Member')}</b>
@@ -973,19 +1083,18 @@ async function loadAdmin() {
             </div>`;
         }).join('') || 'No members yet.';
 
-    $('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn => {
-        const member = (m.data || []).find(x => String(x.id) === btn.dataset.editCoins);
-        btn.onclick = () => editMemberPoints(btn.dataset.editCoins, Number(member?.points || 0));
-    });
+        $('adminMembers').querySelectorAll('[data-edit-coins]').forEach(btn => {
+            const member = (m.data || []).find(x => String(x.id) === btn.dataset.editCoins);
+            btn.onclick = () => editMemberPoints(btn.dataset.editCoins, Number(member?.points || 0));
+        });
 
-    $('adminMembers').querySelectorAll('[data-view-team]').forEach(btn => {
-        btn.onclick = () => viewFullTeam(btn.dataset.viewTeam, btn.dataset.memberName || 'Member');
-    });
+        $('adminMembers').querySelectorAll('[data-view-team]').forEach(btn => {
+            btn.onclick = () => viewFullTeam(btn.dataset.viewTeam, btn.dataset.memberName || 'Member');
+        });
+    }
 
-    // 4. Manage products
-    $('adminManageProducts').innerHTML = p.error
-        ? esc(p.error.message)
-        : (p.data || []).map(x => `
+    if($('adminManageProducts')) {
+        $('adminManageProducts').innerHTML = p.error ? esc(p.error.message) : (p.data || []).map(x => `
             <div class="item">
                 <div><b>${esc(x.name || 'Product')}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active ? 'Active' : 'Inactive'}</small></div>
                 <div class="row-actions">
@@ -995,12 +1104,13 @@ async function loadAdmin() {
                 </div>
             </div>`).join('') || 'No products yet.';
 
-    $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
-    $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
-        const product = (p.data || []).find(x => String(x.id) === btn.dataset.toggle);
-        btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
-    });
-    $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+        $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
+        $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
+            const product = (p.data || []).find(x => String(x.id) === btn.dataset.toggle);
+            btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
+        });
+        $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+    }
 }
 
 async function searchAdminMember() {
@@ -1018,18 +1128,18 @@ async function editMemberPoints(userId, currentPoints) {
     const newPoints = prompt('Enter new coin balance for this member:', currentPoints);
     if (newPoints === null || newPoints.trim() === '') return;
     const pointsNum = Number(newPoints);
-    if (!Number.isInteger(pointsNum) || pointsNum < 0) return alert('Invalid number. Enter a whole number zero or greater.');
+    if (!Number.isInteger(pointsNum) || pointsNum < 0) return alert('Invalid number.');
     
     const { data: profileData, error: fetchErr } = await sb.from('profiles').select('total_commission').eq('id', userId).single();
     if (fetchErr) return alert('Could not load current data: ' + fetchErr.message);
     const currentComm = Number(profileData.total_commission || 0), newCommStr = prompt('Enter new Total Commission in USD ($) for this member:', currentComm);
     if (newCommStr === null || newCommStr.trim() === '') return;
     const commNum = Number(newCommStr);
-    if (!Number.isFinite(commNum) || commNum < 0) return alert('Invalid commission amount. Enter a valid number.');
+    if (!Number.isFinite(commNum) || commNum < 0) return alert('Invalid commission amount.');
     
     const { data, error } = await sb.from('profiles').update({ points: pointsNum, total_commission: commNum }).eq('id', userId).select();
     if (error) alert('Error updating data: ' + error.message);
-    else if (!data || data.length === 0) alert('Update failed silently. Please check your Supabase RLS policies.');
+    else if (!data || data.length === 0) alert('Update failed silently.');
     else {
         alert('Coins and Commission updated successfully!');
         await loadAdmin();
@@ -1079,8 +1189,8 @@ async function adminChangeProof(orderId) {
     const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', orderId);
     if (updateError) return alert('Database update failed: ' + updateError.message);
     alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
-}
-
+}  
+// 🚨 یہاں آپ کا کمیشن سسٹم بالکل محفوظ ہے 🚨
 async function updateOrderStatus(orderId, newStatus) {
     if (!isAdmin) return alert('Admin access required.');
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
@@ -1148,7 +1258,7 @@ async function editProduct(id) { if (!isAdmin) return alert('Admin access requir
 async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!confirm('Delete this product?')) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
-// --- BANNER MANAGEMENT SYSTEM ---
+
 async function loadBanners() {
     const el = $('bannerSlider');
     if (!el || !sb) return;
@@ -1197,7 +1307,6 @@ async function saveBanners() {
         .select('id, images').eq('name', 'WEBSITE_BANNERS').maybeSingle();
     if (readError) return status('bannerStatus', 'Could not check existing banners: ' + readError.message, 'error');
 
-    // Keep no more than four banners; the newest uploaded images take priority.
     const updatedImages = [...(existing?.images || []), ...imageUrls].slice(-4);
     if (existing) {
         const { error } = await sb.from('products').update({ images: updatedImages, image_url: updatedImages[0] || null }).eq('id', existing.id);
@@ -1243,56 +1352,38 @@ async function addOnlineProduct() {
     }
 
     const { error } = await sb.from('products').insert({
-        name,
-        price_pkr: price,
-        commission_percent: rate,
-        images,
-        image_url: images[0] || null,
-        active: true,
-        description: description || null,
-        base_rating: baseRating,
-        base_reviews_count: baseReviewsCount
+        name, price_pkr: price, commission_percent: rate, images,
+        image_url: images[0] || null, active: true, description: description || null,
+        base_rating: baseRating, base_reviews_count: baseReviewsCount
     });
 
     if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error');
-    $('newProduct').value = '';
-    $('newPrice').value = '';
-    $('newImageFiles').value = '';
-    $('newRate').value = '5';
-    $('newDescription').value = '';
+    $('newProduct').value = ''; $('newPrice').value = ''; $('newImageFiles').value = '';
+    $('newRate').value = '5'; $('newDescription').value = '';
     status('adminStatus', 'Product saved successfully.', 'ok');
-    await loadProducts();
-    await loadAdmin();
+    await loadProducts(); await loadAdmin();
 }
 
-// NEW PROFESSIONAL FLOW: Product details -> Checkout -> Payment proof
 function openProductView(index) {
     const products = window.allProductsData || [];
     const p = products[index];
     if (!p) return;
 
-    const imgs = Array.isArray(p.images) && p.images.length
-        ? p.images.filter(Boolean)
-        : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
+    const imgs = Array.isArray(p.images) && p.images.length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
     const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
     const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
     const roundedRating = Math.round(baseRating);
     const starsHtml = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
 
-    // Build the swipeable product image slider and matching dots.
-    const slider = $('pvImageSlider');
-    const dotsContainer = $('pvSliderDots');
-    slider.innerHTML = '';
-    dotsContainer.innerHTML = '';
+    const slider = $('pvImageSlider'); const dotsContainer = $('pvSliderDots');
+    slider.innerHTML = ''; dotsContainer.innerHTML = '';
     imgs.forEach((img, i) => {
         const imgEl = document.createElement('img');
-        imgEl.src = img;
-        imgEl.alt = (p.name || 'Product') + ' image ' + (i + 1);
+        imgEl.src = img; imgEl.alt = (p.name || 'Product') + ' image ' + (i + 1);
         imgEl.loading = i === 0 ? 'eager' : 'lazy';
         imgEl.onerror = function () { this.onerror = null; this.src = 'https://placehold.co/600x600?text=Image+Unavailable'; };
         imgEl.onclick = () => openImageLightbox(img, imgs);
         slider.appendChild(imgEl);
-
         const dot = document.createElement('div');
         dot.className = 'pv-dot' + (i === 0 ? ' active' : '');
         dotsContainer.appendChild(dot);
@@ -1313,19 +1404,14 @@ function openProductView(index) {
     if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
     $('pvpDescription').classList.add('hidden');
 
-    // Related products: show up to three others, excluding the current product.
-    const relatedSlider = $('relatedProductsSlider');
-    relatedSlider.innerHTML = '';
+    const relatedSlider = $('relatedProductsSlider'); relatedSlider.innerHTML = '';
     const related = products.map((prod, i) => ({ prod, index: i })).filter(item => item.index !== index).slice(0, 3);
     if (related.length) {
         related.forEach(({ prod: rp, index: relatedIndex }) => {
-            const rImgs = Array.isArray(rp.images) && rp.images.length
-                ? rp.images.filter(Boolean)
-                : (rp.image_url ? [rp.image_url] : ['https://placehold.co/300x300?text=GM']);
+            const rImgs = Array.isArray(rp.images) && rp.images.length ? rp.images.filter(Boolean) : (rp.image_url ? [rp.image_url] : ['https://placehold.co/300x300?text=GM']);
             const card = document.createElement('div');
             card.style.cssText = 'min-width:140px;max-width:140px;flex:0 0 140px;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:#fff;';
-            card.setAttribute('role', 'button');
-            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button'); card.setAttribute('tabindex', '0');
             card.innerHTML = `<img src="${esc(rImgs[0])}" alt="${esc(rp.name || 'Product')}" loading="lazy" style="width:100%;height:100px;object-fit:contain;border-radius:8px;background:#f9f9f9;"><div style="font-size:12px;font-weight:bold;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(rp.name || 'Product')}</div><div style="color:#cc0000;font-size:14px;font-weight:bold;">${esc(convertMoney(rp.price_pkr))}</div>`;
             card.onclick = () => openProductView(relatedIndex);
             card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openProductView(relatedIndex); } };
@@ -1346,13 +1432,12 @@ function openProductView(index) {
 
 function addToCartFromView() {
     if (!checkoutData) return;
-    // Cart storage is not implemented yet; don't imply an order/cart was saved.
     alert('Add to Cart is not available yet. Please use Buy Now to place this order.');
 }
 
 function writeProductReview() {
     if (!checkoutData) return;
-    alert('Customer reviews are not connected yet. Please contact support if you need help with this product.');
+    alert('Customer reviews are not connected yet.');
 }
 
 function closeProductView() {
@@ -1430,7 +1515,6 @@ async function submitCheckout() {
         };
         let result = await sb.from('orders').insert(orderPayload).select('id').single();
         
-        // اگر پہلی بار میں کوئی کالم نہ ملے تو پرانا طریقہ استعمال کریں
         if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
             const fallbackPayload = { ...orderPayload };
             delete fallbackPayload.buyer_email;
@@ -1438,7 +1522,6 @@ async function submitCheckout() {
             result = await sb.from('orders').insert(fallbackPayload).select('id').single();
         }
         
-        // ⚠️ یہاں ایرر صاف دکھائیں گے
         if (result.error) throw new Error('Order failed: ' + result.error.message);
         currentOrderId = result.data.id;
 
@@ -1484,7 +1567,6 @@ async function submitCheckout() {
             $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
         }
     } catch (e) {
-        // یہاں ایرر میسج دکھے گا
         alert('Error: ' + e.message);
     } finally {
         btn.textContent = 'Confirm Order';
@@ -1560,6 +1642,7 @@ async function requestWalletDeposit() {
         btn.disabled = false;
     }
 }
+
 async function submitPaymentProof() {
     if (!currentOrderId) return alert('Order ID not found.');
     const fileInput = $('paymentProofInput');

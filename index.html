@@ -405,6 +405,14 @@ body { overflow-x: hidden; }
         </div>
         <!-- VIP Product Details & Specs -->
         <div style="border-top:1px solid var(--line);margin-top:20px;padding-top:15px;">
+            <div style="background:#E8F5E9;border:1px solid #C8E6C9;padding:15px;border-radius:10px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <div style="font-size:30px;background:#25D366;color:white;border-radius:50%;width:45px;height:45px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">💬</div>
+                <div>
+                    <h4 style="margin:0 0 3px;font-size:14px;color:var(--g);">Need Help with this Product?</h4>
+                    <p style="margin:0;font-size:12px;color:var(--muted);">Have questions? Contact us on WhatsApp for instant help.</p>
+                    <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:5px;color:#128C7E;font-weight:bold;text-decoration:underline;font-size:12px;">Chat Now →</a>
+                </div>
+            </div>
             <h3 style="font-size:16px;color:var(--g);margin-bottom:10px;">📋 Product Details &amp; Specs</h3>
             <details style="margin-bottom:10px;background:#f9fbf9;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;">
                 <summary style="font-weight:bold;font-size:14px;">Specifications (تفصیلات)</summary>
@@ -540,6 +548,7 @@ body { overflow-x: hidden; }
     </div>
 </div>  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>const CACHE_VERSION = Date.now();</script>
 <script>
 'use strict';
 
@@ -970,7 +979,7 @@ async function loadProducts() {
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
         const baseRating = p.base_rating ?? 5.0;
         const baseReviews = p.base_reviews_count ?? 0;
-        const ratingPercent = (Number(baseRating) / 5) * 100;
+        const ratingPercent = Math.max(0, Math.min(100, (Number(baseRating) / 5) * 100));
         const starsHtml = `<div class="stars-container"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px;">(${esc(baseRating)})</span></div>`;
         return `<div class="product-card" onclick="openProductView(${index})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
@@ -1591,6 +1600,7 @@ function openProductView(index) {
     document.body.style.overflow = 'hidden';
     const waBtn = document.querySelector('.whatsapp-float');
     if (waBtn) waBtn.style.display = 'none';
+    loadApprovedReviews(p.id);
 }
 
 function addToCartFromView() {
@@ -1641,6 +1651,44 @@ async function submitProductReview() {
     } catch (e) {
         status('reviewStatus', 'Error: ' + (e.message || 'Unknown error'), 'error');
     }
+}
+
+async function loadApprovedReviews(productId) {
+    const reviewMsg = $('pvpReviewMessage');
+    if (!reviewMsg) return;
+    reviewMsg.innerHTML = 'Loading reviews...';
+    if (!sb) { reviewMsg.textContent = 'Reviews are currently unavailable.'; return; }
+
+    const { data, error } = await sb.from('product_reviews')
+        .select('user_name, rating, comment, created_at')
+        .eq('product_id', productId)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+
+    // Avoid showing results for a product that has since been changed or closed.
+    if (!checkoutData || checkoutData.id !== productId || $('productViewPage').classList.contains('hidden')) return;
+    if (error || !data || data.length === 0) {
+        reviewMsg.textContent = error ? 'Unable to load reviews: ' + error.message : 'There are no reviews yet. Be the first to review!';
+        return;
+    }
+
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">';
+    data.forEach(r => {
+        const rating = Math.max(0, Math.min(5, Math.round(Number(r.rating) || 0)));
+        const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB') : '';
+        html += `
+        <div style="border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <b style="font-size:14px;color:var(--g);">${esc(r.user_name || 'Member')}</b>
+                <span style="color:#f0bd55;font-size:14px;">${stars}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${esc(date)}</div>
+            <p style="margin:0;font-size:13px;line-height:1.5;">"${esc(r.comment || '')}"</p>
+        </div>`;
+    });
+    html += '</div>';
+    reviewMsg.innerHTML = html;
 }
 
 function closeProductView() {
@@ -1907,7 +1955,7 @@ async function approveReview(reviewId) {
     if (!isAdmin || !sb) return alert('Admin access required.');
     const { error } = await sb.from('product_reviews').update({ is_approved: true }).eq('id', reviewId);
     if (error) return alert('Error approving review: ' + error.message);
-    alert('✅ Review approved. It can appear on the product page when approved-review loading is implemented.');
+    alert('✅ Review approved! It will now show on the product page.');
     await loadAdmin();
 }
 

@@ -588,9 +588,10 @@ body { overflow-x: hidden; }
 
 <!-- Product View Page (Full Screen) -->
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
-    <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
-        <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);">←</button>
-        <h2 style="margin:0;font-size:16px;font-weight:bold;">Product Details</h2><div style="width:24px;"></div>
+    <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;gap:10px;">
+        <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);font-weight:bold;">←</button>
+        <img src="logo.png" alt="GM Network" style="width:35px;height:35px;border-radius:8px;object-fit:cover;">
+        <h2 style="margin:0;font-size:16px;font-weight:800;color:var(--g);">GM Network</h2>
     </div>
     <div class="pv-slider-container"><div id="pvImageSlider" class="pv-slider"></div><div id="pvSliderDots" class="pv-dots"></div></div>
     <div style="padding:20px;padding-bottom:100px;">

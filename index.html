@@ -1228,19 +1228,20 @@ async function adminResetMemberPassword(userId) {
     if (!isAdmin) return alert('Admin access required.');
 
     const newPassword = prompt('Enter NEW PASSWORD for this member (at least 6 characters):');
-    if (newPassword === null) return; // User cancelled
+    if (newPassword === null) return;
     if (newPassword.length < 6) return alert('Password must be at least 6 characters long.');
 
     alert('Changing password, please wait...');
 
     try {
-        // Supabase Admin API requires a service-role key and must run on a trusted server.
-        const { data, error } = await sb.auth.admin.updateUserById(userId, {
-            password: newPassword
+        // Password changes must be authorized and executed securely by the backend RPC.
+        const { error } = await sb.rpc('admin_change_user_password', {
+            target_user_id: userId,
+            new_password: newPassword
         });
 
         if (error) {
-            alert('Standard reset failed. Please use a secure Supabase Edge Function or Supabase Dashboard. Error: ' + error.message);
+            alert('Standard reset failed. Error: ' + error.message);
         } else {
             alert('Password updated successfully! Member can now login with the new password.');
         }

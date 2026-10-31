@@ -34,6 +34,23 @@ button.secondary{background:var(--g2);border:1px solid var(--line);border-radius
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{padding:10px;border-radius:10px;background:var(--g2);color:var(--gold);margin-top:10px;font-size:13px;overflow-wrap:anywhere;white-space:pre-line;border:1px solid var(--line);}
 .status.error{background:#4a1a1a;color:#ffb3b3;border-color:#7a2929;}.status.ok{background:#1b4a2e;color:#a3ffc2;border-color:#296b43;}
 body { overflow-x: hidden; }
+
+/* ===== VIP HOME PAGE ===== */
+.shop-hero { position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 20px; background: linear-gradient(135deg, var(--g), var(--g2)); text-align: center; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; min-height: 250px; }
+.shop-hero img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; top: 0; left: 0; }
+.shop-hero-content { position: relative; z-index: 2; padding: 40px 20px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; background: rgba(5, 10, 8, 0.5); }
+.shop-hero h1 { font-size: 32px; margin: 0 0 10px; color: var(--gold); text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+.shop-hero p { font-size: 16px; color: var(--ink); margin-bottom: 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
+.category-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; text-decoration: none; display: block; }
+.category-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(229,184,83,0.1); }
+.category-card .cat-icon { font-size: 35px; margin-bottom: 10px; display: block; }
+.category-card h3 { color: var(--gold); margin: 0; font-size: 16px; font-weight: bold; }
+.featured-section { margin-bottom: 30px; }
+.featured-title { color: var(--gold); font-size: 22px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+.featured-title span { font-size: 14px; color: var(--muted); cursor: pointer; }
+.featured-title span:hover { color: var(--gold); }
+
 .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; }
 .product-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: var(--card-bg); display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box; overflow: hidden; }
 .product-card .main-img { width: 100%; height: 140px; object-fit: contain; border-radius: 8px; background: #0a1f15; cursor: pointer; }
@@ -155,7 +172,8 @@ body { overflow-x: hidden; }
         <button class="side-menu-close" onclick="toggleMenu()" aria-label="Close menu">×</button>
     </div>
     <nav>
-        <button data-menu="home" class="active" onclick="menuTab('home')">🏠 Dashboard</button>
+        <button data-menu="home" class="active" onclick="menuTab('home')">🏠 Home</button>
+        <button data-menu="dashboard" onclick="menuTab('dashboard')">📊 VIP Dashboard</button>
         <button data-menu="account" onclick="menuTab('account')">👤 Account / Profile</button>
         <button data-menu="my-account" onclick="menuTab('my-account')">🆔 My Account</button>
         <button data-menu="my-wallet" onclick="menuTab('my-wallet')">💰 My Wallet</button>
@@ -171,17 +189,54 @@ body { overflow-x: hidden; }
 <section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 29,999 Coins<br>💎 Platinum: 30,000 - 49,999 Coins<br>👑 Diamond: 50,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
 
 <section id="home" class="view">
-    <div class="hero">
-        <h1>Welcome to GM Network</h1>
-        <p>Buy premium products, refer friends, and earn coins & commissions. Your trusted referral-based marketplace.</p>
-        <button class="hero-btn" onclick="tab('products')">🛍️ Shop Now</button>
-        <div class="hero-badges">
-            <span>✅ 100% Original</span>
-            <span>🚚 Fast Delivery</span>
-            <span>💎 Premium Quality</span>
+    <!-- VIP Hero Banner -->
+    <div class="shop-hero">
+        <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=1000&auto=format&fit=crop" alt="Luxury">
+        <div class="shop-hero-content">
+            <h1>Timeless Luxury</h1>
+            <p>Crafted for You. Discover our premium collection.</p>
+            <button class="hero-btn" onclick="tab('products')">Shop Now</button>
         </div>
     </div>
 
+    <!-- Shop by Category -->
+    <h2 class="section-title">Shop by Category</h2>
+    <div class="category-grid">
+        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">⌚</span><h3>Watches</h3></a>
+        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">👛</span><h3>Wallets</h3></a>
+        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">🕶️</span><h3>Accessories</h3></a>
+        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">💎</span><h3>Premium</h3></a>
+    </div>
+
+    <!-- Featured Products -->
+    <div class="featured-section">
+        <h2 class="featured-title">Featured Products <span onclick="tab('products')">View All →</span></h2>
+        <div class="product-grid" id="featuredProductList"><p class="muted">Loading...</p></div>
+    </div>
+
+    <!-- VIP Dashboard Promo -->
+    <div class="cta-band" style="background: linear-gradient(135deg, #0d1c14, #113626); border: 1px solid var(--gold);">
+        <h3 style="color: var(--gold); font-size: 20px;">Unlock VIP Rewards</h3>
+        <p>Join GM Network today. Earn coins, refer friends, and get exclusive commissions!</p>
+        <button class="hero-btn" onclick="tab('dashboard')">Go to Dashboard</button>
+    </div>
+
+    <footer class="site-footer">
+        <div class="f-logo"><img src="logo.png" alt="GM Logo" style="width:44px; height:44px; border-radius:11px; object-fit:cover;"><span style="font-size:22px;font-weight:900; color:var(--gold);">GM Network</span></div>
+        <p class="f-tag">Your Trusted Partner for Premium Products</p>
+        <div class="f-cols">
+            <div><h4>Quick Links</h4><ul><li><a href="#" onclick="tab('about');return false;">About Us</a></li><li><a href="#" onclick="tab('products');return false;">Products</a></li><li><a href="#" onclick="tab('account');return false;">Sign In</a></li></ul></div>
+            <div><h4>Customer Service</h4><ul><li><a href="#" onclick="tab('my-account');return false;">Track Order</a></li><li><a href="https://wa.me/923082276093" target="_blank" rel="noopener">Contact Support</a></li></ul></div>
+        </div>
+        <div class="f-copy"><p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p></div>
+    </footer>
+</section>
+
+<section id="dashboard" class="view hidden">
+    <div class="hero">
+        <h1>My Dashboard</h1>
+        <p>Welcome back! View your earnings, team, and referral progress.</p>
+    </div>
     <div class="stats">
         <div class="stat"><small>Coins (Self)</small><strong id="nm_self">—</strong></div>
         <div class="stat"><small>Coins (Team)</small><strong id="nm_team">—</strong></div>
@@ -222,42 +277,6 @@ body { overflow-x: hidden; }
         <div id="connection" class="status">Connecting to backend…</div>
     </div>
 
-    <footer class="site-footer">
-        <div class="f-logo"><img src="logo.png" alt="GM Logo" style="width:44px; height:44px; border-radius:11px; object-fit:cover;"><span style="font-size:22px;font-weight:900; color:var(--gold);">GM Network</span></div>
-        <p class="f-tag">Your Trusted Partner for Premium Products</p>
-        <div class="f-cols">
-            <div>
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="#" onclick="tab('about');return false;">About Us</a></li>
-                    <li><a href="#" onclick="tab('products');return false;">Products</a></li>
-                    <li><a href="#" onclick="tab('account');return false;">Sign In</a></li>
-                    <li><a href="#" onclick="alert('Privacy Policy: We respect your privacy. Your data is securely stored and never shared with third parties.');return false;">Privacy Policy</a></li>
-                    <li><a href="#" onclick="alert('Terms & Conditions: By using GM Network you agree to our fair-use policy, referral rules, and commission structure.');return false;">Terms &amp; Conditions</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4>Customer Service</h4>
-                <ul>
-                    <li><a href="#" onclick="tab('about');return false;">Help Center</a></li>
-                    <li><a href="#" onclick="tab('my-account');return false;">Track Order</a></li>
-                    <li><a href="#" onclick="alert('Returns accepted within 7 days of delivery. Contact us on WhatsApp for assistance.');return false;">Returns &amp; Refunds</a></li>
-                    <li><a href="#" onclick="tab('about');return false;">FAQs</a></li>
-                    <li><a href="https://wa.me/923082276093" target="_blank" rel="noopener">Contact Support</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="f-social">
-            <a href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">f</a>
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
-            <a href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="YouTube">▶</a>
-            <a href="https://wa.me/923082276093" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
-        </div>
-        <div class="f-copy">
-            <p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p>
-            <p style="margin:5px 0 0;">Made with ❤️ for our customers.</p>
-        </div>
-    </footer>
 </section>
 
 <section id="account" class="view hidden"><div class="panel" id="authPanel"><div class="auth-box"><button class="secondary active" id="btnShowSignIn" onclick="switchAuth('signin')">Sign In</button><button class="secondary" id="btnShowSignUp" onclick="switchAuth('signup')">Sign Up</button></div><div id="formSignIn"><h2>Sign in to your account</h2><label>Email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password"><button class="primary" onclick="signIn()">Sign In</button><p style="text-align:center;margin-top:15px;font-size:13px;"><a href="#" onclick="forgotPassword(); return false;" style="color:var(--g);text-decoration:underline;font-weight:bold;">Forgot Password?</a></p>
@@ -993,6 +1012,10 @@ async function loadProducts() {
             <button class="primary buy-btn" type="button" style="pointer-events:none;">View Details</button>
         </div>`;
     }).join('') || '<p class="muted">No active products yet.</p>';
+    const featuredEl = $('featuredProductList');
+    if (featuredEl) {
+        featuredEl.innerHTML = Array.from(el.children).slice(0, 4).map(card => card.outerHTML).join('') || '<p class="muted">No featured products available yet.</p>';
+    }
     if($('np')) $('np').textContent = String(window.allProductsData.length);
 }
 

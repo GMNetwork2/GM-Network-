@@ -35,7 +35,7 @@ body { overflow-x: hidden; }
 .product-info h3 { margin: 0; font-size: 13px; font-weight: bold; word-break: break-word; white-space: normal; line-height: 1.2; }
 .product-info .price { font-size: 16px; font-weight: bold; color: #cc0000; margin-top: 4px; }
 .stars-container { display: flex; align-items: center; font-size: 12px; margin-top: 4px; color: #f0bd55; }
-.stars-container .stars-bg { position: relative; display: inline-block; color: #ccc; }
+.stars-container .stars-bg { position: relative; display: inline-block; color: #e0e0e0; white-space: nowrap; }
 .stars-container .stars-fill { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; color: #f0bd55; }
 .product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
@@ -968,6 +968,24 @@ async function sendPasswordReset() {
     }
 }
 
+async function fetchProductRatings(productIds) {
+    if (!productIds.length) return {};
+    const { data } = await sb.from('product_reviews')
+        .select('product_id, rating')
+        .in('product_id', productIds)
+        .eq('is_approved', true);
+
+    const ratingMap = {};
+    if (data) {
+        data.forEach(r => {
+            if (!ratingMap[r.product_id]) ratingMap[r.product_id] = { total: 0, count: 0 };
+            ratingMap[r.product_id].total += Number(r.rating);
+            ratingMap[r.product_id].count += 1;
+        });
+    }
+    return ratingMap;
+}
+
 async function loadProducts() {
     if (!sb) return;
     const el = $('productList');
@@ -975,18 +993,25 @@ async function loadProducts() {
     if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
 
     window.allProductsData = data || [];
+
+    // Fetch approved review ratings for each product.
+    const productIds = window.allProductsData.map(p => p.id);
+    const ratingsMap = await fetchProductRatings(productIds);
     el.innerHTML = window.allProductsData.map((p, index) => {
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-        const baseRating = p.base_rating ?? 5.0;
-        const baseReviews = p.base_reviews_count ?? 0;
-        const ratingPercent = Math.max(0, Math.min(100, (Number(baseRating) / 5) * 100));
-        const starsHtml = `<div class="stars-container"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px;">(${esc(baseRating)})</span></div>`;
+        const baseRating = Number(p.base_rating || 5.0);
+        const baseReviews = Number(p.base_reviews_count || 0);
+        const approved = ratingsMap[p.id] || { total: 0, count: 0 };
+        const finalRating = approved.count > 0 ? ((baseRating * baseReviews) + approved.total) / (baseReviews + approved.count) : baseRating;
+        const finalReviewsCount = baseReviews + approved.count;
+        const ratingPercent = Math.max(0, Math.min(100, (finalRating / 5) * 100));
+        const starsHtml = `<div class="stars-container"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
         return `<div class="product-card" onclick="openProductView(${index})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
                 <h3>${esc(p.name)}</h3>
                 ${starsHtml}
-                <div class="reviews">${esc(baseReviews)} Reviews</div>
+                <div class="reviews">${esc(finalReviewsCount)} Reviews</div>
                 <div class="price">${convertMoney(p.price_pkr)}</div>
             </div>
             <button class="primary buy-btn" type="button" style="pointer-events:none;">View Details</button>

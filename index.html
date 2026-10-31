@@ -1535,8 +1535,8 @@ function openProductView(index) {
     const imgs = Array.isArray(p.images) && p.images.length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
     const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
     const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
-    const roundedRating = Math.round(baseRating);
-    const starsHtml = '★'.repeat(roundedRating) + '☆'.repeat(5 - roundedRating);
+    const ratingPercent = (baseRating / 5) * 100;
+    const starsHtml = `<div class="stars-container" style="font-size:18px;"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px; font-size:14px;">(${baseRating.toFixed(1)})</span></div>`;
 
     const slider = $('pvImageSlider'); const dotsContainer = $('pvSliderDots');
     slider.innerHTML = ''; dotsContainer.innerHTML = '';
@@ -1559,7 +1559,7 @@ function openProductView(index) {
     };
 
     $('pvpName').textContent = p.name || 'Product';
-    $('pvpStars').textContent = starsHtml + ' (' + baseRating.toFixed(1) + ')';
+    $('pvpStars').innerHTML = starsHtml;
     $('pvpReviews').textContent = baseReviews + ' Reviews';
     $('pvpPrice').textContent = convertMoney(p.price_pkr);
     $('pvpDescription').textContent = p.description || 'No description available for this product.';

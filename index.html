@@ -35,8 +35,8 @@ body { overflow-x: hidden; }
 .product-info h3 { margin: 0; font-size: 13px; font-weight: bold; word-break: break-word; white-space: normal; line-height: 1.2; }
 .product-info .price { font-size: 16px; font-weight: bold; color: #cc0000; margin-top: 4px; }
 .stars-container { display: flex; align-items: center; font-size: 12px; margin-top: 4px; color: #f0bd55; }
-.stars-container .stars-bg { position: relative; display: inline-block; color: #e0e0e0; white-space: nowrap; }
-.stars-container .stars-fill { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; color: #f0bd55; }
+.stars-container .stars-bg { position: relative; display: inline-block; color: #e0e0e0; white-space: nowrap; letter-spacing: 2px; }
+.stars-container .stars-fill { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; color: #f0bd55; letter-spacing: 2px; }
 .product-info .reviews { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
 
@@ -1005,7 +1005,15 @@ async function loadProducts() {
         const finalRating = approved.count > 0 ? ((baseRating * baseReviews) + approved.total) / (baseReviews + approved.count) : baseRating;
         const finalReviewsCount = baseReviews + approved.count;
         const ratingPercent = Math.max(0, Math.min(100, (finalRating / 5) * 100));
-        const starsHtml = `<div class="stars-container"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
+        const fullStars = Math.floor(finalRating);
+        const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        let starsHtml = '<div class="stars-container">';
+        starsHtml += '<span style="color:#f0bd55; font-size:14px;">';
+        for (let i = 0; i < fullStars; i++) starsHtml += '★';
+        if (hasHalfStar) starsHtml += '⯨';
+        for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+        starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
         return `<div class="product-card" onclick="openProductView(${index})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
@@ -1570,7 +1578,15 @@ function openProductView(index) {
     const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
     const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
     const ratingPercent = Math.max(0, Math.min(100, (baseRating / 5) * 100));
-    const starsHtml = `<div class="stars-container" style="font-size:18px;"><span class="stars-bg">★★★★★<span class="stars-fill" style="width: ${ratingPercent}%;">★★★★★</span></span> <span style="color:var(--muted); margin-left:5px; font-size:14px;">(${baseRating.toFixed(1)})</span></div>`;
+    const fullStars = Math.floor(baseRating);
+    const hasHalfStar = (baseRating - fullStars) >= 0.25 && (baseRating - fullStars) < 0.75;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    let starsHtml = '<div class="stars-container" style="font-size:18px;">';
+    starsHtml += '<span style="color:#f0bd55; font-size:20px;">';
+    for (let i = 0; i < fullStars; i++) starsHtml += '★';
+    if (hasHalfStar) starsHtml += '⯨';
+    for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+    starsHtml += `</span><span style="color:var(--muted); margin-left:5px; font-size:14px;">(${baseRating.toFixed(1)})</span></div>`;
 
     const slider = $('pvImageSlider'); const dotsContainer = $('pvSliderDots');
     slider.innerHTML = ''; dotsContainer.innerHTML = '';

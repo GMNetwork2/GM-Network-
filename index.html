@@ -437,6 +437,15 @@ body { overflow-x: hidden; }
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">Customer Reviews</h3>
         <div id="pvpReviewMessage" style="color:var(--muted);font-size:14px;margin-bottom:15px;">There are no reviews yet. Be the first to review!</div>
         <button type="button" class="secondary" onclick="writeProductReview()" style="width:100%;padding:12px;font-weight:bold;">Write a Review</button>
+        <div id="reviewFormBox" class="hidden" style="margin-top:15px; background:#f9fbf9; padding:15px; border-radius:10px; border:1px solid var(--line);">
+            <h4 style="margin-top:0; font-size:14px; color:var(--g);">Write a Review</h4>
+            <label style="font-size:12px;">Rating (1 to 5 Stars)</label>
+            <input type="number" id="reviewRating" min="1" max="5" step="0.5" placeholder="e.g. 4.5" style="margin-bottom:10px;">
+            <label style="font-size:12px;">Your Comment</label>
+            <textarea id="reviewComment" rows="3" placeholder="What did you like about this product?" style="margin-bottom:10px;"></textarea>
+            <button class="primary" onclick="submitProductReview()" style="padding:10px; font-size:14px;">Submit Review</button>
+            <div id="reviewStatus" class="status hidden" style="margin-top:10px;"></div>
+        </div>
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <div style="display:flex;justify-content:space-around;text-align:center;padding:15px 0;margin-bottom:20px;gap:8px;">
             <div><div style="font-size:30px;margin-bottom:5px;">🚚</div><div style="font-size:12px;font-weight:bold;">Fast Delivery</div></div>
@@ -1555,8 +1564,48 @@ function addToCartFromView() {
 }
 
 function writeProductReview() {
+    if (!user) return alert('Please sign in first to write a review.');
     if (!checkoutData) return;
-    alert('Customer reviews are not connected yet.');
+    const formBox = $('reviewFormBox');
+    formBox.classList.toggle('hidden');
+    if (!formBox.classList.contains('hidden')) {
+        formBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+async function submitProductReview() {
+    if (!user || !checkoutData || !sb) return alert('Please sign in first.');
+
+    const rating = Number($('reviewRating').value);
+    const comment = $('reviewComment').value.trim();
+
+    if (!rating || rating < 1 || rating > 5) return status('reviewStatus', 'Please enter a rating between 1 and 5.', 'error');
+    if (!comment) return status('reviewStatus', 'Please write a comment.', 'error');
+
+    status('reviewStatus', 'Submitting review...');
+
+    try {
+        const { error } = await sb.from('product_reviews').insert({
+            product_id: checkoutData.id,
+            user_id: user.id,
+            user_name: myProfile?.full_name || 'Member',
+            rating: rating,
+            comment: comment,
+            is_approved: false
+        });
+
+        if (error) throw error;
+
+        status('reviewStatus', '✅ Review submitted! It will be shown once Admin approves it.', 'ok');
+        $('reviewRating').value = '';
+        $('reviewComment').value = '';
+        setTimeout(() => {
+            $('reviewFormBox').classList.add('hidden');
+        }, 4000);
+
+    } catch (e) {
+        status('reviewStatus', 'Error: ' + (e.message || 'Unknown error'), 'error');
+    }
 }
 
 function closeProductView() {

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#123c32">
 <title>GM Network</title>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 :root {
     --g: #0a1f15;
@@ -115,7 +116,7 @@ body { overflow-x: hidden; }
 
 .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; }
 .product-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: var(--card-bg); display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box; overflow: hidden; }
-.product-card .main-img { width: 100%; height: 140px; object-fit: contain; border-radius: 8px; background: #0a1f15; cursor: pointer; }
+.product-card .main-img { width: 100%; height: 180px; object-fit: contain; border-radius: 8px; background: #0a1f15; cursor: pointer; padding: 5px; }
 .product-card .thumbnails { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
 .product-card .thumbnails img { width: 35px; height: 35px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
 .product-card .thumbnails img.active { border-color: var(--gold); }
@@ -211,9 +212,11 @@ body { overflow-x: hidden; }
 #checkoutPage > div:nth-child(1) button { color: var(--gold) !important; }
 #checkoutPage > div:nth-child(2) > div:nth-child(1) { background: var(--card-bg) !important; border: 1px solid var(--line) !important; }
 #checkoutPage > div:nth-child(2) > div:nth-child(1) h3 { color: var(--gold) !important; }
-#checkoutPage > div:nth-child(2) > div:nth-child(5) { background: var(--card-bg) !important; border: 1px solid var(--line) !important; }
-#checkoutPage > div:nth-child(2) > div:nth-child(5) h4 { color: var(--gold) !important; }
-#checkoutPage > div:nth-child(2) > div:nth-child(5) label { color: var(--ink) !important; }
+#checkoutPage > div:nth-child(2) > div:nth-child(8) { background: var(--card-bg) !important; border: 1px solid var(--line) !important; }
+#checkoutPage > div:nth-child(2) > div:nth-child(8) h3 { color: var(--gold) !important; }
+#checkoutPage > div:nth-child(2) > div:nth-child(8) label { color: var(--ink) !important; }
+#checkoutPage label { color: var(--ink); display: block; margin-bottom: 7px; }
+#checkoutPage input:not([type="radio"]) { width: 100%; box-sizing: border-box; }
 #paymentProofPage { background: var(--bg) !important; color: var(--ink) !important; }
 #paymentProofPage > div > div:nth-child(3) { background: var(--card-bg) !important; border: 2px dashed var(--gold) !important; }
 #paymentProofPage > div > div:nth-child(3) p { color: var(--gold) !important; }
@@ -590,7 +593,7 @@ body { overflow-x: hidden; }
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
     <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;gap:10px;">
         <button type="button" onclick="closeProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);font-weight:bold;">←</button>
-        <img src="logo.png" alt="GM Network" style="width:35px;height:35px;border-radius:8px;object-fit:cover;">
+        <img src="logo.png" alt="GM Network Logo" style="width:35px;height:35px;border-radius:8px;object-fit:cover;box-shadow:0 2px 8px rgba(229,184,83,0.3);border:1px solid var(--gold);">
         <h2 style="margin:0;font-size:16px;font-weight:800;color:var(--g);">GM Network</h2>
     </div>
     <div class="pv-slider-container"><div id="pvImageSlider" class="pv-slider"></div><div id="pvSliderDots" class="pv-dots"></div></div>
@@ -729,25 +732,44 @@ body { overflow-x: hidden; }
 </div>
 
 <!-- Checkout Page -->
-<div id="checkoutPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:500;overflow-y:auto;">
-    <div style="position:sticky;top:0;background:#fff;padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
-        <button type="button" onclick="backToProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--g);margin-right:10px;">←</button><h2 style="margin:0;font-size:18px;">Checkout</h2>
+<div id="checkoutPage" class="view hidden" style="position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;">
+    <div style="position:sticky;top:0;background:var(--card-bg);padding:15px;display:flex;align-items:center;border-bottom:1px solid var(--line);z-index:10;">
+        <button type="button" onclick="backToProductView()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--gold);margin-right:10px;">←</button>
+        <img src="logo.png" alt="GM Network Logo" style="width:30px;height:30px;border-radius:6px;object-fit:cover;margin-right:10px;border:1px solid var(--gold);">
+        <h2 style="margin:0;font-size:18px;color:var(--gold);">Secure Checkout</h2>
     </div>
     <div style="padding:20px;max-width:600px;margin:0 auto;">
-        <div style="display:flex;gap:15px;margin-bottom:25px;background:#f9f9f9;padding:10px;border-radius:10px;">
-            <img id="coImage" src="" alt="Selected product" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#fff;">
-            <div><h3 id="coName" style="margin:0 0 5px;font-size:16px;"></h3><div id="coPrice" style="color:#cc0000;font-size:18px;font-weight:bold;"></div></div>
+        <!-- Product Summary Card -->
+        <div style="background:var(--card-bg);border:1px solid var(--gold);padding:15px;border-radius:12px;margin-bottom:25px;display:flex;gap:15px;align-items:center;">
+            <img id="coImage" src="" alt="Selected product" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#050a08;padding:5px;border:1px solid var(--line);">
+            <div><h3 id="coName" style="margin:0 0 5px;font-size:16px;color:var(--ink);"></h3><div id="coPrice" style="color:var(--gold);font-size:20px;font-weight:800;"></div></div>
         </div>
-        <h3 style="margin-bottom:15px;font-size:16px;">Shipping Details</h3>
-        <label for="coNameInput">Full Name</label><input id="coNameInput" autocomplete="name" placeholder="Your name">
-        <label for="coPhoneInput">Phone Number</label><input id="coPhoneInput" type="tel" autocomplete="tel" placeholder="+92 300 1234567">
-        <label for="coAddressInput">Complete Address</label><textarea id="coAddressInput" rows="3" autocomplete="street-address" placeholder="House, street, city, area"></textarea>
-        <div style="margin-top:20px;padding:15px;border:1px solid var(--line);border-radius:10px;">
-            <h4 style="margin-top:0;">Payment Method</h4>
-            <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><input type="radio" name="paymentMethod" value="wallet" checked style="width:auto;"> Pay from Wallet (<span id="checkoutWalletBal">$0</span>)</label>
-            <label style="display:flex;align-items:center;gap:10px;"><input type="radio" name="paymentMethod" value="manual" style="width:auto;"> Manual Payment (Easypaisa/JazzCash)</label>
+        <!-- Shipping Details Section -->
+        <h3 style="margin-bottom:15px;font-size:18px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:8px;">🚚 Shipping Details</h3>
+        <label for="coNameInput">Full Name</label>
+        <input id="coNameInput" autocomplete="name" placeholder="e.g. Ali Khan" style="margin-bottom:15px;background:#050a08;color:#fff;border:1px solid var(--line);padding:12px;border-radius:8px;">
+        <label for="coPhoneInput">Phone Number</label>
+        <input id="coPhoneInput" type="tel" autocomplete="tel" placeholder="+92 300 1234567" style="margin-bottom:15px;background:#050a08;color:#fff;border:1px solid var(--line);padding:12px;border-radius:8px;">
+        <label for="coAddressInput">Street Address / House No.</label>
+        <input id="coAddressInput" autocomplete="street-address" placeholder="House 12, Street 4, Area Name" style="margin-bottom:15px;background:#050a08;color:#fff;border:1px solid var(--line);padding:12px;border-radius:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:25px;">
+            <div><label for="coCityInput">City</label><input id="coCityInput" autocomplete="address-level2" placeholder="e.g. Lahore" style="background:#050a08;color:#fff;border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
+            <div><label for="coPostalInput">Postal / ZIP Code</label><input id="coPostalInput" autocomplete="postal-code" inputmode="numeric" placeholder="e.g. 54000" style="background:#050a08;color:#fff;border:1px solid var(--line);padding:12px;border-radius:8px;"></div>
         </div>
-        <button class="primary" type="button" onclick="submitCheckout()" id="coSubmitBtn" style="margin-top:20px;padding:15px;font-size:16px;">Confirm Order</button>
+        <!-- Payment Method -->
+        <div style="margin-bottom:25px;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--card-bg);">
+            <h3 style="margin-top:0;font-size:16px;color:var(--gold);">💳 Payment Method</h3>
+            <label style="display:flex;align-items:center;gap:12px;margin-bottom:15px;background:#050a08;padding:12px;border-radius:8px;border:1px solid var(--line);cursor:pointer;">
+                <input type="radio" name="paymentMethod" value="wallet" checked style="width:auto;accent-color:var(--gold);">
+                <div><b style="color:var(--ink);font-size:14px;">Pay from Wallet</b><div style="font-size:12px;color:var(--muted);">Available Balance: <span id="checkoutWalletBal" style="color:var(--gold);font-weight:bold;">$0</span></div></div>
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;background:#050a08;padding:12px;border-radius:8px;border:1px solid var(--line);cursor:pointer;">
+                <input type="radio" name="paymentMethod" value="manual" style="width:auto;accent-color:var(--gold);">
+                <div><b style="color:var(--ink);font-size:14px;">Manual Payment</b><div style="font-size:12px;color:var(--muted);">Easypaisa / JazzCash / Bank Transfer</div></div>
+            </label>
+        </div>
+        <button class="primary" type="button" onclick="submitCheckout()" id="coSubmitBtn" style="margin-top:10px;padding:16px;font-size:16px;border-radius:10px;background:var(--gold);color:var(--g);font-weight:800;box-shadow:0 4px 15px rgba(229,184,83,0.3);">Confirm &amp; Place Order</button>
+        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:15px;">🔒 Your details are safe and secure.</p>
     </div>
 </div>
 
@@ -1672,13 +1694,36 @@ async function updateOrderStatus(orderId, newStatus) {
 
 async function markAsDelivered(orderId) {
     if (!user || !sb) return alert('Please sign in to confirm delivery.');
-    if (!confirm('کیا آپ نے واقعی اپنا آرڈر وصول کر لیا ہے؟')) return;
+    const result = await Swal.fire({
+        title: 'کیا آپ نے واقعی اپنا آرڈر وصول کر لیا ہے؟',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#e5b853',
+        cancelButtonColor: '#4a1a1a',
+        confirmButtonText: 'جی ہاں',
+        cancelButtonText: 'نہیں',
+        background: '#0d1c14',
+        color: '#e5b853'
+    });
+    if (!result.isConfirmed) return;
     const { data: order, error: readError } = await sb.from('orders').select('id,status,buyer_id').eq('id', orderId).eq('buyer_id', user.id).single();
     if (readError || !order) return alert('آرڈر لوڈ نہیں ہو سکا: ' + (readError?.message || 'Order not found.'));
     if (order.status !== 'confirmed') return alert('صرف confirmed آرڈر کی ڈیلیوری کنفرم کی جا سکتی ہے۔ موجودہ اسٹیٹس: ' + order.status);
     const { data: updatedOrder, error } = await sb.from('orders').update({ status: 'delivered' }).eq('id', orderId).eq('buyer_id', user.id).eq('status', 'confirmed').select('id').maybeSingle();
     if (error || !updatedOrder) return alert('ڈیلیوری اسٹیٹس اپڈیٹ نہیں ہوا: ' + (error?.message || 'آپ کو اجازت نہیں ہے۔'));
-    alert('شکریہ! آپ کا آرڈر ڈیلیور شدہ مارک ہو گیا ہے۔');
+    if (window.Swal) {
+        Swal.fire({
+            icon: 'success',
+            title: 'شکریہ!',
+            text: 'آپ کا آرڈر ڈیلیور شدہ مارک ہو گیا ہے۔',
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853',
+            confirmButtonText: 'ٹھیک ہے'
+        });
+    } else {
+        alert('شکریہ! آپ کا آرڈر ڈیلیور شدہ مارک ہو گیا ہے۔');
+    }
     closeOrderDetailModal(); await loadMyAccountPage(); if (isAdmin) await loadAdmin();
 }
 
@@ -1998,8 +2043,11 @@ async function submitCheckout() {
     if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
     const name = $('coNameInput').value.trim();
     const phone = $('coPhoneInput').value.trim();
-    const address = $('coAddressInput').value.trim();
-    if (!name || !phone || !address) return alert('Please fill in all shipping details.');
+    const street = $('coAddressInput').value.trim();
+    const city = $('coCityInput').value.trim();
+    const postal = $('coPostalInput').value.trim();
+    const address = `${street}, ${city} - ${postal}`;
+    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details (Name, Phone, Street, City, Postal Code).');
 
     const methodInput = document.querySelector('input[name="paymentMethod"]:checked');
     const paymentMethod = methodInput?.value === 'wallet' ? 'wallet' : 'manual';

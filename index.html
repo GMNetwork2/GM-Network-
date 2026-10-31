@@ -35,6 +35,30 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}.status{
 .status.error{background:#4a1a1a;color:#ffb3b3;border-color:#7a2929;}.status.ok{background:#1b4a2e;color:#a3ffc2;border-color:#296b43;}
 body { overflow-x: hidden; }
 
+/* Brand Story Section */
+.brand-story { display: flex; flex-direction: column; background: var(--card-bg); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; margin: 30px 0; }
+.brand-story img { width: 100%; height: 200px; object-fit: cover; }
+.brand-story-content { padding: 25px 20px; text-align: center; }
+.brand-story-content h2 { color: var(--gold); font-size: 24px; margin: 0 0 15px; font-family: serif; }
+.brand-story-content p { color: var(--muted); font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+/* Customer Testimonials */
+.testimonial-section { margin: 30px 0; }
+.testimonial-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 15px; padding: 20px; margin-bottom: 15px; position: relative; }
+.testimonial-card::before { content: '“'; position: absolute; top: 10px; right: 15px; font-size: 50px; color: var(--gold); opacity: 0.2; font-family: serif; }
+.testimonial-card p { color: var(--ink); font-size: 14px; line-height: 1.6; font-style: italic; margin-bottom: 15px; }
+.testimonial-user { display: flex; align-items: center; gap: 10px; }
+.testimonial-user .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--g2); color: var(--gold); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
+.testimonial-user .user-info b { display: block; color: var(--gold); font-size: 14px; }
+.testimonial-user .user-info span { font-size: 11px; color: var(--muted); }
+/* VIP Newsletter Banner */
+.newsletter-banner { background: linear-gradient(135deg, #0d1c14, #1a3a2a); border: 1px solid var(--gold); border-radius: 15px; padding: 30px 20px; text-align: center; margin: 30px 0; }
+.newsletter-banner h3 { color: var(--gold); font-size: 20px; margin: 0 0 10px; }
+.newsletter-banner p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+.newsletter-form { display: flex; gap: 10px; }
+.newsletter-form input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: #050a08; color: #fff; }
+.newsletter-form button { background: var(--gold); color: var(--g); border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+
 /* ===== VIP HOME PAGE ===== */
 .shop-hero { position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 20px; background: linear-gradient(135deg, var(--g), var(--g2)); text-align: center; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; min-height: 250px; }
 .shop-hero img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; position: absolute; top: 0; left: 0; }
@@ -212,6 +236,52 @@ body { overflow-x: hidden; }
     <div class="featured-section">
         <h2 class="featured-title">Featured Products <span onclick="tab('products')">View All →</span></h2>
         <div class="product-grid" id="featuredProductList"><p class="muted">Loading...</p></div>
+    </div>
+
+    <!-- Brand Story Section -->
+    <div class="brand-story">
+        <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop" alt="GM Network product craftsmanship">
+        <div class="brand-story-content">
+            <h2>The Art of Elegance</h2>
+            <p>At GM Network, we believe that true luxury lies in the details. Each product in our collection is carefully curated to ensure it meets the highest standards of quality and craftsmanship. We bring you not just products, but a statement of class and sophistication.</p>
+            <button class="hero-btn" onclick="tab('about')" style="padding: 10px 20px; font-size: 14px;">Discover Our Story</button>
+        </div>
+    </div>
+
+    <!-- Sample testimonials: replace with genuine customer feedback before publishing as real reviews -->
+    <h2 class="section-title">What Our VIP Members Say <span class="muted" style="font-size:11px;font-weight:400;">(Sample feedback)</span></h2>
+    <div class="testimonial-section">
+        <div class="testimonial-card">
+            <p>Absolutely stunning quality! The watch I ordered exceeded my expectations. The delivery was super fast and the packaging felt truly premium.</p>
+            <div class="testimonial-user">
+                <div class="avatar">A</div>
+                <div class="user-info"><b>Ahmed Khan</b><span>Sample profile · Gold Member</span></div>
+            </div>
+        </div>
+        <div class="testimonial-card">
+            <p>I've been a part of GM Network for 6 months now. Not only are their products top-notch, but their referral system is incredibly rewarding. Highly recommended!</p>
+            <div class="testimonial-user">
+                <div class="avatar">S</div>
+                <div class="user-info"><b>Sara Ali</b><span>Sample profile · Diamond Member</span></div>
+            </div>
+        </div>
+        <div class="testimonial-card">
+            <p>The customer service is exceptional. They helped me choose the perfect gift for my husband. The wallet is genuine leather and looks very expensive.</p>
+            <div class="testimonial-user">
+                <div class="avatar">M</div>
+                <div class="user-info"><b>Maria Hassan</b><span>Sample profile · Platinum Member</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIP Newsletter Banner -->
+    <div class="newsletter-banner">
+        <h3>Join the VIP Club</h3>
+        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <div class="newsletter-form">
+            <input type="email" placeholder="Enter your email address" id="newsletterEmail" autocomplete="email">
+            <button type="button" onclick="alert('Newsletter signup is not connected yet. Please contact GM Network support to subscribe.')">Subscribe</button>
+        </div>
     </div>
 
     <!-- VIP Dashboard Promo -->

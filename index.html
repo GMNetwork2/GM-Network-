@@ -50,9 +50,8 @@ body { overflow-x: hidden; }
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     border-radius: 12px;
-    animation: slideBanner 15s infinite ease-in-out;
+    scroll-behavior: smooth;
 }
-#bannerSlider:hover { animation-play-state: paused; }
 #bannerSlider::-webkit-scrollbar { display: none; }
 #bannerSlider > img, #bannerSlider > .banner-placeholder {
     flex: 0 0 100%;
@@ -73,13 +72,6 @@ body { overflow-x: hidden; }
     font-weight: bold;
     text-align: center;
     padding: 10px;
-}
-@keyframes slideBanner {
-    0%, 20% { transform: translateX(0); }
-    25%, 45% { transform: translateX(-100%); }
-    50%, 70% { transform: translateX(-200%); }
-    75%, 95% { transform: translateX(-300%); }
-    100% { transform: translateX(0); }
 }
 /* Related products retain their independent horizontal layout. */
 #relatedProductsSlider { display:flex; gap:10px; overflow-x:auto; padding-bottom:10px; margin-bottom:15px; }
@@ -1399,7 +1391,7 @@ async function loadBanners() {
     } else {
         el.innerHTML = [1, 2, 3, 4].map(n => `<div class="banner-placeholder">Banner ${n}<br>(Upload via Admin)</div>`).join('');
     }
-    // Automatic banner movement is handled by CSS keyframes.
+    startBannerAutoSlide();
 }
 
 async function saveBanners() {
@@ -1803,6 +1795,27 @@ async function submitPaymentProof() {
         checkoutData = null;
         tab('home');
         if (isAdmin) loadAdmin();
+    }, 3000);
+}
+
+let bannerSlideTimer = null;
+function startBannerAutoSlide() {
+    const slider = document.getElementById('bannerSlider');
+    if (bannerSlideTimer) clearInterval(bannerSlideTimer);
+    bannerSlideTimer = null;
+    if (!slider || slider.children.length <= 1) return;
+
+    let currentIndex = 0;
+    const totalSlides = slider.children.length;
+    slider.scrollLeft = 0;
+
+    bannerSlideTimer = setInterval(() => {
+        const products = document.getElementById('products');
+        if (document.hidden || !products || products.classList.contains('hidden')) return;
+        currentIndex = (currentIndex + 1) % totalSlides;
+        const slideWidth = slider.clientWidth;
+        if (!slideWidth) return;
+        slider.scrollTo({ left: currentIndex * slideWidth, behavior: 'smooth' });
     }, 3000);
 }
 

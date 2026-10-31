@@ -365,6 +365,7 @@ body { overflow-x: hidden; }
     <div id="bannerStatus" class="status hidden"></div>
 </div>
 
+<div class="panel"><h2>Customer Reviews (Pending Approval)</h2><div id="adminPendingReviews" class="muted">Loading reviews…</div></div>
 <div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
 
@@ -1126,11 +1127,12 @@ async function uploadPaymentProof() {
 async function loadAdmin() {
     if (!isAdmin || !sb) return;
 
-    const [m, p, o, w] = await Promise.all([
+    const [m, p, o, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
         sb.from('products').select('*').order('created_at', { ascending: false }),
         sb.from('orders').select('*').order('created_at', { ascending: false }).limit(20),
-        sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10)
+        sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10),
+        sb.from('product_reviews').select('*, products(name)').eq('is_approved', false).order('created_at', { ascending: false })
     ]);
 
     if($('am')) $('am').textContent = '500';
@@ -1210,6 +1212,38 @@ async function loadAdmin() {
             btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
         });
         $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+    }
+
+    if ($('adminPendingReviews')) {
+        const container = $('adminPendingReviews');
+        if (r.error) {
+            container.textContent = 'Error loading reviews: ' + r.error.message;
+        } else if (!r.data || r.data.length === 0) {
+            container.textContent = 'No pending reviews at the moment.';
+        } else {
+            container.innerHTML = r.data.map(x => `
+                <div class="item" style="flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;width:100%;">
+                        <b>${esc(x.user_name || 'Member')}</b>
+                        <span class="pill">${esc(x.rating)} ★</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--muted);width:100%;">
+                        <b>Product:</b> ${esc(x.products?.name || 'Unknown')}<br>
+                        <b>Comment:</b> "${esc(x.comment || '')}"
+                    </div>
+                    <div style="display:flex;gap:5px;margin-top:5px;">
+                        <button class="primary small-btn" data-approve-review="${esc(x.id)}">Approve</button>
+                        <button class="secondary small-btn" data-delete-review="${esc(x.id)}">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+            container.querySelectorAll('[data-approve-review]').forEach(btn => {
+                btn.onclick = () => approveReview(btn.dataset.approveReview);
+            });
+            container.querySelectorAll('[data-delete-review]').forEach(btn => {
+                btn.onclick = () => deleteReview(btn.dataset.deleteReview);
+            });
+        }
     }
 }
 
@@ -1867,6 +1901,23 @@ function startBannerAutoSlide() {
         if (!slideWidth) return;
         slider.scrollTo({ left: currentIndex * slideWidth, behavior: 'smooth' });
     }, 3000);
+}
+
+async function approveReview(reviewId) {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const { error } = await sb.from('product_reviews').update({ is_approved: true }).eq('id', reviewId);
+    if (error) return alert('Error approving review: ' + error.message);
+    alert('✅ Review approved. It can appear on the product page when approved-review loading is implemented.');
+    await loadAdmin();
+}
+
+async function deleteReview(reviewId) {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    if (!confirm('Delete this review permanently?')) return;
+    const { error } = await sb.from('product_reviews').delete().eq('id', reviewId);
+    if (error) return alert('Error deleting review: ' + error.message);
+    alert('Review deleted.');
+    await loadAdmin();
 }
 
 document.addEventListener('DOMContentLoaded', init);

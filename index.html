@@ -598,47 +598,61 @@ body { overflow-x: hidden; }
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
         <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
-        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
-        <div style="border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:15px;">
-            <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;cursor:pointer;font-weight:bold;font-size:16px;"><span>Description</span><span>+</span></div>
-            <div id="pvpDescription" class="hidden" style="padding-top:15px;font-size:15px;color:var(--muted);line-height:1.6;">No description available.</div>
-        </div>
-        <!-- VIP Product Details & Specs -->
-        <div style="border-top:1px solid var(--line);margin-top:20px;padding-top:15px;">
-            <div style="background:#E8F5E9;border:1px solid #C8E6C9;padding:15px;border-radius:10px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-                <div style="font-size:30px;background:#25D366;color:white;border-radius:50%;width:45px;height:45px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">💬</div>
-                <div>
-                    <h4 style="margin:0 0 3px;font-size:14px;color:var(--g);">Need Help with this Product?</h4>
-                    <p style="margin:0;font-size:12px;color:var(--muted);">Have questions? Contact us on WhatsApp for instant help.</p>
-                    <a href="https://wa.me/923082276093" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:5px;color:#128C7E;font-weight:bold;text-decoration:underline;font-size:12px;">Chat Now →</a>
-                </div>
+        <!-- VIP Product Highlights -->
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
+            <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
+                <div style="font-size:24px; margin-bottom:5px;">✨</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--g);">100% Original</div>
             </div>
-            <h3 style="font-size:16px;color:var(--g);margin-bottom:10px;">📋 Product Details &amp; Specs</h3>
-            <details style="margin-bottom:10px;background:#f9fbf9;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;">
-                <summary style="font-weight:bold;font-size:14px;">Specifications (تفصیلات)</summary>
-                <div style="font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6;">
-                    • 100% Original Product<br>
-                    • Premium Quality Material<br>
-                    • Perfect for Daily Use<br>
-                    • Comes with Original Packaging
-                </div>
-            </details>
-            <details style="margin-bottom:10px;background:#f9fbf9;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;">
-                <summary style="font-weight:bold;font-size:14px;">Shipping &amp; Returns (ڈیلیوری اور واپسی)</summary>
-                <div style="font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6;">
-                    • Delivery Time: 2-4 Working Days<br>
-                    • Shipping Charges: Free Delivery<br>
-                    • Return Policy: 7 Days Check &amp; Return (اگر خراب ہو تو)
-                </div>
-            </details>
-            <details style="margin-bottom:10px;background:#f9fbf9;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;">
-                <summary style="font-weight:bold;font-size:14px;">Need Help? (مدد چاہیے؟)</summary>
-                <div style="font-size:13px;color:var(--muted);margin-top:10px;line-height:1.6;">
-                    اگر آپ کو اس پروڈکٹ کے بارے میں کوئی سوال پوچھنا ہے، تو آپ ہمیں واٹس ایپ پر میسج کر سکتے ہیں۔
-                </div>
-            </details>
+            <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
+                <div style="font-size:24px; margin-bottom:5px;">🎁</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--g);">Premium Packaging</div>
+            </div>
+            <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
+                <div style="font-size:24px; margin-bottom:5px;">🛡️</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--g);">Secure Payment</div>
+            </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;"><span style="font-size:20px;">🚚</span><span>Free shipping. Dispatched within 24 hours.</span></div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+        
+        <!-- Description Accordion -->
+        <div style="border:1px solid var(--line); border-radius:12px; margin-bottom:20px; overflow:hidden;">
+            <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;align-items:center;padding:15px;cursor:pointer;font-weight:bold;font-size:15px;background:#f9fbf9;color:var(--g);">
+                <span>📝 Product Description</span><span>+</span>
+            </div>
+            <div id="pvpDescription" class="hidden" style="padding:15px;font-size:14px;color:var(--muted);line-height:1.7;background:#fff;border-top:1px solid var(--line);">No description available.</div>
+        </div>
+
+        <!-- Specifications Accordion -->
+        <div style="border:1px solid var(--line); border-radius:12px; margin-bottom:20px; overflow:hidden;">
+            <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;align-items:center;padding:15px;cursor:pointer;font-weight:bold;font-size:15px;background:#f9fbf9;color:var(--g);">
+                <span>📋 Specifications &amp; Details</span><span>+</span>
+            </div>
+            <div class="hidden" style="padding:15px;font-size:14px;color:var(--muted);line-height:1.8;background:#fff;border-top:1px solid var(--line);">
+                • 100% Original &amp; Premium Quality Material<br>
+                • Perfect for Daily Use<br>
+                • Comes with Original GM Network Packaging<br>
+                • High Durability &amp; Elegant Design
+            </div>
+        </div>
+
+        <!-- Shipping & Returns Accordion -->
+        <div style="border:1px solid var(--line); border-radius:12px; margin-bottom:20px; overflow:hidden;">
+            <div onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('hidden')?'+':'−';" style="display:flex;justify-content:space-between;align-items:center;padding:15px;cursor:pointer;font-weight:bold;font-size:15px;background:#f9fbf9;color:var(--g);">
+                <span>🚚 Shipping &amp; Returns</span><span>+</span>
+            </div>
+            <div class="hidden" style="padding:15px;font-size:14px;color:var(--muted);line-height:1.8;background:#fff;border-top:1px solid var(--line);">
+                • Delivery Time: 2-4 Working Days<br>
+                • Shipping Charges: Free Nationwide Delivery<br>
+                • Return Policy: 7 Days Check &amp; Return (if damaged or defective)
+            </div>
+        </div>
+        
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;padding:15px;background:#E8F5E9;border-radius:10px;border:1px dashed #25D366;">
+            <span style="font-size:24px;">🚚</span>
+            <span style="font-weight:bold;color:#128C7E;">Free shipping. Dispatched within 24 hours.</span>
+        </div>
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">You May Also Like</h3>
         <div class="banner-slider" id="relatedProductsSlider"></div>

@@ -86,6 +86,32 @@ body { overflow-x: hidden; }
 .insta-grid img { width: 100%; height: 150px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); transition: 0.3s; }
 .insta-grid img:hover { opacity: 0.8; transform: scale(1.02); }
 
+/* VIP Dashboard Extra Sections */
+.vip-welcome-banner { background: linear-gradient(135deg, #1a3a2a, #0d1c14); border: 1px solid var(--gold); border-radius: 15px; padding: 30px 20px; text-align: center; margin-bottom: 20px; position: relative; overflow: hidden; }
+.vip-welcome-banner::after { content: '👑'; position: absolute; top: -10px; right: -10px; font-size: 100px; opacity: 0.1; }
+.vip-welcome-banner h2 { color: var(--gold); font-size: 26px; margin: 0 0 5px; }
+.vip-welcome-banner p { color: var(--muted); font-size: 14px; margin: 0; }
+.vip-level-badge { display: inline-block; background: var(--gold); color: var(--g); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-top: 10px; }
+.vip-progress-container { background: var(--card-bg); border: 1px solid var(--line); border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+.vip-progress-bar { width: 100%; height: 12px; background: #050a08; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+.vip-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #ffd66e); width: 45%; border-radius: 10px; }
+.vip-quick-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; }
+.vip-link-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; }
+.vip-link-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+.vip-link-card .icon { font-size: 28px; margin-bottom: 8px; display: block; }
+.vip-link-card h4 { color: var(--ink); font-size: 13px; margin: 0; }
+.success-story-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 15px; padding: 20px; margin-bottom: 15px; border-left: 4px solid var(--gold); }
+.success-story-card h4 { color: var(--gold); margin: 0 0 5px; font-size: 15px; }
+.success-story-card p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0; }
+.leaderboard-row { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 15px; margin-bottom: 8px; }
+.leaderboard-row .rank { font-size: 18px; font-weight: bold; color: var(--gold); width: 30px; }
+.leaderboard-row .name { flex: 1; color: var(--ink); font-weight: bold; font-size: 14px; margin-left: 10px; }
+.leaderboard-row .coins { color: var(--gold); font-weight: bold; font-size: 14px; }
+.daily-reward-banner { background: linear-gradient(135deg, #0d1c14, #1a3a2a); border: 1px dashed var(--gold); border-radius: 15px; padding: 25px; text-align: center; margin: 25px 0; }
+.daily-reward-banner h3 { color: var(--gold); margin: 0 0 10px; }
+.daily-reward-banner p { color: var(--muted); font-size: 13px; margin-bottom: 15px; }
+
+
 
 .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; }
 .product-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: var(--card-bg); display: flex; flex-direction: column; position: relative; width: 100%; box-sizing: border-box; overflow: hidden; }
@@ -346,6 +372,33 @@ body { overflow-x: hidden; }
         <h1>My Dashboard</h1>
         <p>Welcome back! View your earnings, team, and referral progress.</p>
     </div>
+
+    <!-- VIP Welcome Banner (display sample until connected to live member data) -->
+    <div class="vip-welcome-banner">
+        <h2 id="vipMemberName">Welcome, VIP Member!</h2>
+        <p>Your journey to success starts here.</p>
+        <span class="vip-level-badge" id="vipMemberLevel">Member Level</span>
+    </div>
+
+    <!-- Sample Level Progress -->
+    <div class="vip-progress-container">
+        <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <b style="color:var(--gold);" id="vipProgressText">Sample Level Progress</b>
+            <span class="muted">Demo</span>
+        </div>
+        <div class="vip-progress-bar"><div class="vip-progress-fill"></div></div>
+        <p class="muted" style="font-size:11px; margin-top:8px;">Illustrative progress only — actual level progress is based on your account data.</p>
+    </div>
+
+    <!-- Quick Links Grid -->
+    <h2 class="section-title">Quick Actions</h2>
+    <div class="vip-quick-links">
+        <div class="vip-link-card" onclick="tab('products')"><span class="icon">🛍️</span><h4>Shop Products</h4></div>
+        <div class="vip-link-card" onclick="tab('team')"><span class="icon">👥</span><h4>My Team</h4></div>
+        <div class="vip-link-card" onclick="tab('my-wallet')"><span class="icon">💰</span><h4>My Wallet</h4></div>
+        <div class="vip-link-card" onclick="tab('my-account')"><span class="icon">🆔</span><h4>My Account</h4></div>
+    </div>
+
     <div class="stats">
         <div class="stat"><small>Coins (Self)</small><strong id="nm_self">—</strong></div>
         <div class="stat"><small>Coins (Team)</small><strong id="nm_team">—</strong></div>
@@ -384,6 +437,31 @@ body { overflow-x: hidden; }
         <h2>Welcome</h2>
         <p class="muted section-note">Sign in to view your profile, referral code, team and earnings.</p>
         <div id="connection" class="status">Connecting to backend…</div>
+    </div>
+
+    <!-- Sample Success Stories: replace with verified member testimonials before publishing -->
+    <h2 class="section-title">🌟 Member Stories <span class="muted" style="font-size:11px;">Sample content</span></h2>
+    <div class="success-story-card">
+        <h4>Sample Member Story 1</h4>
+        <p>“I enjoy discovering quality products and sharing my experience with friends. The member dashboard makes it easy to follow my activity.”</p>
+    </div>
+    <div class="success-story-card">
+        <h4>Sample Member Story 2</h4>
+        <p>“The product selection and customer support make shopping straightforward. I like keeping track of my team and account progress.”</p>
+    </div>
+
+    <!-- Sample leaderboard: not live member rankings -->
+    <h2 class="section-title">🏆 Top Leaders This Month <span class="muted" style="font-size:11px;">Demo</span></h2>
+    <div class="leaderboard-row"><span class="rank">#1</span><span class="name">Sample Leader 1</span><span class="coins">— Coins</span></div>
+    <div class="leaderboard-row"><span class="rank">#2</span><span class="name">Sample Leader 2</span><span class="coins">— Coins</span></div>
+    <div class="leaderboard-row"><span class="rank">#3</span><span class="name">Sample Leader 3</span><span class="coins">— Coins</span></div>
+    <div class="leaderboard-row"><span class="rank">#4</span><span class="name">Sample Leader 4</span><span class="coins">— Coins</span></div>
+
+    <!-- Daily reward demo only; no coins are credited by this button -->
+    <div class="daily-reward-banner">
+        <h3>🎁 Daily Rewards</h3>
+        <p>Daily reward feature is coming soon. No coins are added by this demo button.</p>
+        <button class="hero-btn" type="button" onclick="alert('Daily rewards are coming soon. No coins have been added.')">Coming Soon</button>
     </div>
 
 </section>

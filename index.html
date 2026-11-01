@@ -1708,24 +1708,25 @@ async function openWithdrawRequestsModal() {
             htmlContent += '<p style="text-align:center;color:#aaa;">No withdrawal requests found.</p>';
         } else {
             data.forEach(w => {
-                const statusColor = w.status === 'pending' ? '#ffcc00' : (w.status === 'approved' ? '#4CAF50' : '#f44336');
+                const st = String(w.status || 'pending').toLowerCase();
+                const statusColor = st === 'pending' ? '#ffcc00' : (st === 'approved' ? '#4CAF50' : '#f44336');
                 const searchText = esc(`${w.profiles?.full_name || 'User'} ${w.amount ?? ''}`.toLowerCase());
                 htmlContent += `
                     <div class="withdraw-item" data-search="${searchText}" style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
                         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                             <b style="color:#e5b853;font-size:14px;">${esc(w.profiles?.full_name || 'User')}</b>
-                            <span style="color:${statusColor};font-weight:bold;text-transform:uppercase;font-size:12px;">${esc(w.status || 'pending')}</span>
+                            <span style="color:${statusColor};font-weight:bold;text-transform:uppercase;font-size:12px;">${esc(st)}</span>
                         </div>
                         <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;">
                             <b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br>
                             <b>Account:</b> ${esc(w.account_details || '—')}<br>
                             <b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}
                         </div>
-                        ${w.status === 'pending' ? `
-                            <div style="display:flex;gap:8px;margin-top:10px;">
-                                <button onclick="updateWithdrawalStatus('${esc(w.id)}','approved')" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button>
-                                <button onclick="updateWithdrawalStatus('${esc(w.id)}','rejected')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button>
-                            </div>` : ''}
+                        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                            ${st !== 'approved' ? `<button type="button" onclick="updateWithdrawalStatus('${esc(w.id)}','approved')" style="flex:1;background:#4CAF50;color:white;border:0;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;min-width:80px;">Approve</button>` : ''}
+                            ${st !== 'rejected' ? `<button type="button" onclick="updateWithdrawalStatus('${esc(w.id)}','rejected')" style="flex:1;background:#f44336;color:white;border:0;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;min-width:80px;">Reject</button>` : ''}
+                            ${st !== 'pending' ? `<button type="button" onclick="updateWithdrawalStatus('${esc(w.id)}','pending')" style="flex:1;background:#ffcc00;color:#000;border:0;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;min-width:80px;">Mark Pending</button>` : ''}
+                        </div>
                     </div>`;
             });
         }
@@ -1748,43 +1749,54 @@ function filterWithdrawals() {
 async function updateWithdrawalStatus(id, status) {
     if (!isAdmin || !sb) return alert('Admin access required.');
     status = String(status || '').toLowerCase();
-    if (!['approved', 'rejected'].includes(status)) return alert('Invalid withdrawal status.');
+    if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid withdrawal status.');
+
+    // اصل لسٹ کا نام کنفرمیشن ڈائیلاگ کھلنے سے پہلے محفوظ کریں۔
+    const activeTitle = document.querySelector('.swal2-title')?.textContent?.trim() || '';
+    const returnToMaster = activeTitle === 'Master History';
+    const returnToWithdrawals = activeTitle === 'Withdrawal Requests';
+
+    const refreshSourceList = async () => {
+        if (returnToMaster) return await openMasterHistory();
+        if (returnToWithdrawals) return await openWithdrawRequestsModal();
+    };
 
     const confirmAction = await Swal.fire({
         title: 'Are you sure?',
         text: 'Do you want to mark this withdrawal as ' + status.toUpperCase() + '?',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: status === 'approved' ? '#4CAF50' : '#f44336',
+        confirmButtonColor: status === 'approved' ? '#4CAF50' : (status === 'rejected' ? '#f44336' : '#e5b853'),
         cancelButtonColor: '#555',
         confirmButtonText: 'Yes, ' + status,
         background: '#0d1c14',
         color: '#e5b853'
     });
-    if (!confirmAction.isConfirmed) return;
+
+    if (!confirmAction.isConfirmed) {
+        await refreshSourceList();
+        return;
+    }
 
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
 
-        // کامیابی کے بعد صرف پیغام دکھائیں؛ پرانی لسٹ دوبارہ نہ کھولیں۔
-        await Swal.fire({
-            icon: 'success',
-            title: 'Success',
-            text: 'Request has been ' + status + '!',
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
-        });
+        // ڈیٹا بیس اپڈیٹ کے بعد اسی لسٹ کو تازہ ڈیٹا کے ساتھ دوبارہ دکھائیں۔
+        if (returnToMaster || returnToWithdrawals) {
+            await refreshSourceList();
+        } else {
+            await Swal.fire({
+                icon: 'success', title: 'Success', text: 'Request has been ' + status + '!',
+                background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
+            });
+        }
     } catch (e) {
         await Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: e.message || 'Could not update withdrawal request.',
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
+            icon: 'error', title: 'Error', text: e.message || 'Could not update withdrawal request.',
+            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
         });
+        await refreshSourceList();
     }
 }
 
@@ -3045,7 +3057,6 @@ async function openMasterHistory() {
             sb.from('wallet_transactions').select('*').order('created_at', { ascending:false }).limit(100),
             sb.from('orders').select('id,buyer_id,unit_price_pkr,status,created_at').order('created_at', { ascending:false }).limit(50)
         ]);
-
         if (wRes.error) throw wRes.error;
         if (tRes.error) throw tRes.error;
         if (oRes.error) throw oRes.error;
@@ -3065,19 +3076,20 @@ async function openMasterHistory() {
 
         const escText = v => esc(String(v ?? '—'));
         let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-
         html += '<h3 style="color:#e5b853;">Withdrawals</h3>';
         if (!(wRes.data || []).length) html += '<p style="color:#aaa;">No withdrawals found.</p>';
 
         (wRes.data || []).forEach(w => {
             const st = String(w.status || 'pending').toLowerCase();
+            const statusColor = st === 'pending' ? '#ffcc00' : (st === 'approved' ? '#4CAF50' : '#f44336');
             html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
                 <b style="color:#e5b853;">${escText(names[w.user_id] || 'Member')}</b>
-                <span style="float:right;font-weight:bold;color:${st==='pending'?'#ffcc00':st==='approved'?'#4CAF50':'#f44336'};">${escText(st.toUpperCase())}</span><br>
+                <span style="float:right;font-weight:bold;color:${statusColor};">${escText(st.toUpperCase())}</span><br>
                 <small>Amount: ${escText(convertMoney(w.amount ?? 0))} | ${escText(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}</small>
-                <div style="margin-top:8px;display:flex;gap:5px;">
-                    ${st === 'pending' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'approved')" style="background:#4CAF50;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Approve</button>` : ''}
-                    ${st === 'pending' || st === 'approved' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'rejected')" style="background:#f44336;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Mark Rejected</button>` : ''}
+                <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
+                    ${st !== 'approved' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'approved')" style="background:#4CAF50;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Approve</button>` : ''}
+                    ${st !== 'rejected' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'rejected')" style="background:#f44336;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Reject</button>` : ''}
+                    ${st !== 'pending' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'pending')" style="background:#ffcc00;color:#000;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Mark Pending</button>` : ''}
                 </div>
             </div>`;
         });

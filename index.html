@@ -1064,9 +1064,34 @@ async function signIn() {
     if (!sb) return alert('Backend is not connected.');
     const email = $('loginEmail').value.trim(), password = $('loginPassword').value;
     if (!email || !password) return alert('Enter email and password.');
+
     status('authStatus', 'Signing in…');
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) status('authStatus', 'Sign-in failed: ' + error.message, 'error');
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            status('authStatus', 'Sign-in failed: ' + error.message, 'error');
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sign In Failed',
+                    text: error.message,
+                    background: '#0d1c14',
+                    color: '#e5b853',
+                    confirmButtonColor: '#e5b853'
+                });
+            }
+            return;
+        }
+
+        if (data && data.user) {
+            status('authStatus', 'Signed in successfully!', 'ok');
+            tab('home');
+        }
+    } catch (err) {
+        const message = err && err.message ? err.message : String(err);
+        status('authStatus', 'Unexpected error: ' + message, 'error');
+    }
 }
 
 async function forgotPassword() {

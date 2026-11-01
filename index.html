@@ -1675,7 +1675,7 @@ async function updateOrderStatus(orderId, newStatus) {
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
     if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
     newStatus = String(newStatus).toLowerCase();
-    // Golden VIP confirmation, with a native fallback if SweetAlert is unavailable.
+
     if (window.Swal) {
         const confirmResult = await window.Swal.fire({
             title: 'Order Status Change',
@@ -1690,62 +1690,88 @@ async function updateOrderStatus(orderId, newStatus) {
             color: '#e5b853'
         });
         if (!confirmResult.isConfirmed) return;
-    } else {
-        if (!confirm('Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?')) return;
+    } else if (!confirm('Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?')) {
+        return;
     }
 
-    const { data: currentOrder, error: readError } = await sb.from('orders').select('buyer_id, unit_price_pkr').eq('id', orderId).single();
-    if (readError || !currentOrder) return alert('Order not found.');
+    // Read previous status so rewards are only added/reversed on a real transition.
+    const { data: currentOrder, error: readError } = await sb.from('orders')
+        .select('buyer_id, unit_price_pkr, status').eq('id', orderId).single();
+    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
+
+    const previousStatus = String(currentOrder.status || '').toLowerCase();
+    if (previousStatus === newStatus) {
+        if (window.Swal) await window.Swal.fire({ icon: 'info', title: 'No change', text: 'This order already has this status.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        else alert('This order already has this status.');
+        return;
+    }
 
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
-    if (newStatus === 'confirmed') {
-        const price = Number(currentOrder.unit_price_pkr);
-        const buyerId = currentOrder.buyer_id;
+    const price = Number(currentOrder.unit_price_pkr);
+    const buyerId = currentOrder.buyer_id;
+    let rewardError = null;
 
-        const { data: buyerData } = await sb.from('profiles').select('*').eq('id', buyerId).single();
-
-        if (buyerData) {
-            await sb.from('profiles').update({
-                points: Number(buyerData.points || 0) + price
-            }).eq('id', buyerId);
-
-            let currentUplineId = buyerData.referred_by;
-            let isDirectReferrer = true;
-
-            while (currentUplineId) {
-                const { data: uplineData, error: uplineError } = await sb.from('profiles').select('*').eq('id', currentUplineId).single();
-                
-                if (uplineError || !uplineData) break; 
-
-                let newComm = Number(uplineData.total_commission || 0);
-                if (isDirectReferrer) newComm += (price * 0.10);
-
-                await sb.from('profiles').update({
-                    points: Number(uplineData.points || 0) + price,
-                    total_commission: newComm
-                }).eq('id', currentUplineId);
-
-                currentUplineId = uplineData.referred_by;
-                isDirectReferrer = false; 
+    // Award coins only when an order newly enters confirmed status.
+    if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
+        const { data: buyerData, error: buyerReadError } = await sb.from('profiles')
+            .select('id, points, referred_by').eq('id', buyerId).single();
+        if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
+        else {
+            const { error } = await sb.from('profiles').update({ points: Number(buyerData.points || 0) + price }).eq('id', buyerId);
+            if (error) rewardError = error;
+            let uplineId = buyerData.referred_by;
+            let direct = true;
+            while (uplineId && !rewardError) {
+                const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
+                if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
+                const values = { points: Number(data.points || 0) + price };
+                if (direct) values.total_commission = Number(data.total_commission || 0) + price * 0.10;
+                const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
+                if (writeErr) { rewardError = writeErr; break; }
+                uplineId = data.referred_by;
+                direct = false;
             }
         }
     }
 
-    if (window.Swal) {
-        window.Swal.fire({
-            icon: 'success',
-            title: 'Success!',
-            text: 'Order status updated to ' + newStatus + ' and coins distributed to all uplines.',
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853',
-            confirmButtonText: 'OK'
-        });
-    } else {
-        alert('Order status updated to ' + newStatus + ' and coins distributed to all uplines.');
+    // Reverse rewards only when a previously confirmed order is cancelled/refunded.
+    // Switching between cancelled and refunded will not deduct a second time.
+    if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
+        const { data: buyerData, error: buyerReadError } = await sb.from('profiles')
+            .select('id, points, referred_by').eq('id', buyerId).single();
+        if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
+        else {
+            const { error } = await sb.from('profiles').update({ points: Math.max(0, Number(buyerData.points || 0) - price) }).eq('id', buyerId);
+            if (error) rewardError = error;
+            let uplineId = buyerData.referred_by;
+            let direct = true;
+            while (uplineId && !rewardError) {
+                const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
+                if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
+                const values = { points: Math.max(0, Number(data.points || 0) - price) };
+                if (direct) values.total_commission = Math.max(0, Number(data.total_commission || 0) - price * 0.10);
+                const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
+                if (writeErr) { rewardError = writeErr; break; }
+                uplineId = data.referred_by;
+                direct = false;
+            }
+        }
     }
+
+    const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
+        ? '. Coins and direct referral commission were reversed.'
+        : newStatus === 'confirmed' ? ' and coins/commission were distributed.' : '.');
+    if (window.Swal) {
+        await window.Swal.fire({
+            icon: rewardError ? 'warning' : 'success',
+            title: rewardError ? 'Status updated — reward adjustment needs review' : 'Success!',
+            text: rewardError ? 'Order status changed, but a coin/commission adjustment failed: ' + (rewardError.message || rewardError) : successText,
+            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'OK'
+        });
+    } else alert(rewardError ? 'Order status changed, but a coin/commission adjustment failed: ' + (rewardError.message || rewardError) : successText);
+
     closeOrderDetailModal();
     await loadAdmin();
 }

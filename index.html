@@ -591,6 +591,16 @@ input[type="file"]::file-selector-button:hover {
     <h2 style="color: var(--gold);">Wallet Deposit Requests</h2>
     <p class="muted" style="margin:0;">Click here to view and approve member deposit requests.</p>
 </div>
+<div class="panel" style="border-color: var(--gold);">
+    <h2 style="color: var(--gold);">Direct Wallet Add (Manual)</h2>
+    <p class="muted" style="font-size:12px; margin-bottom:10px;">Since your merchant account is not ready, use this to directly add funds to any member's wallet for testing or manual payments.</p>
+    <label>Member ID or Name</label>
+    <input id="adminAddFundsMemberId" placeholder="Enter Member ID or Name...">
+    <label>Amount (USD)</label>
+    <input id="adminAddFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
+    <button class="primary" onclick="adminDirectAddFunds()">Add Funds to Member</button>
+    <div id="adminAddFundsStatus" class="status hidden"></div>
+</div>
 <div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
 
@@ -2579,55 +2589,39 @@ async function openWalletDepositsModal() {
 // Approve a pending deposit and credit the member wallet.
 async function approveWalletDeposit(txnId, userId, amount) {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    amount = Number(amount);
-    if (!Number.isFinite(amount) || amount <= 0) return alert('Invalid deposit amount.');
-
     let claimed = false;
     try {
-        // Claim the pending request first so two admin clicks cannot both credit it.
         const { data: claimedTxn, error: claimError } = await sb.from('wallet_transactions')
             .update({ status: 'processing' })
             .eq('id', txnId).eq('user_id', userId).eq('type', 'deposit').eq('status', 'pending')
             .select('id, amount').maybeSingle();
         if (claimError) throw claimError;
-        if (!claimedTxn) throw new Error('This deposit has already been processed or is being processed. Refresh the list.');
+        if (!claimedTxn) throw new Error('This deposit has already been processed. Refresh the list.');
         claimed = true;
-        if (Number(claimedTxn.amount) !== amount) throw new Error('Deposit amount changed. Please verify the request.');
+        const depositAmount = Number(claimedTxn.amount);
+        if (!Number.isFinite(depositAmount) || depositAmount <= 0) throw new Error('Invalid amount stored for this deposit.');
 
         const { data: wallet, error: walletError } = await sb.from('wallets')
             .select('id, balance').eq('user_id', userId).maybeSingle();
         if (walletError) throw walletError;
         if (!wallet) throw new Error('Member wallet was not found.');
-
-        const newBalance = Number(wallet.balance || 0) + amount;
+        const newBalance = Number(wallet.balance || 0) + depositAmount;
         const { error: balanceError } = await sb.from('wallets')
             .update({ balance: newBalance }).eq('id', wallet.id);
         if (balanceError) throw balanceError;
-
-        // Mark completed only after the wallet balance update succeeds.
         const { error: completeError } = await sb.from('wallet_transactions')
             .update({ status: 'completed' }).eq('id', txnId).eq('status', 'processing');
-        if (completeError) {
-            throw new Error('Wallet balance was updated, but the transaction could not be marked completed. Do not approve again; check this transaction manually. ' + completeError.message);
-        }
+        if (completeError) throw new Error('Wallet balance was updated, but transaction status could not be completed. Do not approve again; check this transaction manually. ' + completeError.message);
         claimed = false;
-
-        await Swal.fire({
-            icon: 'success', title: 'Approved!', text: 'Amount added to member wallet.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon: 'success', title: 'Approved!', text: 'Amount added to member wallet.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
         await openWalletDepositsModal();
     } catch (e) {
-        // If crediting failed before the balance changed, release the claim for retry.
         if (claimed && !String(e.message || '').includes('Wallet balance was updated')) {
             const { error: releaseError } = await sb.from('wallet_transactions')
                 .update({ status: 'pending' }).eq('id', txnId).eq('status', 'processing');
-            if (releaseError) e.message += ' Also could not reset request to pending: ' + releaseError.message;
+            if (releaseError) e.message += ' Could not reset request to pending: ' + releaseError.message;
         }
-        await Swal.fire({
-            icon: 'error', title: 'Error', text: e.message || 'Could not approve deposit.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not approve deposit.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
         await openWalletDepositsModal();
     }
 }
@@ -2654,6 +2648,50 @@ async function rejectWalletDeposit(txnId) {
             background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
         });
         await openWalletDepositsModal();
+    }
+}
+
+// Admin: manually add funds to a member wallet for testing/manual payments.
+async function adminDirectAddFunds() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const memberInput = $('adminAddFundsMemberId').value.trim();
+    const amount = Number($('adminAddFundsAmount').value);
+    if (!memberInput) return status('adminAddFundsStatus', 'Please enter Member ID or Name.', 'error');
+    if (!Number.isFinite(amount) || amount <= 0) return status('adminAddFundsStatus', 'Please enter a valid amount.', 'error');
+    status('adminAddFundsStatus', 'Processing...');
+    try {
+        // This app's profiles fields expose member_code and full_name; auth email is not available here.
+        let profileQuery = sb.from('profiles').select('id, full_name');
+        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberInput);
+        if (looksLikeUuid) profileQuery = profileQuery.eq('id', memberInput);
+        else profileQuery = profileQuery.or(`member_code.eq.${memberInput},full_name.ilike.%${memberInput}%`);
+        const { data: profile, error: profileError } = await profileQuery.maybeSingle();
+        if (profileError) throw new Error(profileError.message);
+        if (!profile) throw new Error('Member not found. Please check the Member ID or Name.');
+
+        let { data: wallet, error: walletError } = await sb.from('wallets')
+            .select('id, balance').eq('user_id', profile.id).maybeSingle();
+        if (walletError) throw walletError;
+        if (!wallet) {
+            const { data: newWallet, error: createError } = await sb.from('wallets')
+                .insert({ user_id: profile.id, balance: amount }).select('id, balance').single();
+            if (createError) throw createError;
+            wallet = newWallet;
+        } else {
+            const newBalance = Number(wallet.balance || 0) + amount;
+            const { error: updateError } = await sb.from('wallets')
+                .update({ balance: newBalance }).eq('id', wallet.id);
+            if (updateError) throw updateError;
+        }
+        const { error: transactionError } = await sb.from('wallet_transactions').insert({
+            wallet_id: wallet.id, user_id: profile.id, amount, type: 'deposit', status: 'completed'
+        });
+        if (transactionError) throw new Error('Wallet balance changed, but transaction history could not be saved. Check the wallet before retrying. ' + transactionError.message);
+        status('adminAddFundsStatus', `Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`, 'ok');
+        $('adminAddFundsMemberId').value = '';
+        $('adminAddFundsAmount').value = '';
+    } catch (e) {
+        status('adminAddFundsStatus', 'Error: ' + e.message, 'error');
     }
 }
 

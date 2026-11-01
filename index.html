@@ -238,6 +238,13 @@ input[type="file"]::file-selector-button:hover {
     background-color: var(--gold) !important;
     color: var(--g) !important;
 }
+/* Auth buttons and product quantity selector */
+.auth-box { display:flex; gap:10px; margin-bottom:15px; }
+.auth-box button { flex:1; margin:0; padding:12px; font-weight:bold; border-radius:10px; border:1px solid var(--line); background:#050a08; color:var(--muted); transition:0.3s; }
+.auth-box button.active { background:var(--gold); color:var(--g); border-color:var(--gold); box-shadow:0 4px 10px rgba(229,184,83,.2); }
+.qty-selector { display:flex; align-items:center; gap:15px; margin-bottom:20px; background:var(--card-bg); padding:10px; border-radius:10px; border:1px solid var(--line); width:max-content; }
+.qty-selector button { background:var(--g2); color:var(--gold); border:1px solid var(--line); width:40px; height:40px; border-radius:8px; font-size:20px; font-weight:bold; cursor:pointer; }
+.qty-selector span { font-size:18px; font-weight:bold; min-width:30px; text-align:center; color:var(--gold); }
 </style>
 </head>
 <body>
@@ -586,20 +593,25 @@ input[type="file"]::file-selector-button:hover {
 <div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel" onclick="openWithdrawRequestsModal()" style="cursor:pointer; border-color: var(--gold);">
     <h2 style="color: var(--gold);">Withdraw Requests</h2>
     <p class="muted" style="margin:0;">Click here to view and manage all withdrawal requests.</p>
-</div>
-<div class="panel" onclick="openWalletDepositsModal()" style="cursor:pointer; border-color: var(--gold);">
-    <h2 style="color: var(--gold);">Wallet Deposit Requests</h2>
-    <p class="muted" style="margin:0;">Click here to view and approve member deposit requests.</p>
-</div>
-<div class="panel" style="border-color: var(--gold);">
-    <h2 style="color: var(--gold);">Direct Wallet Add (Manual)</h2>
-    <p class="muted" style="font-size:12px; margin-bottom:10px;">Since your merchant account is not ready, use this to directly add funds to any member's wallet for testing or manual payments.</p>
-    <label>Member ID or Name</label>
-    <input id="adminAddFundsMemberId" placeholder="Enter Member ID or Name...">
-    <label>Amount (USD)</label>
-    <input id="adminAddFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
+</div><div class="panel" style="border-color:var(--gold);">
+    <h2 style="color:var(--gold);">Direct Wallet Add (Manual)</h2>
+    <p class="muted" style="font-size:12px;margin-bottom:10px;">Use this to add funds to a member wallet for testing or manual payments.</p>
+    <label>Member ID or Name</label><input id="adminAddFundsMemberId" placeholder="Enter Member ID or Name...">
+    <label>Amount (USD)</label><input id="adminAddFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
     <button class="primary" onclick="adminDirectAddFunds()">Add Funds to Member</button>
     <div id="adminAddFundsStatus" class="status hidden"></div>
+</div>
+<div class="panel" style="border-color:#f44336;">
+    <h2 style="color:#f44336;">Direct Wallet Deduct (Manual)</h2>
+    <p class="muted" style="font-size:12px;margin-bottom:10px;">Use this to remove funds from a member wallet, for example if funds were added by mistake.</p>
+    <label>Member ID or Name</label><input id="adminDeductFundsMemberId" placeholder="Enter Member ID or Name...">
+    <label>Amount (USD)</label><input id="adminDeductFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
+    <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds from Member</button>
+    <div id="adminDeductFundsStatus" class="status hidden"></div>
+</div>
+<div class="panel" onclick="openWalletDepositsModal()" style="cursor:pointer;border-color:var(--gold);">
+    <h2 style="color:var(--gold);">Wallet Deposit Requests</h2>
+    <p class="muted" style="margin:0;">Click here to review and approve pending member deposits.</p>
 </div>
 <div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
@@ -634,6 +646,11 @@ input[type="file"]::file-selector-button:hover {
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
         <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
+        <div class="qty-selector">
+            <button type="button" onclick="updateQty(-1)" aria-label="Decrease quantity">−</button>
+            <span id="pvpQtyDisplay">1</span>
+            <button type="button" onclick="updateQty(1)" aria-label="Increase quantity">+</button>
+        </div>
         <!-- VIP Product Highlights -->
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
             <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
@@ -1061,6 +1078,14 @@ function cryptoRandom() {
 }
 
 async function signOut() {
+    if (window.Swal) {
+        const confirmSignOut = await window.Swal.fire({
+            title: 'Sign Out?', text: "Are you sure you want to log out?", icon: 'question',
+            showCancelButton: true, confirmButtonColor: '#e5b853', cancelButtonColor: '#4a1a1a',
+            confirmButtonText: 'Yes, Sign Out', cancelButtonText: 'Cancel', background: '#0d1c14', color: '#e5b853'
+        });
+        if (!confirmSignOut.isConfirmed) return;
+    }
     if (sb) await sb.auth.signOut();
     user = null; isAdmin = false; myProfile = null; totalComm = 0;
     ['nm', 'ns', 'nc', 'nm_self', 'nm_team', 'ns_self', 'ns_team'].forEach(id => { if($(id)) $(id).textContent = '—'; });
@@ -1571,7 +1596,6 @@ async function updateWithdrawalStatus(id, status) {
             confirmButtonColor: '#e5b853'
         });
 
-        // Success popup ka OK dabane ke baad fresh list dobara kholen.
         await openWithdrawRequestsModal();
 
     } catch (e) {
@@ -2084,6 +2108,15 @@ async function addOnlineProduct() {
     await loadProducts(); await loadAdmin();
 }
 
+let productQty = 1;
+
+function updateQty(change) {
+    productQty = Math.max(1, Math.min(10, Number(productQty || 1) + Number(change || 0)));
+    if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = String(productQty);
+    if (checkoutData && $('pvpPrice')) $('pvpPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
+    if ($('coPrice') && checkoutData) $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
+}
+
 function openProductView(index) {
     const products = window.allProductsData || [];
     const p = products[index];
@@ -2152,6 +2185,8 @@ function openProductView(index) {
         relatedSlider.innerHTML = '<div class="muted" style="font-size:13px;">No other products found.</div>';
     }
 
+    productQty = 1;
+    if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = '1';
     checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0], productIndex: index };
     $('productViewPage').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -2267,7 +2302,7 @@ function openCheckoutPage() {
     if (!checkoutData) return;
     $('coImage').src = checkoutData.image || $('pvImageSlider').querySelector('img')?.src || '';
     $('coName').textContent = checkoutData.name;
-    $('coPrice').textContent = convertMoney(checkoutData.price);
+    $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
     const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
     if (selectedPayment) selectedPayment.checked = true;
     loadCheckoutWalletBalance();
@@ -2290,74 +2325,83 @@ async function loadCheckoutWalletBalance() {
 
 async function submitCheckout() {
     if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
-    
     const name = $('coNameInput').value.trim();
     const phone = $('coPhoneInput').value.trim();
     const street = $('coAddressInput').value.trim();
     const city = $('coCityInput').value.trim();
     const postal = $('coPostalInput').value.trim();
     const address = `${street}, ${city} - ${postal}`;
-    
-    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details.');
+    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details (Name, Phone, Street, City, Postal Code).');
 
     const methodInput = document.querySelector('input[name="paymentMethod"]:checked');
     const paymentMethod = methodInput?.value === 'wallet' ? 'wallet' : 'manual';
-
-    // اگر مینوئل پیمنٹ ہے تو پرانا طریقہ کار (بغیر والٹ کے)
-    if (paymentMethod === 'manual') {
-        const btn = $('coSubmitBtn');
-        btn.textContent = 'Processing…';
-        btn.disabled = true;
-        try {
-            const orderPayload = {
-                buyer_id: user.id, buyer_email: user.email || null, product_id: checkoutData.id,
-                quantity: 1, unit_price_pkr: checkoutData.price, phone_number: phone,
-                shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null,
-                payment_method: 'manual'
-            };
-            let result = await sb.from('orders').insert(orderPayload).select('id').single();
-            if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
-                const fallbackPayload = { ...orderPayload };
-                delete fallbackPayload.buyer_email;
-                delete fallbackPayload.payment_method;
-                result = await sb.from('orders').insert(fallbackPayload).select('id').single();
-            }
-            if (result.error) throw new Error('Order failed: ' + result.error.message);
-            currentOrderId = result.data.id;
-
-            history.pushState({ page: 'payment' }, '', '#payment');
-            $('checkoutPage').classList.add('hidden');
-            $('paymentProofPage').classList.remove('hidden');
-            $('payTotalAmount').textContent = convertMoney(checkoutData.price);
-            const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
-            $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
-        } catch (e) {
-            alert('Error: ' + e.message);
-        } finally {
-            btn.textContent = 'Confirm Order';
-            btn.disabled = false;
+    const orderTotal = Number(checkoutData.price || 0) * Number(productQty || 1);
+    let wallet = null;
+    if (paymentMethod === 'wallet') {
+        const { data, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
+        if (error) return alert('Could not check wallet balance: ' + error.message);
+        wallet = data;
+        if (!wallet || Number(wallet.balance || 0) < orderTotal) {
+            return alert('Insufficient wallet balance. Please add funds or choose manual payment.');
         }
-    } 
-    // اگر والٹ سے پیمنٹ ہے تو نیا محفوظ فنکشن (RPC) استعمال کریں
-    else {
-        const btn = $('coSubmitBtn');
-        btn.textContent = 'Processing Wallet Payment…';
-        btn.disabled = true;
+    }
+
+    const btn = $('coSubmitBtn');
+    btn.textContent = 'Processing…';
+    btn.disabled = true;
+    try {
+        const orderPayload = {
+            buyer_id: user.id,
+            buyer_email: user.email || null,
+            product_id: checkoutData.id,
+            quantity: productQty,
+            unit_price_pkr: checkoutData.price,
+            phone_number: phone,
+            shipping_address: address,
+            status: 'pending',
+            referrer_id: myProfile?.referred_by || null,
+            payment_method: paymentMethod
+        };
+        let result = await sb.from('orders').insert(orderPayload).select('id').single();
         
-        try {
-            // اصل قیمت کی تصدیق اور والٹ کی کٹوتی Supabase کے محفوظ RPC میں ہونی چاہیے۔
-            const { data, error } = await sb.rpc('secure_wallet_purchase', {
-                p_product_id: checkoutData.id,
-                p_price: checkoutData.price,
-                p_phone: phone,
-                p_address: address,
-                p_referrer_id: myProfile?.referred_by || null
+        if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
+            const fallbackPayload = { ...orderPayload };
+            delete fallbackPayload.buyer_email;
+            delete fallbackPayload.payment_method;
+            result = await sb.from('orders').insert(fallbackPayload).select('id').single();
+        }
+        
+        if (result.error) throw new Error('Order failed: ' + result.error.message);
+        currentOrderId = result.data.id;
+
+        if (paymentMethod === 'wallet') {
+            const oldBalance = Number(wallet.balance || 0);
+            const newBalance = oldBalance - orderTotal;
+            const { data: updatedWallet, error: debitError } = await sb.from('wallets')
+                .update({ balance: newBalance }).eq('id', wallet.id).eq('balance', oldBalance).select('balance').maybeSingle();
+            
+            if (debitError || !updatedWallet) {
+                alert('Order was created, but wallet payment could not be completed. Please contact admin with Order ID: ' + currentOrderId);
+                history.pushState({ page: 'payment' }, '', '#payment');
+                $('checkoutPage').classList.add('hidden');
+                $('paymentProofPage').classList.remove('hidden');
+                $('payTotalAmount').textContent = convertMoney(orderTotal);
+                status('proofStatus', 'Wallet debit failed. Do not pay twice; contact admin with Order ID ' + currentOrderId + '.', 'error');
+                return;
+            }
+            
+            const { error: txnError } = await sb.from('wallet_transactions').insert({
+                wallet_id: wallet.id, user_id: user.id, amount: orderTotal,
+                type: 'purchase', status: 'completed', order_id: currentOrderId
             });
-
-            if (error) throw new Error(error.message);
-            if (!data?.ok) throw new Error(data?.error || 'Secure wallet purchase failed.');
-
-            alert('Order placed successfully! Your wallet has been charged.');
+            if (txnError) console.error('Wallet transaction log failed:', txnError.message);
+            
+            const { error: confirmError } = await sb.from('orders').update({ status: 'confirmed' }).eq('id', currentOrderId);
+            if (confirmError) console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
+            
+            alert(confirmError
+                ? 'Wallet was charged, but order status could not be updated. Please contact admin with Order ID: ' + currentOrderId
+                : 'Order placed and wallet payment processed successfully.');
             
             $('checkoutPage').classList.add('hidden');
             $('productViewPage').classList.add('hidden');
@@ -2365,13 +2409,19 @@ async function submitCheckout() {
             checkoutData = null;
             await loadMyWallet();
             tab('my-wallet');
-
-        } catch (e) {
-            alert('Payment Failed: ' + e.message);
-        } finally {
-            btn.textContent = 'Confirm & Place Order';
-            btn.disabled = false;
+        } else {
+            history.pushState({ page: 'payment' }, '', '#payment');
+            $('checkoutPage').classList.add('hidden');
+            $('paymentProofPage').classList.remove('hidden');
+            $('payTotalAmount').textContent = convertMoney(orderTotal);
+            const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
+            $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
         }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    } finally {
+        btn.textContent = 'Confirm Order';
+        btn.disabled = false;
     }
 }
 
@@ -2518,181 +2568,123 @@ async function deleteReview(reviewId) {
     await loadAdmin();
 }
 
-// Admin: show pending wallet deposit requests with payment screenshots.
 async function openWalletDepositsModal() {
     if (!isAdmin) return alert('Admin access required.');
     if (!sb) return alert('Database connection is not available.');
-
-    Swal.fire({
-        title: 'Loading Deposits...',
-        allowOutsideClick: false,
-        background: '#0d1c14',
-        color: '#e5b853',
-        didOpen: () => { Swal.showLoading(); }
-    });
-
+    Swal.fire({ title: 'Loading Deposits...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => { Swal.showLoading(); } });
     try {
-        const { data, error } = await sb.from('wallet_transactions')
-            .select('*, profiles(full_name)')
-            .eq('type', 'deposit')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
+        const { data, error } = await sb.from('wallet_transactions').select('*, profiles(full_name)')
+            .eq('type', 'deposit').eq('status', 'pending').order('created_at', { ascending: false });
         if (error) throw error;
-
         let htmlContent = '<div style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-        if (!data || data.length === 0) {
-            htmlContent += '<p style="text-align:center;color:#aaa;">No pending deposit requests found.</p>';
-        } else {
-            data.forEach(w => {
-                const proofUrl = String(w.screenshot_url || '');
-                const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
-                const proofLink = safeProofUrl
-                    ? `<a href="${safeProofUrl}" target="_blank" rel="noopener noreferrer" style="color:#4CAF50;text-decoration:underline;">View Screenshot</a>`
-                    : '<span style="color:#aaa;">No screenshot available</span>';
-                htmlContent += `
-                    <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                            <b style="color:#e5b853;font-size:14px;">${esc(w.profiles?.full_name || 'User')}</b>
-                            <span style="color:#ffcc00;font-weight:bold;font-size:12px;">PENDING</span>
-                        </div>
-                        <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;">
-                            <b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br>
-                            <b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}<br>
-                            <b>Proof:</b> ${proofLink}
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:10px;">
-                            <button onclick="approveWalletDeposit('${esc(w.id)}', '${esc(w.user_id)}', ${Number(w.amount) || 0})" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button>
-                            <button onclick="rejectWalletDeposit('${esc(w.id)}')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button>
-                        </div>
-                    </div>`;
-            });
-        }
+        if (!data || data.length === 0) htmlContent += '<p style="text-align:center;color:#aaa;">No pending deposit requests found.</p>';
+        else data.forEach(w => {
+            const proofUrl = String(w.screenshot_url || '');
+            const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
+            const proofLink = safeProofUrl ? `<a href="${safeProofUrl}" target="_blank" rel="noopener" style="color:#4CAF50;text-decoration:underline;">View Screenshot</a>` : '<span style="color:#aaa;">No screenshot</span>';
+            htmlContent += `<div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><b style="color:#e5b853;font-size:14px;">${esc(w.profiles?.full_name || 'Member')}</b><span style="color:#ffcc00;font-weight:bold;font-size:12px;">PENDING</span></div>
+                <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;"><b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br><b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}<br><b>Proof:</b> ${proofLink}</div>
+                <div style="display:flex;gap:8px;margin-top:10px;"><button onclick="approveWalletDeposit('${esc(w.id)}','${esc(w.user_id)}')" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button><button onclick="rejectWalletDeposit('${esc(w.id)}')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button></div>
+            </div>`;
+        });
         htmlContent += '</div>';
-
-        await Swal.fire({
-            title: 'Wallet Deposits',
-            html: htmlContent,
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853',
-            confirmButtonText: 'Close',
-            width: '600px'
-        });
+        await Swal.fire({ title:'Wallet Deposits', html:htmlContent, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853', confirmButtonText:'Close', width:'600px' });
     } catch (e) {
-        await Swal.fire({
-            icon: 'error', title: 'Error', text: e.message || 'Could not load deposits.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not load deposits.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     }
 }
 
-// Approve a pending deposit and credit the member wallet.
-async function approveWalletDeposit(txnId, userId, amount) {
+async function approveWalletDeposit(txnId, userId) {
     if (!isAdmin || !sb) return alert('Admin access required.');
     let claimed = false;
+    let balanceUpdated = false;
     try {
-        const { data: claimedTxn, error: claimError } = await sb.from('wallet_transactions')
-            .update({ status: 'processing' })
-            .eq('id', txnId).eq('user_id', userId).eq('type', 'deposit').eq('status', 'pending')
-            .select('id, amount').maybeSingle();
+        const { data: txn, error: claimError } = await sb.from('wallet_transactions').update({ status:'processing' })
+            .eq('id',txnId).eq('user_id',userId).eq('type','deposit').eq('status','pending').select('id,amount').maybeSingle();
         if (claimError) throw claimError;
-        if (!claimedTxn) throw new Error('This deposit has already been processed. Refresh the list.');
+        if (!txn) throw new Error('This deposit has already been processed. Refresh the list.');
         claimed = true;
-        const depositAmount = Number(claimedTxn.amount);
-        if (!Number.isFinite(depositAmount) || depositAmount <= 0) throw new Error('Invalid amount stored for this deposit.');
-
-        const { data: wallet, error: walletError } = await sb.from('wallets')
-            .select('id, balance').eq('user_id', userId).maybeSingle();
+        const amount = Number(txn.amount);
+        if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid deposit amount.');
+        const { data: wallet, error: walletError } = await sb.from('wallets').select('id,balance').eq('user_id',userId).maybeSingle();
         if (walletError) throw walletError;
         if (!wallet) throw new Error('Member wallet was not found.');
-        const newBalance = Number(wallet.balance || 0) + depositAmount;
-        const { error: balanceError } = await sb.from('wallets')
-            .update({ balance: newBalance }).eq('id', wallet.id);
+        const oldBalance = Number(wallet.balance || 0);
+        const { data: updated, error: balanceError } = await sb.from('wallets').update({ balance:oldBalance + amount }).eq('id',wallet.id).eq('balance',oldBalance).select('id').maybeSingle();
         if (balanceError) throw balanceError;
-        const { error: completeError } = await sb.from('wallet_transactions')
-            .update({ status: 'completed' }).eq('id', txnId).eq('status', 'processing');
-        if (completeError) throw new Error('Wallet balance was updated, but transaction status could not be completed. Do not approve again; check this transaction manually. ' + completeError.message);
+        if (!updated) throw new Error('Wallet balance changed concurrently. Refresh and review before retrying.');
+        balanceUpdated = true;
+        const { error: completeError } = await sb.from('wallet_transactions').update({status:'completed'}).eq('id',txnId).eq('status','processing');
+        if (completeError) throw new Error('Wallet was updated but deposit status could not be completed. Check this transaction manually. '+completeError.message);
         claimed = false;
-        await Swal.fire({ icon: 'success', title: 'Approved!', text: 'Amount added to member wallet.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        await Swal.fire({icon:'success',title:'Approved!',text:'Amount added to member wallet.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
         await openWalletDepositsModal();
     } catch (e) {
-        if (claimed && !String(e.message || '').includes('Wallet balance was updated')) {
-            const { error: releaseError } = await sb.from('wallet_transactions')
-                .update({ status: 'pending' }).eq('id', txnId).eq('status', 'processing');
-            if (releaseError) e.message += ' Could not reset request to pending: ' + releaseError.message;
-        }
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not approve deposit.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        if (claimed && !balanceUpdated) await sb.from('wallet_transactions').update({status:'pending'}).eq('id',txnId).eq('status','processing');
+        await Swal.fire({icon:'error',title:'Error',text:e.message || 'Could not approve deposit.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
         await openWalletDepositsModal();
     }
 }
 
-// Reject a pending deposit request.
 async function rejectWalletDeposit(txnId) {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    try {
-        const { data, error } = await sb.from('wallet_transactions')
-            .update({ status: 'rejected' })
-            .eq('id', txnId).eq('type', 'deposit').eq('status', 'pending')
-            .select('id').maybeSingle();
-        if (error) throw error;
-        if (!data) throw new Error('This deposit has already been processed or no longer exists.');
-
-        await Swal.fire({
-            icon: 'success', title: 'Rejected', text: 'Deposit request rejected.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
-        await openWalletDepositsModal();
-    } catch (e) {
-        await Swal.fire({
-            icon: 'error', title: 'Error', text: e.message || 'Could not reject deposit.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
-        await openWalletDepositsModal();
-    }
+    const { error } = await sb.from('wallet_transactions').update({status:'rejected'}).eq('id',txnId).eq('type','deposit').eq('status','pending');
+    if (error) return Swal.fire({icon:'error',title:'Error',text:error.message,background:'#0d1c14',color:'#e5b853'});
+    await Swal.fire({icon:'success',title:'Rejected',text:'Deposit request rejected.',background:'#0d1c14',color:'#e5b853'});
+    await openWalletDepositsModal();
 }
 
-// Admin: manually add funds to a member wallet for testing/manual payments.
+async function findAdminWalletMember(memberInput) {
+    let query = sb.from('profiles').select('id,full_name');
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberInput);
+    query = uuid ? query.eq('id',memberInput) : query.or(`member_code.eq.${memberInput},full_name.ilike.%${memberInput}%`);
+    const {data,error} = await query.maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Member not found. Please use Member ID or exact name.');
+    return data;
+}
+
 async function adminDirectAddFunds() {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    const memberInput = $('adminAddFundsMemberId').value.trim();
-    const amount = Number($('adminAddFundsAmount').value);
-    if (!memberInput) return status('adminAddFundsStatus', 'Please enter Member ID or Name.', 'error');
-    if (!Number.isFinite(amount) || amount <= 0) return status('adminAddFundsStatus', 'Please enter a valid amount.', 'error');
-    status('adminAddFundsStatus', 'Processing...');
+    const memberInput=$('adminAddFundsMemberId').value.trim(), amount=Number($('adminAddFundsAmount').value);
+    if (!memberInput) return status('adminAddFundsStatus','Please enter Member ID or Name.','error');
+    if (!Number.isFinite(amount) || amount<=0) return status('adminAddFundsStatus','Please enter a valid amount.','error');
+    status('adminAddFundsStatus','Processing...');
     try {
-        // This app's profiles fields expose member_code and full_name; auth email is not available here.
-        let profileQuery = sb.from('profiles').select('id, full_name');
-        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberInput);
-        if (looksLikeUuid) profileQuery = profileQuery.eq('id', memberInput);
-        else profileQuery = profileQuery.or(`member_code.eq.${memberInput},full_name.ilike.%${memberInput}%`);
-        const { data: profile, error: profileError } = await profileQuery.maybeSingle();
-        if (profileError) throw new Error(profileError.message);
-        if (!profile) throw new Error('Member not found. Please check the Member ID or Name.');
+        const profile=await findAdminWalletMember(memberInput);
+        let {data:wallet,error}=await sb.from('wallets').select('id,balance').eq('user_id',profile.id).maybeSingle();
+        if(error) throw error;
+        if(!wallet){const r=await sb.from('wallets').insert({user_id:profile.id,balance:amount}).select('id,balance').single();if(r.error)throw r.error;wallet=r.data;}
+        else {const old=Number(wallet.balance||0);const r=await sb.from('wallets').update({balance:old+amount}).eq('id',wallet.id).eq('balance',old).select('id').maybeSingle();if(r.error)throw r.error;if(!r.data)throw new Error('Wallet changed concurrently. Please retry.');}
+        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'deposit',status:'completed'});
+        if(logError) throw new Error('Balance changed but history could not be saved; do not retry until checked. '+logError.message);
+        status('adminAddFundsStatus',`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`,'ok');
+        $('adminAddFundsMemberId').value='';$('adminAddFundsAmount').value='';
+    } catch(e){status('adminAddFundsStatus','Error: '+e.message,'error');}
+}
 
-        let { data: wallet, error: walletError } = await sb.from('wallets')
-            .select('id, balance').eq('user_id', profile.id).maybeSingle();
-        if (walletError) throw walletError;
-        if (!wallet) {
-            const { data: newWallet, error: createError } = await sb.from('wallets')
-                .insert({ user_id: profile.id, balance: amount }).select('id, balance').single();
-            if (createError) throw createError;
-            wallet = newWallet;
-        } else {
-            const newBalance = Number(wallet.balance || 0) + amount;
-            const { error: updateError } = await sb.from('wallets')
-                .update({ balance: newBalance }).eq('id', wallet.id);
-            if (updateError) throw updateError;
-        }
-        const { error: transactionError } = await sb.from('wallet_transactions').insert({
-            wallet_id: wallet.id, user_id: profile.id, amount, type: 'deposit', status: 'completed'
-        });
-        if (transactionError) throw new Error('Wallet balance changed, but transaction history could not be saved. Check the wallet before retrying. ' + transactionError.message);
-        status('adminAddFundsStatus', `Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`, 'ok');
-        $('adminAddFundsMemberId').value = '';
-        $('adminAddFundsAmount').value = '';
-    } catch (e) {
-        status('adminAddFundsStatus', 'Error: ' + e.message, 'error');
-    }
+async function adminDirectDeductFunds() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const memberInput=$('adminDeductFundsMemberId').value.trim(), amount=Number($('adminDeductFundsAmount').value);
+    if (!memberInput) return status('adminDeductFundsStatus','Please enter Member ID or Name.','error');
+    if (!Number.isFinite(amount) || amount<=0) return status('adminDeductFundsStatus','Please enter a valid amount.','error');
+    status('adminDeductFundsStatus','Processing...');
+    try {
+        const profile=await findAdminWalletMember(memberInput);
+        const {data:wallet,error}=await sb.from('wallets').select('id,balance').eq('user_id',profile.id).maybeSingle();
+        if(error) throw error;
+        if(!wallet) throw new Error('Wallet not found.');
+        const old=Number(wallet.balance||0);
+        if(old<amount) throw new Error('Member wallet does not have enough balance.');
+        const {data:updated,error:updateError}=await sb.from('wallets').update({balance:old-amount}).eq('id',wallet.id).eq('balance',old).select('id').maybeSingle();
+        if(updateError) throw updateError;
+        if(!updated) throw new Error('Wallet balance changed concurrently. Please retry.');
+        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'purchase',status:'completed'});
+        if(logError) throw new Error('Funds were deducted but history could not be saved. Check before retrying. '+logError.message);
+        status('adminDeductFundsStatus',`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`,'ok');
+        $('adminDeductFundsMemberId').value='';$('adminDeductFundsAmount').value='';
+    } catch(e){status('adminDeductFundsStatus','Error: '+e.message,'error');}
 }
 
 function restoreHistoryPage(page) {

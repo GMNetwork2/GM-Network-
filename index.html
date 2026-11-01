@@ -1600,10 +1600,23 @@ async function updateWithdrawalStatus(id, status) {
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
-        await Swal.fire({ icon:'success', title:'Success', text:'Request has been ' + status + '!', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
-        await openWithdrawRequestsModal();
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Request has been ' + status + '!',
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853'
+        });
     } catch (e) {
-        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: e.message || 'Could not update withdrawal request.',
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853'
+        });
     }
 }
 
@@ -2655,12 +2668,24 @@ async function approveWalletDeposit(txnId, userId) {
         const { error: completeError } = await sb.from('wallet_transactions').update({status:'completed'}).eq('id',txnId).eq('status','processing');
         if (completeError) throw new Error('Wallet was updated but deposit status could not be completed. Check this transaction manually. '+completeError.message);
         claimed = false;
-        await Swal.fire({icon:'success',title:'Approved!',text:'Amount added to member wallet.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
-        await openWalletDepositsModal();
+        await Swal.fire({
+            icon:'success',
+            title:'Approved!',
+            text:'Amount added to member wallet.',
+            background:'#0d1c14',
+            color:'#e5b853',
+            confirmButtonColor:'#e5b853'
+        });
     } catch (e) {
         if (claimed && !balanceUpdated) await sb.from('wallet_transactions').update({status:'pending'}).eq('id',txnId).eq('status','processing');
-        await Swal.fire({icon:'error',title:'Error',text:e.message || 'Could not approve deposit.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
-        await openWalletDepositsModal();
+        await Swal.fire({
+            icon:'error',
+            title:'Error',
+            text:e.message || 'Could not approve deposit.',
+            background:'#0d1c14',
+            color:'#e5b853',
+            confirmButtonColor:'#e5b853'
+        });
     }
 }
 

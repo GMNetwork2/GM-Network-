@@ -1556,7 +1556,10 @@ async function updateWithdrawalStatus(id, status) {
             confirmButtonColor: '#e5b853'
         });
 
-        await openWithdrawRequestsModal();
+        // Popup close hone ke baad choti si delay ke sath list dobara kholen.
+        setTimeout(() => {
+            openWithdrawRequestsModal();
+        }, 300);
 
     } catch (e) {
         Swal.fire({

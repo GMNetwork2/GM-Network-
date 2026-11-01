@@ -583,7 +583,10 @@ input[type="file"]::file-selector-button:hover {
 </div>
 
 <div class="panel"><h2>Customer Reviews (Pending Approval)</h2><div id="adminPendingReviews" class="muted">Loading reviews…</div></div>
-<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel"><h2>Withdraw Requests</h2><div id="adminWithdrawals" class="muted">No requests yet.</div></div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
+<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel" onclick="openWithdrawRequestsModal()" style="cursor:pointer; border-color: var(--gold);">
+    <h2 style="color: var(--gold);">Withdraw Requests</h2>
+    <p class="muted" style="margin:0;">Click here to view and manage all withdrawal requests.</p>
+</div><div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
 
 <!-- WhatsApp Floating Button -->
@@ -1462,6 +1465,109 @@ async function uploadPaymentProof() {
     const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', currentOrderId);
     if (updateError) status('uploadStatus', 'Database update failed: ' + updateError.message, 'error');
     else { status('uploadStatus', '✅ Proof submitted successfully!', 'ok'); setTimeout(() => closeModal(), 3000); }
+}
+
+// Withdraw Requests Modal Open Function
+async function openWithdrawRequestsModal() {
+    if (!isAdmin) return alert('Admin access required.');
+
+    Swal.fire({
+        title: 'Loading Requests...',
+        allowOutsideClick: false,
+        background: '#0d1c14',
+        color: '#e5b853',
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const { data, error } = await sb.from('withdrawals')
+            .select('*, profiles(full_name)')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+
+        let htmlContent = '<div style="max-height: 60vh; overflow-y: auto; text-align: left; padding-right: 5px;">';
+
+        if (!data || data.length === 0) {
+            htmlContent += '<p style="text-align: center; color: #aaa;">No withdrawal requests found.</p>';
+        } else {
+            data.forEach(w => {
+                const statusColor = w.status === 'pending' ? '#ffcc00' : (w.status === 'approved' ? '#4CAF50' : '#f44336');
+                htmlContent += `
+                    <div style="border: 1px solid #1f3a2c; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #0a1f15;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                            <b style="color: #e5b853; font-size: 14px;">${esc(w.profiles?.full_name || 'User')}</b>
+                            <span style="color: ${statusColor}; font-weight: bold; text-transform: uppercase; font-size: 12px;">${esc(w.status || 'pending')}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #aaa; margin-bottom: 8px; line-height: 1.5;">
+                            <b>Amount:</b> <span style="color: #e5b853; font-size: 16px;">$${esc(w.amount ?? '0')}</span><br>
+                            <b>Account:</b> ${esc(w.account_details || '—')}<br>
+                            <b>Date:</b> ${w.created_at ? new Date(w.created_at).toLocaleString() : '—'}
+                        </div>
+                        ${w.status === 'pending' ? `
+                            <div style="display:flex; gap: 8px; margin-top: 10px;">
+                                <button onclick="updateWithdrawalStatus('${esc(w.id)}', 'approved')" style="flex:1; background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Approve</button>
+                                <button onclick="updateWithdrawalStatus('${esc(w.id)}', 'rejected')" style="flex:1; background: #f44336; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Reject</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
+        htmlContent += '</div>';
+
+        await Swal.fire({
+            title: 'Withdrawal Requests',
+            html: htmlContent,
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853',
+            confirmButtonText: 'Close',
+            width: '600px'
+        });
+
+    } catch (e) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: e.message,
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853'
+        });
+    }
+}
+
+// Update Withdrawal Status Function
+async function updateWithdrawalStatus(id, status) {
+    if (!isAdmin) return alert('Admin access required.');
+    if (!['approved', 'rejected'].includes(status)) return alert('Invalid withdrawal status.');
+
+    try {
+        const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
+        if (error) throw error;
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Request has been ' + status + '!',
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853'
+        });
+
+        await openWithdrawRequestsModal();
+
+    } catch (e) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: e.message,
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853'
+        });
+    }
 }
 
 async function loadAdmin() {

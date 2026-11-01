@@ -223,6 +223,21 @@ body { overflow-x: hidden; }
 #paymentProofPage > div > div:nth-child(3) h2 { color: var(--gold) !important; }
 #paymentProofPage > div > div:nth-child(4) { background: var(--card-bg) !important; border: 1px solid var(--line) !important; }
 #paymentProofPage > div > div:nth-child(5) { background: #0a1f15 !important; border: 1px solid var(--line) !important; color: var(--gold) !important; }
+/* Custom File Input Style */
+input[type="file"]::file-selector-button {
+    background-color: var(--g2) !important;
+    color: var(--gold) !important;
+    border: 1px solid var(--gold) !important;
+    border-radius: 6px !important;
+    padding: 6px 12px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+    margin-right: 10px !important;
+}
+input[type="file"]::file-selector-button:hover {
+    background-color: var(--gold) !important;
+    color: var(--g) !important;
+}
 </style>
 </head>
 <body>
@@ -1718,7 +1733,19 @@ async function updateOrderStatus(orderId, newStatus) {
         }
     }
 
-    alert('Order status updated to ' + newStatus + ' and coins distributed to all uplines.');
+    if (window.Swal) {
+        window.Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: 'Order status updated to ' + newStatus + ' and coins distributed to all uplines.',
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853',
+            confirmButtonText: 'OK'
+        });
+    } else {
+        alert('Order status updated to ' + newStatus + ' and coins distributed to all uplines.');
+    }
     closeOrderDetailModal();
     await loadAdmin();
 }

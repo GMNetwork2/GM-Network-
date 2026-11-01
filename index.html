@@ -698,7 +698,7 @@ body { overflow-x: hidden; }
         <footer style="background:#111;color:#fff;padding:40px 20px;margin:30px -20px -20px;border-radius:20px 20px 0 0;">
             <div style="text-align:center;margin-bottom:30px;">
                 <div style="display:inline-flex;align-items:center;gap:10px;">
-                    <div style="background:var(--gold);color:var(--g);width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;box-shadow:0 0 15px rgba(240,189,85,.5);">GM</div>
+                    <img src="logo.png?v=4" alt="GM Network Logo" style="width:50px; height:50px; border-radius:12px; object-fit:cover; box-shadow:0 0 15px rgba(240,189,85,.5); background:#fff;">
                     <span style="font-size:26px;font-weight:900;letter-spacing:1px;">GM Network</span>
                 </div>
                 <p style="color:#aaa;font-size:13px;margin-top:10px;">Your Trusted Partner for Premium Products</p>
@@ -1625,7 +1625,10 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
         btn.className = 'primary';
         btn.style.marginTop = '10px';
         btn.textContent = 'Save Order Status';
-        btn.setAttribute('onclick', `updateOrderStatus(${JSON.stringify(String(id))}, document.getElementById('admin-status-dropdown').value)`);
+        btn.onclick = () => {
+            const selectedStatus = document.getElementById('admin-status-dropdown').value;
+            updateOrderStatus(id, selectedStatus);
+        };
         actionDiv.append(label, select, btn);
     }
     $('orderDetailModal').classList.remove('hidden');
@@ -1869,6 +1872,7 @@ function openProductView(index) {
     const products = window.allProductsData || [];
     const p = products[index];
     if (!p) return;
+    history.pushState({ page: 'product' }, '', '#product');
 
     const imgs = Array.isArray(p.images) && p.images.length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
     const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
@@ -2034,6 +2038,7 @@ function closeProductView() {
     checkoutData = null;
     const waBtn = document.querySelector('.whatsapp-float');
     if (waBtn) waBtn.style.display = 'flex';
+    history.replaceState({ page: 'home' }, '', window.location.pathname);
 }
 
 function backToProductView() {
@@ -2050,6 +2055,7 @@ function openCheckoutPage() {
     const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
     if (selectedPayment) selectedPayment.checked = true;
     loadCheckoutWalletBalance();
+    history.pushState({ page: 'checkout' }, '', '#checkout');
     $('productViewPage').classList.add('hidden');
     $('checkoutPage').classList.remove('hidden');
 }
@@ -2124,6 +2130,7 @@ async function submitCheckout() {
             
             if (debitError || !updatedWallet) {
                 alert('Order was created, but wallet payment could not be completed. Please contact admin with Order ID: ' + currentOrderId);
+                history.pushState({ page: 'payment' }, '', '#payment');
                 $('checkoutPage').classList.add('hidden');
                 $('paymentProofPage').classList.remove('hidden');
                 $('payTotalAmount').textContent = convertMoney(checkoutData.price);
@@ -2151,6 +2158,7 @@ async function submitCheckout() {
             await loadMyWallet();
             tab('my-wallet');
         } else {
+            history.pushState({ page: 'payment' }, '', '#payment');
             $('checkoutPage').classList.add('hidden');
             $('paymentProofPage').classList.remove('hidden');
             $('payTotalAmount').textContent = convertMoney(checkoutData.price);
@@ -2307,6 +2315,18 @@ async function deleteReview(reviewId) {
     alert('Review deleted.');
     await loadAdmin();
 }
+
+window.addEventListener('popstate', () => {
+    if (!$('paymentProofPage').classList.contains('hidden')) {
+        $('paymentProofPage').classList.add('hidden');
+        if (checkoutData) $('checkoutPage').classList.remove('hidden');
+        else document.body.style.overflow = '';
+    } else if (!$('checkoutPage').classList.contains('hidden')) {
+        backToProductView();
+    } else if (!$('productViewPage').classList.contains('hidden')) {
+        closeProductView();
+    }
+});
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

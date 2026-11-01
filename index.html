@@ -610,6 +610,11 @@ input[type="file"]::file-selector-button:hover {
     <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds from Member</button>
     <div id="adminDeductFundsStatus" class="status hidden"></div>
 </div>
+<div class="panel" style="border-color:#2196F3;">
+    <h2 style="color:#2196F3;">Master History (All Transactions)</h2>
+    <p class="muted" style="font-size:12px;margin-bottom:10px;">Review withdrawals, wallet deposits and purchases, plus recent orders. Financial reversals require a protected database transaction.</p>
+    <button class="primary" type="button" onclick="openMasterHistory()" style="background:#2196F3;color:white;">View Master History</button>
+</div>
 <div class="panel" style="border-color: var(--gold);">
     <h2 style="color: var(--gold);">Wallet Transaction History (Audit)</h2>
     <p class="muted" style="font-size:12px;margin-bottom:10px;">View the complete deposit and purchase history of any member to help review wallet activity.</p>
@@ -2448,17 +2453,31 @@ async function loadMyWallet() {
     const currentBalance = Number(wallet?.balance || 0);
     $('walletBalance').textContent = convertMoney(currentBalance);
     if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(currentBalance);
+
     const { data: txns, error: txnError } = await sb.from('wallet_transactions')
         .select('id,type,amount,status,created_at')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(10);
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(15);
+
     if (txnError) {
         $('walletTransactions').textContent = 'Could not load transactions: ' + txnError.message;
     } else {
-        $('walletTransactions').innerHTML = (txns || []).map(t => `
+        $('walletTransactions').innerHTML = (txns || []).map(t => {
+            const type = String(t.type || '').toLowerCase();
+            const isDeposit = type === 'deposit';
+            const isWithdrawal = type === 'withdrawal';
+            const title = isDeposit ? '➕ Deposit' : (isWithdrawal ? '💸 Withdrawal' : (type === 'purchase' ? '➖ Purchase' : 'Transaction'));
+            const positive = isDeposit;
+            const amountColor = positive ? 'green' : 'red';
+            const sign = positive ? '+' : (isWithdrawal || type === 'purchase' ? '-' : '');
+            return `
             <div class="item" style="cursor:default;">
-                <div><b>${t.type === 'deposit' ? '➕ Deposit' : '➖ Purchase'}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
-                <div style="text-align:right;"><b style="color:${t.type === 'deposit' ? 'green' : 'red'};">${t.type === 'deposit' ? '+' : '-'}${esc(convertMoney(t.amount))}</b><br><span class="pill">${esc(t.status || 'pending')}</span></div>
-            </div>`).join('') || '<p>No transactions yet.</p>';
+                <div><b>${title}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
+                <div style="text-align:right;">
+                    <b style="color:${amountColor};">${sign}${esc(convertMoney(t.amount))}</b><br>
+                    <span class="pill">${esc(t.status || 'pending')}</span>
+                </div>
+            </div>`;
+        }).join('') || '<p>No transactions yet.</p>';
     }
     $('walletStatus').classList.add('hidden');
 }
@@ -2846,6 +2865,87 @@ window.addEventListener('popstate', (event) => {
 // returns through the app's screens instead of immediately leaving the app.
 if (!history.state || !history.state.page) {
     history.replaceState({ page: 'home' }, '', window.location.pathname + window.location.search + window.location.hash);
+}
+
+// Admin master history: read-only financial ledger plus recent orders.
+// Reversals are intentionally not performed in the browser because wallet balance
+// changes and ledger status changes must be atomic and protected by a database RPC.
+async function openMasterHistory() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    Swal.fire({ title:'Loading All History...', allowOutsideClick:false, background:'#0d1c14', color:'#e5b853', didOpen:() => Swal.showLoading() });
+    try {
+        const [wRes, tRes, oRes] = await Promise.all([
+            sb.from('withdrawals').select('*').order('created_at', { ascending:false }).limit(50),
+            sb.from('wallet_transactions').select('*').order('created_at', { ascending:false }).limit(100),
+            sb.from('orders').select('id,buyer_id,unit_price_pkr,status,created_at').order('created_at', { ascending:false }).limit(50)
+        ]);
+        if (wRes.error) throw wRes.error;
+        if (tRes.error) throw tRes.error;
+        if (oRes.error) throw oRes.error;
+
+        const ids = [...new Set([
+            ...(wRes.data || []).map(x => x.user_id),
+            ...(tRes.data || []).map(x => x.user_id),
+            ...(oRes.data || []).map(x => x.buyer_id)
+        ].filter(Boolean))];
+        const names = {};
+        if (ids.length) {
+            const { data: profiles, error: pErr } = await sb.from('profiles').select('id,full_name').in('id', ids);
+            if (pErr) throw pErr;
+            (profiles || []).forEach(p => names[p.id] = p.full_name || 'Member');
+        }
+        const escText = v => esc(String(v ?? '—'));
+        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+        html += '<h3 style="color:#e5b853;">Withdrawals</h3>';
+        if (!(wRes.data || []).length) html += '<p style="color:#aaa;">No withdrawals found.</p>';
+        (wRes.data || []).forEach(w => {
+            const st = String(w.status || 'pending');
+            const canMarkRejected = st.toLowerCase() === 'approved';
+            html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
+                <b style="color:#e5b853;">${escText(names[w.user_id] || 'Member')}</b>
+                <span style="float:right;">${escText(st)}</span><br>
+                <small>Amount: ${escText(convertMoney(w.amount ?? 0))} | ${escText(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}</small>
+                ${canMarkRejected ? `<div><button type="button" onclick="markWithdrawalRejected('${escText(w.id)}')" style="margin-top:8px;background:#f44336;color:white;border:0;padding:7px 10px;border-radius:5px;">Mark Rejected</button></div>` : ''}
+            </div>`;
+        });
+        html += '<h3 style="color:#e5b853;margin-top:18px;">Wallet Transactions (Deposits & Purchases)</h3>';
+        if (!(tRes.data || []).length) html += '<p style="color:#aaa;">No wallet transactions found.</p>';
+        (tRes.data || []).forEach(t => {
+            html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
+                <b style="color:#e5b853;">${escText(names[t.user_id] || 'Member')}</b>
+                <span style="float:right;">${escText(t.status || 'pending')}</span><br>
+                <small>${escText(t.type || 'transaction')} | ${escText(convertMoney(t.amount ?? 0))} | ${escText(t.created_at ? new Date(t.created_at).toLocaleString() : '—')}</small>
+            </div>`;
+        });
+        html += '<h3 style="color:#e5b853;margin-top:18px;">Recent Orders</h3>';
+        if (!(oRes.data || []).length) html += '<p style="color:#aaa;">No orders found.</p>';
+        (oRes.data || []).forEach(o => {
+            html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
+                <b style="color:#e5b853;">${escText(names[o.buyer_id] || 'Member')}</b>
+                <span style="float:right;">${escText(o.status || '—')}</span><br>
+                <small>Order: ${escText(String(o.id || '').slice(-8))} | ${escText(o.unit_price_pkr ?? '—')} | ${escText(o.created_at ? new Date(o.created_at).toLocaleString() : '—')}</small>
+            </div>`;
+        });
+        html += '<p style="color:#ffcc00;font-size:12px;margin-top:12px;">Note: This screen is an audit view. Do not reverse a deposit by simply subtracting its amount: the member may have spent the funds. A secure, atomic Supabase RPC is required.</p></div>';
+        await Swal.fire({ title:'Master History', html, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853', confirmButtonText:'Close', width:'650px' });
+    } catch (e) {
+        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not load master history.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+    }
+}
+
+async function markWithdrawalRejected(id) {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const confirmResult = await Swal.fire({ title:'Mark withdrawal rejected?', text:'This changes the request status only; it does not move money.', icon:'warning', showCancelButton:true, confirmButtonColor:'#f44336', background:'#0d1c14', color:'#e5b853' });
+    if (!confirmResult.isConfirmed) return;
+    try {
+        const { data, error } = await sb.from('withdrawals').update({ status:'rejected' }).eq('id', id).eq('status','approved').select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('The request was changed already or could not be found. Refresh history.');
+        await Swal.fire({ icon:'success', title:'Updated', text:'Withdrawal status marked as rejected. No wallet balance was changed.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        await openMasterHistory();
+    } catch (e) {
+        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

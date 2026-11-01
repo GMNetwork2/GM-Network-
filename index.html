@@ -937,11 +937,19 @@ function tab(id, skipHistory = false) {
         return;
     }
 
-    // Sign-in prompt: show the sign-in form directly to avoid reopening the same guard.
-    if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) {
+    // Sign-in guard: account page remains accessible so the user can sign in.
+    if (['my-account', 'my-wallet', 'team'].includes(id) && !user) {
         if (window.Swal) {
-            Swal.fire({icon:'warning',title:'Sign In Required',text:'Please sign in first to access this page.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853',confirmButtonText:'Go to Sign In'}).then((result) => {
-                if (result.isConfirmed && id !== 'account') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sign In Required',
+                text: 'Please sign in first to access this page.',
+                background: '#0d1c14',
+                color: '#e5b853',
+                confirmButtonColor: '#e5b853',
+                confirmButtonText: 'Go to Sign In'
+            }).then((result) => {
+                if (result.isConfirmed) {
                     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'account'));
                     document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === 'account'));
                     const signInForm = document.getElementById('formSignIn');
@@ -951,6 +959,7 @@ function tab(id, skipHistory = false) {
                     if (signUpForm) signUpForm.classList.add('hidden');
                     if (profile) profile.classList.add('hidden');
                     document.body.style.overflow = '';
+                    if (!skipHistory) history.pushState({ page: 'account' }, '', '#account');
                 }
             });
         } else {
@@ -959,6 +968,12 @@ function tab(id, skipHistory = false) {
             if (!skipHistory) history.pushState({ page: id }, '', '#' + id);
             document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
             document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
+            const signInForm = document.getElementById('formSignIn');
+            const signUpForm = document.getElementById('formSignUp');
+            const profile = document.getElementById('loggedInProfile');
+            if (signInForm) signInForm.classList.remove('hidden');
+            if (signUpForm) signUpForm.classList.add('hidden');
+            if (profile) profile.classList.add('hidden');
         }
         return;
     }
@@ -967,7 +982,7 @@ function tab(id, skipHistory = false) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
     document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
     document.body.style.overflow = '';
-    if (id === 'team') loadMyTeam();
+    if (id === 'team' && user) loadMyTeam();
     if (id === 'account' && user) loadProfile();
     if (id === 'my-account' && user) loadMyAccountPage();
     if (id === 'my-wallet' && user) loadMyWallet();
@@ -1062,20 +1077,67 @@ function switchAuth(type) {
 
 async function signIn() {
     if (!sb) return alert('Backend is not connected.');
-    const email = $('loginEmail').value.trim(), password = $('loginPassword').value;
-    if (!email || !password) return alert('Enter email and password.');
+    const email = $('loginEmail').value.trim();
+    const password = $('loginPassword').value;
 
+    if (!email || !password) {
+        return alert('Enter email and password.');
+    }
+
+    const btn = document.querySelector('#formSignIn button.primary');
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
     status('authStatus', 'Signing in…');
+
     try {
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
         if (error) {
-            status('authStatus', 'Sign-in failed: ' + error.message, 'error');
+            console.error('Supabase sign-in error:', error);
+            let userMessage = error.message || 'Unknown error';
+            let detail = '';
+
+            if (error.message === 'Invalid login credentials' || error.code === 'invalid_credentials') {
+                detail = 'ای میل یا پاس ورڈ غلط ہے۔ براہ کرم دوبارہ کوشش کریں۔';
+            } else if (error.message?.toLowerCase().includes('email not confirmed')) {
+                detail = 'آپ کا ای میل ابھی تک تصدیق شدہ نہیں ہے۔ براہ کرم اپنا ان باکس چیک کریں۔';
+                userMessage = 'Email not confirmed';
+            } else if (error.message?.toLowerCase().includes('rate limit')) {
+                detail = 'بہت زیادہ کوششیں۔ کچھ منٹ بعد دوبارہ کوشش کریں۔';
+            } else if (error.status === 400) {
+                detail = 'درخواست غلط ہے۔ براہ کرم ای میل اور پاس ورڈ چیک کریں۔';
+            } else if (error.status === 500) {
+                detail = 'سرور میں مسئلہ ہے۔ بعد میں کوشش کریں۔';
+            }
+
+            status('authStatus', `Sign-in failed: ${userMessage}${detail ? ' — ' + detail : ''}`, 'error');
             if (window.Swal) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Sign In Failed',
-                    text: error.message,
+                    html: `
+                        <p style="margin-bottom:10px;"><b>Error:</b> ${esc(userMessage)}</p>
+                        ${detail ? `<p style="margin-bottom:10px;">${esc(detail)}</p>` : ''}
+                        <p style="font-size:11px;color:#888;margin-top:15px;word-break:break-all;">
+                            <b>Code:</b> ${esc(error.code || 'N/A')}<br>
+                            <b>Status:</b> ${esc(String(error.status || 'N/A'))}
+                        </p>
+                    `,
+                    background: '#0d1c14',
+                    color: '#e5b853',
+                    confirmButtonColor: '#e5b853',
+                    confirmButtonText: 'OK'
+                });
+            }
+            return;
+        }
+
+        if (!data || !data.user || !data.session) {
+            status('authStatus', 'Sign-in returned no active session. Please try again.', 'error');
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sign In Failed',
+                    text: 'No active session was returned by the server. Please try again.',
                     background: '#0d1c14',
                     color: '#e5b853',
                     confirmButtonColor: '#e5b853'
@@ -1084,13 +1146,42 @@ async function signIn() {
             return;
         }
 
-        if (data && data.user) {
-            status('authStatus', 'Signed in successfully!', 'ok');
-            tab('home');
+        // Set the global user immediately; do not wait for the auth event callback.
+        user = data.user;
+        status('authStatus', 'Signed in successfully!', 'ok');
+
+        // Finish profile/admin initialization before navigating.
+        await updateAuth();
+        tab('home');
+
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Welcome!',
+                text: 'You are now signed in.',
+                background: '#0d1c14',
+                color: '#e5b853',
+                confirmButtonColor: '#e5b853',
+                timer: 1500,
+                showConfirmButton: false
+            });
         }
     } catch (err) {
+        console.error('Unexpected sign-in exception:', err);
         const message = err && err.message ? err.message : String(err);
         status('authStatus', 'Unexpected error: ' + message, 'error');
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Unexpected Error',
+                text: message,
+                background: '#0d1c14',
+                color: '#e5b853',
+                confirmButtonColor: '#e5b853'
+            });
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
     }
 }
 

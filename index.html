@@ -1536,106 +1536,74 @@ async function uploadPaymentProof() {
     else { status('uploadStatus', '✅ Proof submitted successfully!', 'ok'); setTimeout(() => closeModal(), 3000); }
 }
 
-// Withdraw Requests Modal Open Function
+// Withdraw Requests Modal (With Search)
 async function openWithdrawRequestsModal() {
     if (!isAdmin) return alert('Admin access required.');
+    if (!sb) return alert('Database connection is not available.');
 
-    Swal.fire({
-        title: 'Loading Requests...',
-        allowOutsideClick: false,
-        background: '#0d1c14',
-        color: '#e5b853',
-        didOpen: () => { Swal.showLoading(); }
-    });
-
+    Swal.fire({ title: 'Loading Requests...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
     try {
         const { data, error } = await sb.from('withdrawals')
             .select('*, profiles(full_name)')
-            .order('created_at', { ascending: false })
-            .limit(50);
+            .order('created_at', { ascending: false });
         if (error) throw error;
 
-        let htmlContent = '<div style="max-height: 60vh; overflow-y: auto; text-align: left; padding-right: 5px;">';
-
+        let htmlContent = `
+            <div style="margin-bottom:10px;">
+                <input type="text" id="withdrawSearchInput" placeholder="Search by name or amount..." oninput="filterWithdrawals()" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e5b853;background:#0a1f15;color:#fff;margin-bottom:10px;">
+            </div>
+            <div id="withdrawListContainer" style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">`;
         if (!data || data.length === 0) {
-            htmlContent += '<p style="text-align: center; color: #aaa;">No withdrawal requests found.</p>';
+            htmlContent += '<p style="text-align:center;color:#aaa;">No withdrawal requests found.</p>';
         } else {
             data.forEach(w => {
                 const statusColor = w.status === 'pending' ? '#ffcc00' : (w.status === 'approved' ? '#4CAF50' : '#f44336');
+                const searchText = esc(`${w.profiles?.full_name || 'User'} ${w.amount ?? ''}`.toLowerCase());
                 htmlContent += `
-                    <div style="border: 1px solid #1f3a2c; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #0a1f15;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
-                            <b style="color: #e5b853; font-size: 14px;">${esc(w.profiles?.full_name || 'User')}</b>
-                            <span style="color: ${statusColor}; font-weight: bold; text-transform: uppercase; font-size: 12px;">${esc(w.status || 'pending')}</span>
+                    <div class="withdraw-item" data-search="${searchText}" style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <b style="color:#e5b853;font-size:14px;">${esc(w.profiles?.full_name || 'User')}</b>
+                            <span style="color:${statusColor};font-weight:bold;text-transform:uppercase;font-size:12px;">${esc(w.status || 'pending')}</span>
                         </div>
-                        <div style="font-size: 13px; color: #aaa; margin-bottom: 8px; line-height: 1.5;">
-                            <b>Amount:</b> <span style="color: #e5b853; font-size: 16px;">$${esc(w.amount ?? '0')}</span><br>
+                        <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;">
+                            <b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br>
                             <b>Account:</b> ${esc(w.account_details || '—')}<br>
-                            <b>Date:</b> ${w.created_at ? new Date(w.created_at).toLocaleString() : '—'}
+                            <b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}
                         </div>
                         ${w.status === 'pending' ? `
-                            <div style="display:flex; gap: 8px; margin-top: 10px;">
-                                <button onclick="updateWithdrawalStatus('${esc(w.id)}', 'approved')" style="flex:1; background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Approve</button>
-                                <button onclick="updateWithdrawalStatus('${esc(w.id)}', 'rejected')" style="flex:1; background: #f44336; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Reject</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
+                            <div style="display:flex;gap:8px;margin-top:10px;">
+                                <button onclick="updateWithdrawalStatus('${esc(w.id)}','approved')" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button>
+                                <button onclick="updateWithdrawalStatus('${esc(w.id)}','rejected')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button>
+                            </div>` : ''}
+                    </div>`;
             });
         }
         htmlContent += '</div>';
-
-        await Swal.fire({
-            title: 'Withdrawal Requests',
-            html: htmlContent,
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853',
-            confirmButtonText: 'Close',
-            width: '600px'
-        });
-
+        await Swal.fire({ title:'Withdrawal Requests', html:htmlContent, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853', confirmButtonText:'Close', width:'600px' });
     } catch (e) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: e.message,
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not load withdrawal requests.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     }
 }
 
-// Update Withdrawal Status Function
-async function updateWithdrawalStatus(id, status) {
-    if (!isAdmin) return alert('Admin access required.');
-    if (!['approved', 'rejected'].includes(status)) return alert('Invalid withdrawal status.');
+function filterWithdrawals() {
+    const input = document.getElementById('withdrawSearchInput');
+    if (!input) return;
+    const term = input.value.toLowerCase().trim();
+    document.querySelectorAll('.withdraw-item').forEach(item => {
+        item.style.display = (item.getAttribute('data-search') || '').includes(term) ? 'block' : 'none';
+    });
+}
 
+async function updateWithdrawalStatus(id, status) {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    if (!['approved', 'rejected'].includes(status)) return alert('Invalid withdrawal status.');
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
-
-        await Swal.fire({
-            icon: 'success',
-            title: 'Success',
-            text: 'Request has been ' + status + '!',
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
-        });
-
+        await Swal.fire({ icon:'success', title:'Success', text:'Request has been ' + status + '!', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
         await openWithdrawRequestsModal();
-
     } catch (e) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: e.message,
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     }
 }
 
@@ -2600,28 +2568,68 @@ async function deleteReview(reviewId) {
 async function openWalletDepositsModal() {
     if (!isAdmin) return alert('Admin access required.');
     if (!sb) return alert('Database connection is not available.');
-    Swal.fire({ title: 'Loading Deposits...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title:'Loading Deposits...', allowOutsideClick:false, background:'#0d1c14', color:'#e5b853', didOpen:() => Swal.showLoading() });
     try {
-        const { data, error } = await sb.from('wallet_transactions').select('*, profiles(full_name)')
-            .eq('type', 'deposit').eq('status', 'pending').order('created_at', { ascending: false });
+        const { data, error } = await sb.from('wallet_transactions')
+            .select('*')
+            .eq('type','deposit').eq('status','pending')
+            .order('created_at', { ascending:false });
         if (error) throw error;
-        let htmlContent = '<div style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-        if (!data || data.length === 0) htmlContent += '<p style="text-align:center;color:#aaa;">No pending deposit requests found.</p>';
-        else data.forEach(w => {
-            const proofUrl = String(w.screenshot_url || '');
-            const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
-            const proofLink = safeProofUrl ? `<a href="${safeProofUrl}" target="_blank" rel="noopener" style="color:#4CAF50;text-decoration:underline;">View Screenshot</a>` : '<span style="color:#aaa;">No screenshot</span>';
-            htmlContent += `<div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><b style="color:#e5b853;font-size:14px;">${esc(w.profiles?.full_name || 'Member')}</b><span style="color:#ffcc00;font-weight:bold;font-size:12px;">PENDING</span></div>
-                <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;"><b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br><b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}<br><b>Proof:</b> ${proofLink}</div>
-                <div style="display:flex;gap:8px;margin-top:10px;"><button onclick="approveWalletDeposit('${esc(w.id)}','${esc(w.user_id)}')" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button><button onclick="rejectWalletDeposit('${esc(w.id)}')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button></div>
-            </div>`;
-        });
+
+        const profileIds = [...new Set((data || []).map(w => w.user_id).filter(Boolean))];
+        const profilesMap = {};
+        if (profileIds.length) {
+            const { data: profiles, error: profileError } = await sb.from('profiles').select('id,full_name').in('id',profileIds);
+            if (profileError) throw profileError;
+            (profiles || []).forEach(profile => { profilesMap[profile.id] = profile.full_name; });
+        }
+
+        let htmlContent = `
+            <div style="margin-bottom:10px;">
+                <input type="text" id="depositSearchInput" placeholder="Search by name or amount..." oninput="filterDeposits()" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e5b853;background:#0a1f15;color:#fff;margin-bottom:10px;">
+            </div>
+            <div id="depositListContainer" style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">`;
+        if (!data || data.length === 0) {
+            htmlContent += '<p style="text-align:center;color:#aaa;">No pending deposit requests found.</p>';
+        } else {
+            data.forEach(w => {
+                const memberName = profilesMap[w.user_id] || 'Member';
+                const proofUrl = String(w.screenshot_url || '');
+                const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
+                const proofLink = safeProofUrl ? `<a href="${safeProofUrl}" target="_blank" rel="noopener noreferrer" style="color:#4CAF50;text-decoration:underline;">View Screenshot</a>` : '<span style="color:#aaa;">No screenshot</span>';
+                const searchText = esc(`${memberName} ${w.amount ?? ''}`.toLowerCase());
+                htmlContent += `
+                    <div class="deposit-item" data-search="${searchText}" style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <b style="color:#e5b853;font-size:14px;">${esc(memberName)}</b>
+                            <span style="color:#ffcc00;font-weight:bold;font-size:12px;">PENDING</span>
+                        </div>
+                        <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;">
+                            <b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br>
+                            <b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}<br>
+                            <b>Proof:</b> ${proofLink}
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button onclick="approveWalletDeposit('${esc(w.id)}','${esc(w.user_id)}')" style="flex:1;background:#4CAF50;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Approve</button>
+                            <button onclick="rejectWalletDeposit('${esc(w.id)}')" style="flex:1;background:#f44336;color:white;border:0;padding:10px;border-radius:6px;cursor:pointer;font-weight:bold;">Reject</button>
+                        </div>
+                    </div>`;
+            });
+        }
         htmlContent += '</div>';
         await Swal.fire({ title:'Wallet Deposits', html:htmlContent, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853', confirmButtonText:'Close', width:'600px' });
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not load deposits.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     }
+}
+
+function filterDeposits() {
+    const input = document.getElementById('depositSearchInput');
+    if (!input) return;
+    const term = input.value.toLowerCase().trim();
+    document.querySelectorAll('.deposit-item').forEach(item => {
+        item.style.display = (item.getAttribute('data-search') || '').includes(term) ? 'block' : 'none';
+    });
 }
 
 async function approveWalletDeposit(txnId, userId) {

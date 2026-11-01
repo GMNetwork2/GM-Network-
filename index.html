@@ -937,10 +937,21 @@ function tab(id, skipHistory = false) {
         return;
     }
 
+    // Sign-in prompt: show the sign-in form directly to avoid reopening the same guard.
     if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) {
         if (window.Swal) {
             Swal.fire({icon:'warning',title:'Sign In Required',text:'Please sign in first to access this page.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853',confirmButtonText:'Go to Sign In'}).then((result) => {
-                if (result.isConfirmed) tab('account');
+                if (result.isConfirmed && id !== 'account') {
+                    document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'account'));
+                    document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === 'account'));
+                    const signInForm = document.getElementById('formSignIn');
+                    const signUpForm = document.getElementById('formSignUp');
+                    const profile = document.getElementById('loggedInProfile');
+                    if (signInForm) signInForm.classList.remove('hidden');
+                    if (signUpForm) signUpForm.classList.add('hidden');
+                    if (profile) profile.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
             });
         } else {
             alert('Please sign in first.');

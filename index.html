@@ -1128,15 +1128,50 @@ async function loadMyAccountPage() {
 async function editBankDetails() {
     if (!user) return alert('Please sign in first.');
     const current = myProfile?.account_details || '';
-    const newAcc = prompt('Enter your Bank / Easypaisa / JazzCash Account Number and Name:', current);
-    if (newAcc === null || newAcc.trim() === '') return;
 
-    const { error } = await sb.from('profiles').update({ account_details: newAcc.trim() }).eq('id', user.id);
-    if (error) alert('Could not save account details: ' + error.message);
-    else {
-        alert('Account details saved successfully!');
-        myProfile.account_details = newAcc.trim();
-        if($('accBankDetails')) $('accBankDetails').textContent = newAcc.trim();
+    if (window.Swal) {
+        const { value: newAcc } = await window.Swal.fire({
+            title: 'Bank / Wallet Details',
+            input: 'textarea',
+            inputLabel: 'Enter your Account Number and Name',
+            inputValue: current,
+            inputPlaceholder: 'e.g. Easypaisa 03001234567 - Ali Khan',
+            showCancelButton: true,
+            confirmButtonColor: '#e5b853',
+            cancelButtonColor: '#4a1a1a',
+            confirmButtonText: 'Save',
+            cancelButtonText: 'Cancel',
+            background: '#0d1c14',
+            color: '#e5b853'
+        });
+
+        if (newAcc === undefined || newAcc === null || newAcc.trim() === '') return;
+
+        const { error } = await sb.from('profiles').update({ account_details: newAcc.trim() }).eq('id', user.id);
+        if (error) {
+            await window.Swal.fire({
+                icon: 'error', title: 'Error',
+                text: 'Could not save account details: ' + error.message,
+                background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
+            });
+        } else {
+            myProfile.account_details = newAcc.trim();
+            if ($('accBankDetails')) $('accBankDetails').textContent = newAcc.trim();
+            await window.Swal.fire({
+                icon: 'success', title: 'Saved!', text: 'Account details saved successfully!',
+                background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
+            });
+        }
+    } else {
+        const newAcc = prompt('Enter your Bank / Easypaisa / JazzCash Account Number and Name:', current);
+        if (newAcc === null || newAcc.trim() === '') return;
+        const { error } = await sb.from('profiles').update({ account_details: newAcc.trim() }).eq('id', user.id);
+        if (error) alert('Could not save account details: ' + error.message);
+        else {
+            alert('Account details saved successfully!');
+            myProfile.account_details = newAcc.trim();
+            if ($('accBankDetails')) $('accBankDetails').textContent = newAcc.trim();
+        }
     }
 }
 

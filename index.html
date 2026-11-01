@@ -590,9 +590,10 @@ input[type="file"]::file-selector-button:hover {
 </div>
 
 <div class="panel"><h2>Customer Reviews (Pending Approval)</h2><div id="adminPendingReviews" class="muted">Loading reviews…</div></div>
-<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel" onclick="openWithdrawRequestsModal()" style="cursor:pointer; border-color: var(--gold);">
+<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel" style="border-color: var(--gold);">
     <h2 style="color: var(--gold);">Withdraw Requests</h2>
-    <p class="muted" style="margin:0;">Click here to view and manage all withdrawal requests.</p>
+    <p class="muted" style="margin-bottom:10px;">Click here to view and manage all withdrawal requests.</p>
+    <button class="primary" type="button" onclick="openWithdrawRequestsModal()">View Withdraw Requests</button>
 </div><div class="panel" style="border-color:var(--gold);">
     <h2 style="color:var(--gold);">Direct Wallet Add (Manual)</h2>
     <p class="muted" style="font-size:12px;margin-bottom:10px;">Use this to add funds to a member wallet for testing or manual payments.</p>
@@ -609,9 +610,18 @@ input[type="file"]::file-selector-button:hover {
     <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds from Member</button>
     <div id="adminDeductFundsStatus" class="status hidden"></div>
 </div>
-<div class="panel" onclick="openWalletDepositsModal()" style="cursor:pointer;border-color:var(--gold);">
+<div class="panel" style="border-color: var(--gold);">
+    <h2 style="color: var(--gold);">Wallet Transaction History (Audit)</h2>
+    <p class="muted" style="font-size:12px;margin-bottom:10px;">View the complete deposit and purchase history of any member to help review wallet activity.</p>
+    <label>Member ID or Name</label>
+    <input id="adminHistoryMemberId" placeholder="Enter Member ID or Name...">
+    <button class="primary" onclick="openMemberAuditHistory()">View History</button>
+    <div id="adminHistoryStatus" class="status hidden"></div>
+</div>
+<div class="panel" style="border-color:var(--gold);">
     <h2 style="color:var(--gold);">Wallet Deposit Requests</h2>
-    <p class="muted" style="margin:0;">Click here to review and approve pending member deposits.</p>
+    <p class="muted" style="margin-bottom:10px;">Click here to review and approve pending member deposits.</p>
+    <button class="primary" type="button" onclick="openWalletDepositsModal()">View Deposit Requests</button>
 </div>
 <div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
 <footer>GM Network • v12.0</footer></main>
@@ -897,8 +907,27 @@ function changeCurrency(curr) {
 }
 
 function tab(id, skipHistory = false) {
-    if (id === 'admin' && !isAdmin) { alert('Admin access required.'); return; }
-    if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
+    if (id === 'admin' && !isAdmin) {
+        if (window.Swal) Swal.fire({icon:'error',title:'Access Denied',text:'Admin access required.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
+        else alert('Admin access required.');
+        return;
+    }
+
+    if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) {
+        if (window.Swal) {
+            Swal.fire({icon:'warning',title:'Sign In Required',text:'Please sign in first to access this page.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853',confirmButtonText:'Go to Sign In'}).then((result) => {
+                if (result.isConfirmed) tab('account');
+            });
+        } else {
+            alert('Please sign in first.');
+            id = 'account';
+            if (!skipHistory) history.pushState({ page: id }, '', '#' + id);
+            document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
+            document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
+        }
+        return;
+    }
+
     if (!skipHistory) history.pushState({ page: id }, '', '#' + id);
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
     document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
@@ -2660,6 +2689,8 @@ async function adminDirectAddFunds() {
         const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'deposit',status:'completed'});
         if(logError) throw new Error('Balance changed but history could not be saved; do not retry until checked. '+logError.message);
         status('adminAddFundsStatus',`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`,'ok');
+        if (window.Swal) Swal.fire({icon:'success',title:'Success!',text:`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`,background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
+        else alert(`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`);
         $('adminAddFundsMemberId').value='';$('adminAddFundsAmount').value='';
     } catch(e){status('adminAddFundsStatus','Error: '+e.message,'error');}
 }
@@ -2683,8 +2714,70 @@ async function adminDirectDeductFunds() {
         const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'purchase',status:'completed'});
         if(logError) throw new Error('Funds were deducted but history could not be saved. Check before retrying. '+logError.message);
         status('adminDeductFundsStatus',`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`,'ok');
+        if (window.Swal) Swal.fire({icon:'success',title:'Success!',text:`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`,background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
+        else alert(`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`);
         $('adminDeductFundsMemberId').value='';$('adminDeductFundsAmount').value='';
     } catch(e){status('adminDeductFundsStatus','Error: '+e.message,'error');}
+}
+
+// Admin: View complete wallet history for a member.
+async function openMemberAuditHistory() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const memberInput = $('adminHistoryMemberId').value.trim();
+    if (!memberInput) return status('adminHistoryStatus', 'Please enter Member ID or Name.', 'error');
+
+    status('adminHistoryStatus', 'Loading history...');
+    try {
+        const profile = await findAdminWalletMember(memberInput);
+        const { data: txns, error: txnError } = await sb.from('wallet_transactions')
+            .select('*')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false });
+        if (txnError) throw txnError;
+
+        let htmlContent = `<h3 style="color:var(--gold);text-align:center;margin-bottom:15px;">History: ${esc(profile.full_name || 'Member')}</h3>`;
+        htmlContent += '<div style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+
+        if (!txns || txns.length === 0) {
+            htmlContent += '<p style="text-align:center;color:#aaa;">No transactions found for this member.</p>';
+        } else {
+            txns.forEach(t => {
+                const isDeposit = String(t.type || '').toLowerCase() === 'deposit';
+                const color = isDeposit ? '#4CAF50' : '#f44336';
+                const sign = isDeposit ? '+' : '−';
+                const proofUrl = String(t.screenshot_url || '');
+                const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
+                const proofHtml = safeProofUrl
+                    ? `<a href="${safeProofUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:underline;font-size:12px;">View Proof</a>`
+                    : '<span style="color:#888;font-size:12px;">No proof attached</span>';
+                const amount = Number(t.amount);
+                const amountText = Number.isFinite(amount) ? esc(convertMoney(amount)) : esc(String(t.amount ?? '—'));
+                const dateText = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
+                htmlContent += `
+                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                    <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;">
+                        <b style="color:${color};font-size:16px;">${sign} ${amountText}</b>
+                        <span class="pill">${esc(t.status || 'unknown')}</span>
+                    </div>
+                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
+                        <b>Type:</b> ${esc(t.type || '—')}<br>
+                        <b>Date:</b> ${esc(dateText)}<br>
+                        <b>Proof:</b> ${proofHtml}
+                    </div>
+                </div>`;
+            });
+        }
+        htmlContent += '</div>';
+
+        await Swal.fire({
+            title: 'Wallet Audit', html: htmlContent,
+            background: '#0d1c14', color: '#e5b853',
+            confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '600px'
+        });
+        status('adminHistoryStatus', 'History loaded successfully.', 'ok');
+    } catch (e) {
+        status('adminHistoryStatus', 'Error: ' + (e.message || 'Could not load member history.'), 'error');
+    }
 }
 
 function restoreHistoryPage(page) {

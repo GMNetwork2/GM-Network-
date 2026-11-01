@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#123c32">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>GM Network</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
@@ -848,8 +851,24 @@ input[type="file"]::file-selector-button:hover {
         <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>
 </div>  
+<script>
+// Best-effort cleanup of this site's service-worker caches. This cannot clear the WebView HTTP cache.
+(function () {
+    try {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                registrations.forEach(function (registration) { registration.unregister(); });
+            }).catch(function () {});
+        }
+        if ('caches' in window) {
+            caches.keys().then(function (names) {
+                return Promise.all(names.map(function (name) { return caches.delete(name); }));
+            }).catch(function () {});
+        }
+    } catch (_) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>const CACHE_VERSION = Date.now();</script>
 <script>
 'use strict';
 
@@ -1613,6 +1632,8 @@ async function updateWithdrawalStatus(id, status) {
             color: '#e5b853',
             confirmButtonColor: '#e5b853'
         });
+        // After the success dialog closes, reload the current request list.
+        await openWithdrawRequestsModal();
     } catch (e) {
         await Swal.fire({
             icon: 'error',
@@ -2695,6 +2716,8 @@ async function approveWalletDeposit(txnId, userId) {
             color:'#e5b853',
             confirmButtonColor:'#e5b853'
         });
+        // After OK closes the success dialog, reload pending deposit requests.
+        await openWalletDepositsModal();
     } catch (e) {
         if (claimed && !balanceUpdated) await sb.from('wallet_transactions').update({status:'pending'}).eq('id',txnId).eq('status','processing');
         await Swal.fire({

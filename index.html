@@ -1747,10 +1747,27 @@ function filterWithdrawals() {
 
 async function updateWithdrawalStatus(id, status) {
     if (!isAdmin || !sb) return alert('Admin access required.');
+    status = String(status || '').toLowerCase();
     if (!['approved', 'rejected'].includes(status)) return alert('Invalid withdrawal status.');
+
+    const confirmAction = await Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to mark this withdrawal as ' + status.toUpperCase() + '?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: status === 'approved' ? '#4CAF50' : '#f44336',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Yes, ' + status,
+        background: '#0d1c14',
+        color: '#e5b853'
+    });
+    if (!confirmAction.isConfirmed) return;
+
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
+
+        // کامیابی کے بعد صرف پیغام دکھائیں؛ پرانی لسٹ دوبارہ نہ کھولیں۔
         await Swal.fire({
             icon: 'success',
             title: 'Success',
@@ -1759,8 +1776,6 @@ async function updateWithdrawalStatus(id, status) {
             color: '#e5b853',
             confirmButtonColor: '#e5b853'
         });
-        // After the success dialog closes, reload the current request list.
-        await openWithdrawRequestsModal();
     } catch (e) {
         await Swal.fire({
             icon: 'error',
@@ -3023,12 +3038,14 @@ if (!history.state || !history.state.page) {
 async function openMasterHistory() {
     if (!isAdmin || !sb) return alert('Admin access required.');
     Swal.fire({ title:'Loading All History...', allowOutsideClick:false, background:'#0d1c14', color:'#e5b853', didOpen:() => Swal.showLoading() });
+
     try {
         const [wRes, tRes, oRes] = await Promise.all([
             sb.from('withdrawals').select('*').order('created_at', { ascending:false }).limit(50),
             sb.from('wallet_transactions').select('*').order('created_at', { ascending:false }).limit(100),
             sb.from('orders').select('id,buyer_id,unit_price_pkr,status,created_at').order('created_at', { ascending:false }).limit(50)
         ]);
+
         if (wRes.error) throw wRes.error;
         if (tRes.error) throw tRes.error;
         if (oRes.error) throw oRes.error;
@@ -3038,26 +3055,33 @@ async function openMasterHistory() {
             ...(tRes.data || []).map(x => x.user_id),
             ...(oRes.data || []).map(x => x.buyer_id)
         ].filter(Boolean))];
+
         const names = {};
         if (ids.length) {
             const { data: profiles, error: pErr } = await sb.from('profiles').select('id,full_name').in('id', ids);
             if (pErr) throw pErr;
             (profiles || []).forEach(p => names[p.id] = p.full_name || 'Member');
         }
+
         const escText = v => esc(String(v ?? '—'));
         let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+
         html += '<h3 style="color:#e5b853;">Withdrawals</h3>';
         if (!(wRes.data || []).length) html += '<p style="color:#aaa;">No withdrawals found.</p>';
+
         (wRes.data || []).forEach(w => {
-            const st = String(w.status || 'pending');
-            const canMarkRejected = st.toLowerCase() === 'approved';
+            const st = String(w.status || 'pending').toLowerCase();
             html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
                 <b style="color:#e5b853;">${escText(names[w.user_id] || 'Member')}</b>
-                <span style="float:right;">${escText(st)}</span><br>
+                <span style="float:right;font-weight:bold;color:${st==='pending'?'#ffcc00':st==='approved'?'#4CAF50':'#f44336'};">${escText(st.toUpperCase())}</span><br>
                 <small>Amount: ${escText(convertMoney(w.amount ?? 0))} | ${escText(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}</small>
-                ${canMarkRejected ? `<div><button type="button" onclick="markWithdrawalRejected('${escText(w.id)}')" style="margin-top:8px;background:#f44336;color:white;border:0;padding:7px 10px;border-radius:5px;">Mark Rejected</button></div>` : ''}
+                <div style="margin-top:8px;display:flex;gap:5px;">
+                    ${st === 'pending' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'approved')" style="background:#4CAF50;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Approve</button>` : ''}
+                    ${st === 'pending' || st === 'approved' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'rejected')" style="background:#f44336;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Mark Rejected</button>` : ''}
+                </div>
             </div>`;
         });
+
         html += '<h3 style="color:#e5b853;margin-top:18px;">Wallet Transactions (Deposits & Purchases)</h3>';
         if (!(tRes.data || []).length) html += '<p style="color:#aaa;">No wallet transactions found.</p>';
         (tRes.data || []).forEach(t => {
@@ -3067,16 +3091,18 @@ async function openMasterHistory() {
                 <small>${escText(t.type || 'transaction')} | ${escText(convertMoney(t.amount ?? 0))} | ${escText(t.created_at ? new Date(t.created_at).toLocaleString() : '—')}</small>
             </div>`;
         });
+
         html += '<h3 style="color:#e5b853;margin-top:18px;">Recent Orders</h3>';
         if (!(oRes.data || []).length) html += '<p style="color:#aaa;">No orders found.</p>';
         (oRes.data || []).forEach(o => {
             html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
                 <b style="color:#e5b853;">${escText(names[o.buyer_id] || 'Member')}</b>
                 <span style="float:right;">${escText(o.status || '—')}</span><br>
-                <small>Order: ${escText(String(o.id || '').slice(-8))} | ${escText(o.unit_price_pkr ?? '—')} | ${escText(o.created_at ? new Date(o.created_at).toLocaleString() : '—')}</small>
+                <small>Order: ${escText(String(o.id || '').slice(-8))} | ${escText(convertMoney(o.unit_price_pkr ?? 0))} | ${escText(o.created_at ? new Date(o.created_at).toLocaleString() : '—')}</small>
             </div>`;
         });
-        html += '<p style="color:#ffcc00;font-size:12px;margin-top:12px;">Note: This screen is an audit view. Do not reverse a deposit by simply subtracting its amount: the member may have spent the funds. A secure, atomic Supabase RPC is required.</p></div>';
+
+        html += '</div>';
         await Swal.fire({ title:'Master History', html, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853', confirmButtonText:'Close', width:'650px' });
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not load master history.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });

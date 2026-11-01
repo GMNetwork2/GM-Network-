@@ -846,16 +846,18 @@ function changeCurrency(curr) {
     if (myProfile) loadProfile();
 }
 
-function tab(id) {
+function tab(id, skipHistory = false) {
     if (id === 'admin' && !isAdmin) { alert('Admin access required.'); return; }
     if (['my-account', 'my-wallet', 'team', 'account'].includes(id) && !user) { alert('Please sign in first.'); id = 'account'; }
+    if (!skipHistory) history.pushState({ page: id }, '', '#' + id);
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
     document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
-    
+    document.body.style.overflow = '';
     if (id === 'team') loadMyTeam();
     if (id === 'account' && user) loadProfile();
     if (id === 'my-account' && user) loadMyAccountPage();
     if (id === 'my-wallet' && user) loadMyWallet();
+    if (id === 'admin' && isAdmin) loadAdmin();
 }
 
 function toggleMenu() {
@@ -1625,9 +1627,13 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
         btn.className = 'primary';
         btn.style.marginTop = '10px';
         btn.textContent = 'Save Order Status';
-        btn.onclick = () => {
-            const selectedStatus = document.getElementById('admin-status-dropdown').value;
-            updateOrderStatus(id, selectedStatus);
+        btn.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const statusSelect = document.getElementById('admin-status-dropdown');
+            if (!statusSelect) return alert('Order status selector was not found.');
+            updateOrderStatus(id, statusSelect.value);
+            return false;
         };
         actionDiv.append(label, select, btn);
     }
@@ -2316,17 +2322,40 @@ async function deleteReview(reviewId) {
     await loadAdmin();
 }
 
-window.addEventListener('popstate', () => {
-    if (!$('paymentProofPage').classList.contains('hidden')) {
-        $('paymentProofPage').classList.add('hidden');
-        if (checkoutData) $('checkoutPage').classList.remove('hidden');
-        else document.body.style.overflow = '';
-    } else if (!$('checkoutPage').classList.contains('hidden')) {
-        backToProductView();
-    } else if (!$('productViewPage').classList.contains('hidden')) {
-        closeProductView();
+function restoreHistoryPage(page) {
+    const validTabs = ['home', 'dashboard', 'account', 'my-account', 'my-wallet', 'products', 'team', 'about', 'admin'];
+    $('productViewPage').classList.add('hidden');
+    $('checkoutPage').classList.add('hidden');
+    $('paymentProofPage').classList.add('hidden');
+    document.body.style.overflow = '';
+
+    if (page === 'product') {
+        $('productViewPage').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
     }
+    if (page === 'checkout') {
+        $('checkoutPage').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
+    }
+    if (page === 'payment') {
+        $('paymentProofPage').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
+    }
+    tab(validTabs.includes(page) ? page : 'home', true);
+}
+
+window.addEventListener('popstate', (event) => {
+    restoreHistoryPage(event.state && event.state.page ? event.state.page : 'home');
 });
+
+// Give the initial page a known history state so Android's Back button
+// returns through the app's screens instead of immediately leaving the app.
+if (!history.state || !history.state.page) {
+    history.replaceState({ page: 'home' }, '', window.location.pathname + window.location.search + window.location.hash);
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

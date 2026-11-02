@@ -10,6 +10,26 @@
 <title>GM Network</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
+/* ===== GLOBAL SWEETALERT FIX (No more cut-off screens) ===== */
+.swal2-popup {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    border-radius: 15px !important;
+}
+.swal2-html-container {
+    max-height: 65vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 5px !important;
+}
+.swal2-html-container::-webkit-scrollbar {
+    width: 5px;
+}
+.swal2-html-container::-webkit-scrollbar-thumb {
+    background: #e5b853;
+    border-radius: 10px;
+}
+
 :root {
     --g: #0a1f15;
     --g2: #113626;
@@ -1508,7 +1528,7 @@ async function fetchProductRatings(productIds) {
 async function loadProducts() {
     if (!sb) return;
     const el = $('productList');
-    const { data, error } = await sb.from('products').select('*').eq('active', true).neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
     if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
 
     window.allProductsData = data || [];
@@ -1541,7 +1561,7 @@ async function loadProducts() {
                 <div class="reviews">${esc(finalReviewsCount)} Reviews</div>
                 <div class="price">${convertMoney(p.price_pkr)}</div>
             </div>
-            <button class="primary buy-btn" type="button" style="pointer-events:none;">View Details</button>
+            <button class="primary buy-btn" type="button" style="pointer-events:none; ${!p.active ? 'background:#222; color:#555;' : ''};">${p.active ? 'View Details' : 'SOLD OUT'}</button>
         </div>`;
     }).join('') || '<p class="muted">No active products yet.</p>';
     const featuredEl = $('featuredProductList');
@@ -1756,16 +1776,14 @@ function filterWithdrawals() {
 
 async function updateWithdrawalStatus(id, status) {
     if (!isAdmin || !sb) {
-        await Swal.fire({ icon:'error', title:'Access denied', text:'Admin access required.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
-        return;
+        return Swal.fire({ icon:'error', title:'Access denied', text:'Admin access required.', background:'#0d1c14', color:'#e5b853' });
     }
     status = String(status || '').toLowerCase();
     if (!['approved', 'rejected', 'pending'].includes(status)) {
-        await Swal.fire({ icon:'error', title:'Invalid status', text:'Please choose approved, rejected, or pending.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
-        return;
+        return Swal.fire({ icon:'error', title:'Invalid status', text:'Please choose approved, rejected, or pending.', background:'#0d1c14', color:'#e5b853' });
     }
 
-    // Confirmation dialog replaces the previous modal, so save its title first.
+    // Parent list ka title save karein taake refresh sahi ho.
     const activeTitleBeforeConfirm = document.querySelector('.swal2-title')?.textContent || '';
     const confirmResult = await Swal.fire({
         title: 'Are you sure?',
@@ -1780,15 +1798,17 @@ async function updateWithdrawalStatus(id, status) {
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
+
         const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:2000, background:'#0d1c14', color:'#e5b853' });
         Toast.fire({ icon:'success', title:'Status updated to ' + status });
+
         if (activeTitleBeforeConfirm.includes('Master History')) {
             await openMasterHistory();
         } else if (activeTitleBeforeConfirm.includes('Withdrawal Requests')) {
             await openWithdrawRequestsModal();
         }
     } catch (e) {
-        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853' });
     }
 }
 
@@ -1937,10 +1957,10 @@ async function loadAdmin() {
     if($('adminManageProducts')) {
         $('adminManageProducts').innerHTML = p.error ? esc(p.error.message) : (p.data || []).map(x => `
             <div class="item">
-                <div><b>${esc(x.name || 'Product')}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active ? 'Active' : 'Inactive'}</small></div>
-                <div class="row-actions">
+                <div><b>${esc(x.name || 'Product')}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small></div>
+                <div class="row-actions" style="flex-wrap:wrap; gap:5px;">
                     <button class="secondary" data-edit="${esc(x.id)}">Edit</button>
-                    <button class="secondary" data-toggle="${esc(x.id)}">${x.active ? 'Deactivate' : 'Activate'}</button>
+                    <button class="secondary" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark as Sold Out' : 'Mark as Active'}</button>
                     <button class="secondary" data-delete="${esc(x.id)}">Delete</button>
                 </div>
             </div>`).join('') || 'No products yet.';
@@ -2444,6 +2464,17 @@ function openProductView(index) {
     if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = '1';
     checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0], productIndex: index };
     window.currentProductQty = 1;
+    // Sold Out Check for Product View Page
+    const pvBuyBtn = document.querySelector('#productViewPage .primary[onclick="openCheckoutPage()"]');
+    const pvAddBtn = document.querySelector('#productViewPage button[onclick="addToCartFromView()"]');
+    if (!p.active) {
+        if (pvBuyBtn) { pvBuyBtn.textContent = 'SOLD OUT'; pvBuyBtn.style.background = '#222'; pvBuyBtn.style.color = '#555'; pvBuyBtn.disabled = true; }
+        if (pvAddBtn) { pvAddBtn.textContent = 'UNAVAILABLE'; pvAddBtn.style.borderColor = '#555'; pvAddBtn.style.color = '#555'; pvAddBtn.disabled = true; }
+    } else {
+        if (pvBuyBtn) { pvBuyBtn.textContent = 'Buy Now'; pvBuyBtn.style.background = 'var(--gold)'; pvBuyBtn.style.color = 'var(--g)'; pvBuyBtn.disabled = false; }
+        if (pvAddBtn) { pvAddBtn.textContent = 'Add to Cart'; pvAddBtn.style.borderColor = 'var(--g)'; pvAddBtn.style.color = 'var(--g)'; pvAddBtn.disabled = false; }
+    }
+
     $('productViewPage').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     const waBtn = document.querySelector('.whatsapp-float');
@@ -2453,6 +2484,8 @@ function openProductView(index) {
 
 function addToCartFromView() {
     if (!checkoutData) return;
+    const selectedProduct = (window.allProductsData || []).find(item => String(item.id) === String(checkoutData.id));
+    if (selectedProduct && !selectedProduct.active) return alert('This product is sold out and currently unavailable.');
     alert('Add to Cart is not available yet. Please use Buy Now to place this order.');
 }
 
@@ -2556,6 +2589,8 @@ function backToProductView() {
 function openCheckoutPage() {
     if (!user) return alert('Please sign in to place an order.');
     if (!checkoutData) return;
+    const selectedProduct = (window.allProductsData || []).find(item => String(item.id) === String(checkoutData.id));
+    if (selectedProduct && !selectedProduct.active) return alert('This product is sold out and currently unavailable.');
     $('coImage').src = checkoutData.image || $('pvImageSlider').querySelector('img')?.src || '';
     $('coName').textContent = checkoutData.name;
     $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);

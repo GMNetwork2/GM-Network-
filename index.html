@@ -1756,33 +1756,18 @@ function filterWithdrawals() {
 
 async function updateWithdrawalStatus(id, status) {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    status = String(status || '').toLowerCase();
-    if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid withdrawal status.');
 
-    // اصل لسٹ کا نام کنفرمیشن ڈائیلاگ کھلنے سے پہلے محفوظ کریں۔
-    const activeTitle = document.querySelector('.swal2-title')?.textContent?.trim() || '';
-    const returnToMaster = activeTitle === 'Master History';
-    const returnToWithdrawals = activeTitle === 'Withdrawal Requests';
+    if (!status) {
+        const input = prompt("Enter new status: 'approved', 'rejected', or 'pending'");
+        if (!input) return;
+        status = input.toLowerCase().trim();
+    }
 
-    const refreshSourceList = async () => {
-        if (returnToMaster) return await openMasterHistory();
-        if (returnToWithdrawals) return await openWithdrawRequestsModal();
-    };
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+        return alert('Invalid status. Please type approved, rejected, or pending.');
+    }
 
-    const confirmAction = await Swal.fire({
-        title: 'Are you sure?',
-        text: 'Do you want to mark this withdrawal as ' + status.toUpperCase() + '?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: status === 'approved' ? '#4CAF50' : (status === 'rejected' ? '#f44336' : '#e5b853'),
-        cancelButtonColor: '#555',
-        confirmButtonText: 'Yes, ' + status,
-        background: '#0d1c14',
-        color: '#e5b853'
-    });
-
-    if (!confirmAction.isConfirmed) {
-        await refreshSourceList();
+    if (!window.confirm('Are you sure you want to mark this withdrawal as ' + status.toUpperCase() + '?')) {
         return;
     }
 
@@ -1790,21 +1775,20 @@ async function updateWithdrawalStatus(id, status) {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
 
-        // ڈیٹا بیس اپڈیٹ کے بعد اسی لسٹ کو تازہ ڈیٹا کے ساتھ دوبارہ دکھائیں۔
-        if (returnToMaster || returnToWithdrawals) {
-            await refreshSourceList();
-        } else {
-            await Swal.fire({
-                icon: 'success', title: 'Success', text: 'Request has been ' + status + '!',
-                background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-            });
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
+            background: '#0d1c14', color: '#e5b853'
+        });
+        Toast.fire({ icon: 'success', title: 'Status updated to ' + status });
+
+        const activeTitle = document.querySelector('.swal2-title')?.textContent || '';
+        if (activeTitle.includes('Master History')) {
+            await openMasterHistory();
+        } else if (activeTitle.includes('Withdrawal Requests')) {
+            await openWithdrawRequestsModal();
         }
     } catch (e) {
-        await Swal.fire({
-            icon: 'error', title: 'Error', text: e.message || 'Could not update withdrawal request.',
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
-        });
-        await refreshSourceList();
+        alert('Error updating status: ' + (e.message || 'Unknown error'));
     }
 }
 
@@ -1836,17 +1820,44 @@ async function checkDepositStatus() {
 
 async function toggleDepositSystem() {
     if (!isAdmin || !sb) return alert('Admin access required.');
+
+    const confirmMsg = depositSystemEnabled 
+        ? "Are you sure you want to DISABLE the deposit system? Members will NOT be able to submit deposits." 
+        : "Are you sure you want to ENABLE the deposit system? Members will be able to submit deposits.";
+
+    const confirmResult = await Swal.fire({
+        title: 'Confirm Action',
+        text: confirmMsg,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: depositSystemEnabled ? '#f44336' : '#4CAF50',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Yes, Proceed',
+        background: '#0d1c14',
+        color: '#e5b853'
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
     const btn = $('toggleDepositBtn');
     if (btn) btn.disabled = true;
+
     try {
         const nextValue = !depositSystemEnabled;
         const { error } = await sb.from('app_settings').upsert({ id: 1, deposit_enabled: nextValue }, { onConflict: 'id' });
         if (error) throw error;
+
         depositSystemEnabled = nextValue;
         await checkDepositStatus();
-        alert(nextValue ? 'Deposit system is now ON.' : 'Deposit system is now OFF.');
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Updated!',
+            text: nextValue ? 'Deposit system is now ON.' : 'Deposit system is now OFF.',
+            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
+        });
     } catch (err) {
-        alert('Could not update deposit setting: ' + (err.message || err));
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Could not update deposit setting: ' + (err.message || err), background: '#0d1c14', color: '#e5b853' });
     } finally {
         if (btn) btn.disabled = false;
     }
@@ -1879,7 +1890,7 @@ async function loadAdmin() {
             if (order) {
                 el.onclick = function(e) {
                     e.preventDefault();
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null);
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null, order.quantity);
                 };
             }
         });
@@ -2037,9 +2048,9 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof) {
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1) {
     $('orderDetailName').textContent = name || ('Order …' + String(id).slice(-6));
-    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; $('orderDetailPrice').textContent = convertMoney(price);
+    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(price || 0) * orderQty; $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')';
     $('orderDetailStatus').textContent = String(orderStatus || 'unknown').toUpperCase(); $('orderDetailUserId').textContent = buyerId ? '...' + String(buyerId).slice(-8) : '—'; $('orderDetailMemberCode').textContent = 'Loading…';
     
     if (buyerId) {
@@ -2355,6 +2366,7 @@ let productQty = 1;
 
 function updateQty(change) {
     productQty = Math.max(1, Math.min(10, Number(productQty || 1) + Number(change || 0)));
+    window.currentProductQty = productQty;
     if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = String(productQty);
     if (checkoutData && $('pvpPrice')) $('pvpPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
     if ($('coPrice') && checkoutData) $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
@@ -2431,6 +2443,7 @@ function openProductView(index) {
     productQty = 1;
     if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = '1';
     checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0], productIndex: index };
+    window.currentProductQty = 1;
     $('productViewPage').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     const waBtn = document.querySelector('.whatsapp-float');

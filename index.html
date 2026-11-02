@@ -51,6 +51,24 @@ select.swal2-select, #swal-status {
     margin-bottom: 10px !important;
 }
 
+/* ===== TEXTAREA WIDTH FIX ===== */
+.swal2-html-container div,
+.swal2-html-container textarea,
+.swal2-html-container input,
+.swal2-html-container select {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+.swal2-html-container {
+    width: 100% !important;
+    padding: 15px !important;
+}
+textarea#swal-note {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
 :root {
     --g: #0a1f15;
     --g2: #113626;
@@ -1800,22 +1818,43 @@ async function updateWithdrawalStatus(id, status) {
     status = String(status || '').toLowerCase();
     if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid status');
 
-    // Save the parent popup title before opening confirmation.
     const currentModalTitle = document.querySelector('.swal2-title')?.textContent || '';
-    const confirm = await Swal.fire({
-        title: 'Are you sure?',
-        text: 'Mark this withdrawal as ' + status.toUpperCase() + '?',
-        icon: 'warning', showCancelButton: true,
+    
+    // ایڈمن نوٹ پوچھنے کے لیے
+    const { value: adminNote } = await Swal.fire({
+        title: 'Update Withdrawal',
+        html: `
+            <p style="margin-bottom:10px;">Mark this withdrawal as <b>${status.toUpperCase()}</b>?</p>
+            <label style="display:block; margin-bottom:5px; font-weight:bold; text-align:left;">Admin Note (For Member)</label>
+            <textarea id="wd-note" class="swal2-textarea" placeholder="Write a note for the member..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none; box-sizing:border-box;"></textarea>
+        `,
+        showCancelButton: true,
         confirmButtonColor: '#e5b853',
-        background: '#0d1c14', color: '#e5b853'
+        background: '#0d1c14', color: '#e5b853',
+        preConfirm: () => document.getElementById('wd-note').value
     });
-    if (!confirm.isConfirmed) return;
+    if (adminNote === undefined) return;
 
     try {
-        const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
+        // Withdrawal ٹیبل اپڈیٹ کریں
+        const { error } = await sb.from('withdrawals').update({ 
+            status: status,
+            admin_notes: adminNote 
+        }).eq('id', id);
         if (error) throw error;
+
+        // اگر ٹرگر کام نہ کرے تو دستی طور پر والٹ ٹرانزیکشن بھی اپڈیٹ کریں
+        const { data: withdrawal } = await sb.from('withdrawals').select('user_id, amount').eq('id', id).single();
+        if (withdrawal) {
+            await sb.from('wallet_transactions').update({ 
+                status: status, 
+                admin_notes: adminNote 
+            }).eq('user_id', withdrawal.user_id).eq('type', 'withdrawal').eq('amount', withdrawal.amount);
+        }
+
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, background: '#0d1c14', color: '#e5b853' });
         Toast.fire({ icon: 'success', title: 'Updated to ' + status });
+        
         if (currentModalTitle.includes('Master History')) {
             await openMasterHistory();
         } else if (currentModalTitle.includes('Withdrawal Requests')) {
@@ -2746,7 +2785,7 @@ async function loadMyWallet() {
     if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(currentBalance);
 
     const { data: txns, error: txnError } = await sb.from('wallet_transactions')
-        .select('id,type,amount,status,created_at')
+        .select('id,type,amount,status,created_at,admin_notes')
         .eq('user_id', user.id).order('created_at', { ascending: false }).limit(15);
 
     if (txnError) {
@@ -2761,12 +2800,15 @@ async function loadMyWallet() {
             const amountColor = positive ? 'green' : 'red';
             const sign = positive ? '+' : (isWithdrawal || type === 'purchase' ? '-' : '');
             return `
-            <div class="item" style="cursor:default;">
-                <div><b>${title}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
-                <div style="text-align:right;">
-                    <b style="color:${amountColor};">${sign}${esc(convertMoney(t.amount))}</b><br>
-                    <span class="pill">${esc(t.status || 'pending')}</span>
+            <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <div><b>${title}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
+                    <div style="text-align:right;">
+                        <b style="color:${amountColor};">${sign}${esc(convertMoney(t.amount))}</b><br>
+                        <span class="pill">${esc(t.status || 'pending')}</span>
+                    </div>
                 </div>
+                ${t.admin_notes ? `<div style="width:100%; font-size:12px; color:#e5b853; background:#0a1f15; padding:8px; border-radius:6px; margin-top:5px; border-left:3px solid #e5b853;"><b>Admin Note:</b> ${esc(t.admin_notes)}</div>` : ''}
             </div>`;
         }).join('') || '<p>No transactions yet.</p>';
     }
@@ -3262,22 +3304,22 @@ async function updateWalletTransactionStatus(txnId, currentStatus) {
     const { value: formValues } = await Swal.fire({
         title: 'Edit Transaction Details',
         html: `
-            <div style="text-align:left; font-size:14px; line-height:1.6; color:#e5e5e5; padding: 5px;">
+            <div style="text-align:left; font-size:14px; line-height:1.6; color:#e5e5e5; width:100%; box-sizing:border-box;">
                 <p style="margin: 0 0 5px;"><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount || 0))}</span></p>
                 <p style="margin: 0 0 5px;"><b>Type:</b> ${esc(txn.type || 'transaction')}</p>
                 <p style="margin: 0 0 10px;"><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</p>
-                <div style="padding:10px; background:#0a1f15; border:1px solid #1f3a2c; border-radius:8px; margin-bottom:15px;">
+                <div style="padding:10px; background:#0a1f15; border:1px solid #1f3a2c; border-radius:8px; margin-bottom:15px; width:100%; box-sizing:border-box;">
                     <b>Payment Proof:</b><br>
                     ${proofHtml}
                 </div>
                 <label style="display:block; margin-bottom:5px; font-weight:bold;">Status</label>
-                <select id="swal-status" class="swal2-select" style="width:100%; padding:8px; margin-bottom:15px; background:#050a08; color:#fff; border:1px solid #1f3a2c; border-radius:6px;">
+                <select id="swal-status" class="swal2-select" style="width:100%; padding:8px; margin-bottom:15px; background:#050a08; color:#fff; border:1px solid #1f3a2c; border-radius:6px; box-sizing:border-box;">
                     <option value="completed" ${txn.status === 'completed' ? 'selected' : ''}>Completed</option>
                     <option value="pending" ${txn.status === 'pending' ? 'selected' : ''}>Pending</option>
                     <option value="rejected" ${txn.status === 'rejected' ? 'selected' : ''}>Rejected</option>
                 </select>
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (Optional)</label>
-                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none;">${esc(txn.admin_notes || '')}</textarea>
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (For Member)</label>
+                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note for the member..." style="width:100%; max-width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none; box-sizing:border-box; display:block;">${esc(txn.admin_notes || '')}</textarea>
             </div>
         `,
         showCancelButton: true,

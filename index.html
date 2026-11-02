@@ -10,16 +10,27 @@
 <title>GM Network</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-/* ===== SWEETALERT RESPONSIVE FIX ===== */
+/* ===== SWEETALERT RESPONSIVE FIX (No more cut-off screens) ===== */
 .swal2-popup {
     max-height: 95vh !important;
     width: 95% !important;
     max-width: 500px !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 .swal2-html-container {
-    max-height: 75vh !important;
+    max-height: 70vh !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     padding: 10px !important;
+    box-sizing: border-box !important;
+}
+.swal2-html-container::-webkit-scrollbar {
+    width: 5px;
+}
+.swal2-html-container::-webkit-scrollbar-thumb {
+    background: #e5b853;
+    border-radius: 10px;
 }
 textarea.swal2-textarea, #swal-note {
     box-sizing: border-box !important;
@@ -3249,24 +3260,35 @@ async function updateWalletTransactionStatus(txnId, currentStatus) {
     }
 
     const { value: formValues } = await Swal.fire({
-        title: 'Edit Transaction',
+        title: 'Edit Transaction Details',
         html: `
-            <div style="text-align:left; color:#e5e5e5;">
-                <p><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount))}</span></p>
-                <p><b>Type:</b> ${esc(txn.type || 'transaction')}</p>
-                <p><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</p>
-                <div style="padding:10px; background:#0a1f15; border:1px solid #1f3a2c; border-radius:8px; margin-bottom:10px;"><b>Proof:</b> ${proofHtml}</div>
-                <label style="display:block; margin-bottom:5px;">Status:</label>
-                <select id="swal-status" class="swal2-select" style="width:100%; margin-bottom:10px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:8px; border-radius:6px;">
+            <div style="text-align:left; font-size:14px; line-height:1.6; color:#e5e5e5; padding: 5px;">
+                <p style="margin: 0 0 5px;"><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount || 0))}</span></p>
+                <p style="margin: 0 0 5px;"><b>Type:</b> ${esc(txn.type || 'transaction')}</p>
+                <p style="margin: 0 0 10px;"><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</p>
+                <div style="padding:10px; background:#0a1f15; border:1px solid #1f3a2c; border-radius:8px; margin-bottom:15px;">
+                    <b>Payment Proof:</b><br>
+                    ${proofHtml}
+                </div>
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Status</label>
+                <select id="swal-status" class="swal2-select" style="width:100%; padding:8px; margin-bottom:15px; background:#050a08; color:#fff; border:1px solid #1f3a2c; border-radius:6px;">
                     <option value="completed" ${txn.status === 'completed' ? 'selected' : ''}>Completed</option>
                     <option value="pending" ${txn.status === 'pending' ? 'selected' : ''}>Pending</option>
                     <option value="rejected" ${txn.status === 'rejected' ? 'selected' : ''}>Rejected</option>
                 </select>
-                <label style="display:block; margin-bottom:5px;">Admin Note:</label>
-                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:8px; border-radius:6px;">${esc(txn.admin_notes || '')}</textarea>
-            </div>`,
-        showCancelButton: true, confirmButtonColor: '#e5b853', cancelButtonColor: '#555',
-        confirmButtonText: 'Save', background: '#0d1c14', color: '#e5b853',
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (Optional)</label>
+                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none;">${esc(txn.admin_notes || '')}</textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#e5b853',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Save Changes',
+        cancelButtonText: 'Cancel',
+        background: '#0d1c14',
+        color: '#e5b853',
+        width: '95%',
+        maxWidth: '500px',
         preConfirm: () => ({
             status: document.getElementById('swal-status').value,
             admin_notes: document.getElementById('swal-note').value

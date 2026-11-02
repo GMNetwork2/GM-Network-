@@ -10,24 +10,34 @@
 <title>GM Network</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-/* ===== GLOBAL SWEETALERT FIX (No more cut-off screens) ===== */
+/* ===== SWEETALERT RESPONSIVE FIX ===== */
 .swal2-popup {
-    max-height: 90vh !important;
-    overflow-y: auto !important;
-    border-radius: 15px !important;
+    max-height: 95vh !important;
+    width: 95% !important;
+    max-width: 500px !important;
 }
 .swal2-html-container {
-    max-height: 65vh !important;
+    max-height: 75vh !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding-right: 5px !important;
+    padding: 10px !important;
 }
-.swal2-html-container::-webkit-scrollbar {
-    width: 5px;
+textarea.swal2-textarea, #swal-note {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 80px !important;
+    resize: none !important;
+    border: 1px solid #e5b853 !important;
+    background: #050a08 !important;
+    color: #fff !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    margin-bottom: 0 !important;
 }
-.swal2-html-container::-webkit-scrollbar-thumb {
-    background: #e5b853;
-    border-radius: 10px;
+select.swal2-select, #swal-status {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
 }
 
 :root {
@@ -1775,40 +1785,33 @@ function filterWithdrawals() {
 }
 
 async function updateWithdrawalStatus(id, status) {
-    if (!isAdmin || !sb) {
-        return Swal.fire({ icon:'error', title:'Access denied', text:'Admin access required.', background:'#0d1c14', color:'#e5b853' });
-    }
+    if (!isAdmin || !sb) return alert('Admin access required.');
     status = String(status || '').toLowerCase();
-    if (!['approved', 'rejected', 'pending'].includes(status)) {
-        return Swal.fire({ icon:'error', title:'Invalid status', text:'Please choose approved, rejected, or pending.', background:'#0d1c14', color:'#e5b853' });
-    }
+    if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid status');
 
-    // Parent list ka title save karein taake refresh sahi ho.
-    const activeTitleBeforeConfirm = document.querySelector('.swal2-title')?.textContent || '';
-    const confirmResult = await Swal.fire({
+    // Save the parent popup title before opening confirmation.
+    const currentModalTitle = document.querySelector('.swal2-title')?.textContent || '';
+    const confirm = await Swal.fire({
         title: 'Are you sure?',
-        text: 'Do you want to mark this withdrawal as ' + status.toUpperCase() + '?',
+        text: 'Mark this withdrawal as ' + status.toUpperCase() + '?',
         icon: 'warning', showCancelButton: true,
-        confirmButtonColor: status === 'approved' ? '#4CAF50' : (status === 'rejected' ? '#f44336' : '#e5b853'),
-        cancelButtonColor: '#555', confirmButtonText: 'Yes, ' + status,
+        confirmButtonColor: '#e5b853',
         background: '#0d1c14', color: '#e5b853'
     });
-    if (!confirmResult.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
     try {
         const { error } = await sb.from('withdrawals').update({ status }).eq('id', id);
         if (error) throw error;
-
-        const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:2000, background:'#0d1c14', color:'#e5b853' });
-        Toast.fire({ icon:'success', title:'Status updated to ' + status });
-
-        if (activeTitleBeforeConfirm.includes('Master History')) {
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, background: '#0d1c14', color: '#e5b853' });
+        Toast.fire({ icon: 'success', title: 'Updated to ' + status });
+        if (currentModalTitle.includes('Master History')) {
             await openMasterHistory();
-        } else if (activeTitleBeforeConfirm.includes('Withdrawal Requests')) {
+        } else if (currentModalTitle.includes('Withdrawal Requests')) {
             await openWithdrawRequestsModal();
         }
     } catch (e) {
-        Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853' });
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not update withdrawal request.', background: '#0d1c14', color: '#e5b853' });
     }
 }
 
@@ -3234,74 +3237,50 @@ async function openMasterHistory() {
     }
 }
 async function updateWalletTransactionStatus(txnId, currentStatus) {
-    if (!isAdmin || !sb) {
-        await Swal.fire({ icon:'error', title:'Access denied', text:'Admin access required.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
-        return;
-    }
-
-    // Save parent modal state before opening the edit dialog.
+    if (!isAdmin || !sb) return alert('Admin access required.');
     const wasMasterHistoryOpen = (document.querySelector('.swal2-title')?.textContent || '').includes('Master History');
 
-    const { data: txn, error: fetchError } = await sb.from('wallet_transactions').select('*').eq('id', txnId).single();
-    if (fetchError || !txn) {
-        await Swal.fire({ icon:'error', title:'Error', text:'Transaction details could not be found.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
-        return;
-    }
+    const { data: txn, error } = await sb.from('wallet_transactions').select('*').eq('id', txnId).single();
+    if (error || !txn) return Swal.fire({ icon: 'error', title: 'Error', text: 'Transaction not found', background: '#0d1c14', color: '#e5b853' });
 
-    let proofHtml = '<span style="color:#888;font-size:12px;">No proof attached</span>';
+    let proofHtml = '<span style="color:#888;">No proof attached</span>';
     if (txn.screenshot_url && /^https?:\/\//i.test(txn.screenshot_url)) {
-        proofHtml = `<a href="${esc(txn.screenshot_url)}" target="_blank" rel="noopener noreferrer" style="color:#4CAF50;text-decoration:underline;font-weight:bold;font-size:14px;">🔍 View Proof Screenshot</a>`;
+        proofHtml = `<a href="${esc(txn.screenshot_url)}" target="_blank" rel="noopener noreferrer" style="color:#4CAF50;text-decoration:underline;">🔍 View Proof</a>`;
     }
 
     const { value: formValues } = await Swal.fire({
-        title: 'Edit Transaction Details',
+        title: 'Edit Transaction',
         html: `
-            <div style="text-align:left; font-size:14px; line-height:1.8; color:#e5e5e5;">
-                <div style="margin-bottom:10px;"><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount || 0))}</span></div>
-                <div style="margin-bottom:10px;"><b>Type:</b> ${esc(txn.type || 'transaction')}</div>
-                <div style="margin-bottom:10px;"><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</div>
-                <div style="margin-bottom:15px; padding:10px; background:#0a1f15; border-radius:8px; border:1px solid var(--line);">
-                    <b>Payment Proof:</b><br>
-                    ${proofHtml}
-                </div>
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Status</label>
-                <select id="swal-status" class="swal2-select" style="width:100%; padding:10px; margin-bottom:15px; background:#050a08; color:#fff; border:1px solid var(--line); border-radius:8px;">
+            <div style="text-align:left; color:#e5e5e5;">
+                <p><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount))}</span></p>
+                <p><b>Type:</b> ${esc(txn.type || 'transaction')}</p>
+                <p><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</p>
+                <div style="padding:10px; background:#0a1f15; border:1px solid #1f3a2c; border-radius:8px; margin-bottom:10px;"><b>Proof:</b> ${proofHtml}</div>
+                <label style="display:block; margin-bottom:5px;">Status:</label>
+                <select id="swal-status" class="swal2-select" style="width:100%; margin-bottom:10px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:8px; border-radius:6px;">
                     <option value="completed" ${txn.status === 'completed' ? 'selected' : ''}>Completed</option>
                     <option value="pending" ${txn.status === 'pending' ? 'selected' : ''}>Pending</option>
                     <option value="rejected" ${txn.status === 'rejected' ? 'selected' : ''}>Rejected</option>
                 </select>
-                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (Optional)</label>
-                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:60px; margin-bottom:0; background:#050a08; color:#fff; border:1px solid var(--line); border-radius:8px;">${esc(txn.admin_notes || '')}</textarea>
-            </div>
-        `,
-        showCancelButton: true,
-        confirmButtonColor: '#e5b853',
-        cancelButtonColor: '#555',
-        confirmButtonText: 'Save Changes',
-        cancelButtonText: 'Cancel',
-        background: '#0d1c14',
-        color: '#e5b853',
-        width: '450px',
+                <label style="display:block; margin-bottom:5px;">Admin Note:</label>
+                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:8px; border-radius:6px;">${esc(txn.admin_notes || '')}</textarea>
+            </div>`,
+        showCancelButton: true, confirmButtonColor: '#e5b853', cancelButtonColor: '#555',
+        confirmButtonText: 'Save', background: '#0d1c14', color: '#e5b853',
         preConfirm: () => ({
             status: document.getElementById('swal-status').value,
             admin_notes: document.getElementById('swal-note').value
         })
     });
-
     if (!formValues) return;
-
     try {
-        const { error } = await sb.from('wallet_transactions').update({
-            status: formValues.status,
-            admin_notes: formValues.admin_notes
-        }).eq('id', txnId);
-        if (error) throw error;
-
-        const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:2000, background:'#0d1c14', color:'#e5b853' });
-        Toast.fire({ icon:'success', title:'Transaction updated successfully' });
+        const { error: updateError } = await sb.from('wallet_transactions').update({ status: formValues.status, admin_notes: formValues.admin_notes }).eq('id', txnId);
+        if (updateError) throw updateError;
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, background: '#0d1c14', color: '#e5b853' });
+        Toast.fire({ icon: 'success', title: 'Updated successfully' });
         if (wasMasterHistoryOpen) await openMasterHistory();
-    } catch (e) {
-        await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update transaction.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Could not update transaction.', background: '#0d1c14', color: '#e5b853' });
     }
 }
 

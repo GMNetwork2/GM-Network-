@@ -1765,6 +1765,7 @@ async function updateWithdrawalStatus(id, status) {
         return;
     }
 
+    // Confirmation dialog replaces the previous modal, so save its title first.
     const activeTitleBeforeConfirm = document.querySelector('.swal2-title')?.textContent || '';
     const confirmResult = await Swal.fire({
         title: 'Are you sure?',
@@ -1781,8 +1782,11 @@ async function updateWithdrawalStatus(id, status) {
         if (error) throw error;
         const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:2000, background:'#0d1c14', color:'#e5b853' });
         Toast.fire({ icon:'success', title:'Status updated to ' + status });
-        if (activeTitleBeforeConfirm.includes('Master History')) await openMasterHistory();
-        else if (activeTitleBeforeConfirm.includes('Withdrawal Requests')) await openWithdrawRequestsModal();
+        if (activeTitleBeforeConfirm.includes('Master History')) {
+            await openMasterHistory();
+        } else if (activeTitleBeforeConfirm.includes('Withdrawal Requests')) {
+            await openWithdrawRequestsModal();
+        }
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal request.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     }
@@ -3199,20 +3203,67 @@ async function updateWalletTransactionStatus(txnId, currentStatus) {
         await Swal.fire({ icon:'error', title:'Access denied', text:'Admin access required.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
         return;
     }
+
+    // Save parent modal state before opening the edit dialog.
     const wasMasterHistoryOpen = (document.querySelector('.swal2-title')?.textContent || '').includes('Master History');
-    const { value: newStatus } = await Swal.fire({
-        title:'Edit Transaction Status', input:'select',
-        inputOptions:{ completed:'Completed', pending:'Pending', rejected:'Rejected' },
-        inputValue: currentStatus || 'pending', showCancelButton:true,
-        confirmButtonColor:'#e5b853', cancelButtonColor:'#555', confirmButtonText:'Update',
-        background:'#0d1c14', color:'#e5b853'
+
+    const { data: txn, error: fetchError } = await sb.from('wallet_transactions').select('*').eq('id', txnId).single();
+    if (fetchError || !txn) {
+        await Swal.fire({ icon:'error', title:'Error', text:'Transaction details could not be found.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        return;
+    }
+
+    let proofHtml = '<span style="color:#888;font-size:12px;">No proof attached</span>';
+    if (txn.screenshot_url && /^https?:\/\//i.test(txn.screenshot_url)) {
+        proofHtml = `<a href="${esc(txn.screenshot_url)}" target="_blank" rel="noopener noreferrer" style="color:#4CAF50;text-decoration:underline;font-weight:bold;font-size:14px;">🔍 View Proof Screenshot</a>`;
+    }
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Edit Transaction Details',
+        html: `
+            <div style="text-align:left; font-size:14px; line-height:1.8; color:#e5e5e5;">
+                <div style="margin-bottom:10px;"><b>Amount:</b> <span style="color:#e5b853;">${esc(convertMoney(txn.amount || 0))}</span></div>
+                <div style="margin-bottom:10px;"><b>Type:</b> ${esc(txn.type || 'transaction')}</div>
+                <div style="margin-bottom:10px;"><b>Date:</b> ${esc(txn.created_at ? new Date(txn.created_at).toLocaleString() : '—')}</div>
+                <div style="margin-bottom:15px; padding:10px; background:#0a1f15; border-radius:8px; border:1px solid var(--line);">
+                    <b>Payment Proof:</b><br>
+                    ${proofHtml}
+                </div>
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Status</label>
+                <select id="swal-status" class="swal2-select" style="width:100%; padding:10px; margin-bottom:15px; background:#050a08; color:#fff; border:1px solid var(--line); border-radius:8px;">
+                    <option value="completed" ${txn.status === 'completed' ? 'selected' : ''}>Completed</option>
+                    <option value="pending" ${txn.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="rejected" ${txn.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                </select>
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (Optional)</label>
+                <textarea id="swal-note" class="swal2-textarea" placeholder="Write a note here..." style="width:100%; height:60px; margin-bottom:0; background:#050a08; color:#fff; border:1px solid var(--line); border-radius:8px;">${esc(txn.admin_notes || '')}</textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#e5b853',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Save Changes',
+        cancelButtonText: 'Cancel',
+        background: '#0d1c14',
+        color: '#e5b853',
+        width: '450px',
+        preConfirm: () => ({
+            status: document.getElementById('swal-status').value,
+            admin_notes: document.getElementById('swal-note').value
+        })
     });
-    if (!newStatus) return;
+
+    if (!formValues) return;
+
     try {
-        const { error } = await sb.from('wallet_transactions').update({ status:newStatus }).eq('id', txnId);
+        const { error } = await sb.from('wallet_transactions').update({
+            status: formValues.status,
+            admin_notes: formValues.admin_notes
+        }).eq('id', txnId);
         if (error) throw error;
+
         const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:2000, background:'#0d1c14', color:'#e5b853' });
-        Toast.fire({ icon:'success', title:'Transaction status updated to ' + newStatus });
+        Toast.fire({ icon:'success', title:'Transaction updated successfully' });
         if (wasMasterHistoryOpen) await openMasterHistory();
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update transaction.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });

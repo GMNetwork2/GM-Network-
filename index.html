@@ -645,9 +645,18 @@ input[type="file"]::file-selector-button:hover {
     <div id="adminSection-products" class="hidden panel">
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
         <h2>Manage Products</h2>
-        <button class="primary" onclick="insertDemoProducts()" style="background:#2196F3; margin-bottom:15px;">🚀 Insert Demo Products</button>
+        <h3 style="margin-top:10px;">1-Click Demo Product Generators:</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+            <button class="primary" onclick="insertDemoByCategory('Watches')" style="background:#2196F3; margin:0; font-size:12px;">⌚ Watches (8)</button>
+            <button class="primary" onclick="insertDemoByCategory('Wallets')" style="background:#FF9800; margin:0; font-size:12px;">👛 Wallets (8)</button>
+            <button class="primary" onclick="insertDemoByCategory('Accessories')" style="background:#4CAF50; margin:0; font-size:12px;">🕶️ Accessories (8)</button>
+            <button class="primary" onclick="insertDemoByCategory('Premium')" style="background:#9C27B0; margin:0; font-size:12px;">💎 Premium (8)</button>
+            <button class="primary" onclick="insertDemoByCategory('Perfumes')" style="background:#E91E63; margin:0; font-size:12px;">🧴 Perfumes (8)</button>
+            <button class="primary" onclick="insertDemoByCategory('Attars')" style="background:#009688; margin:0; font-size:12px;">🌸 Attars (8)</button>
+        </div>
         <label>Product name</label><input id="newProduct" placeholder="Product name">
         <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
+        <label>Discount % (0 for no discount)</label><input id="newDiscount" type="number" min="0" max="90" value="0">
         <label>Description</label><textarea id="newDescription" rows="2"></textarea>
         <label>Starting Rating</label><input id="newBaseRating" type="number" step="0.1" min="0" max="5" value="4.5">
         <label>Reviews Count</label><input id="newBaseReviewsCount" type="number" min="0" value="10">
@@ -1633,6 +1642,17 @@ function renderProductCards(productsToRender, container) {
         const approved = ratingsMap[p.id] || { total: 0, count: 0 };
         const finalRating = approved.count > 0 ? ((baseRating * baseReviews) + approved.total) / (baseReviews + approved.count) : baseRating;
         const finalReviewsCount = baseReviews + approved.count;
+        let priceHtml = '';
+        if (p.discount_percent && Number(p.discount_percent) > 0) {
+            const originalPrice = Number(p.price_pkr);
+            const discountedPrice = originalPrice - (originalPrice * (Number(p.discount_percent) / 100));
+            priceHtml = `<div class="price" style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="text-decoration:line-through; color:#888; font-size:12px;">${convertMoney(originalPrice)}</span>
+                            <span style="color:#4CAF50; font-weight:bold; font-size:16px;">${convertMoney(discountedPrice)}</span>
+                         </div>`;
+        } else {
+            priceHtml = `<div class="price">${convertMoney(p.price_pkr)}</div>`;
+        }
         const fullStars = Math.floor(finalRating);
         const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
@@ -1648,7 +1668,7 @@ function renderProductCards(productsToRender, container) {
                 <h3>${esc(p.name)}</h3>
                 ${starsHtml}
                 <div class="reviews">${esc(finalReviewsCount)} Reviews</div>
-                <div class="price">${convertMoney(p.price_pkr)}</div>
+                ${priceHtml}
             </div>
             <button class="primary buy-btn" type="button" style="pointer-events:none; ${!p.active ? 'background:#222; color:#555;' : ''};">${p.active ? 'View Details' : 'SOLD OUT'}</button>
         </div>`;
@@ -2110,22 +2130,44 @@ async function loadAdmin() {
     }
 
     if($('adminManageProducts')) {
-        $('adminManageProducts').innerHTML = p.error ? esc(p.error.message) : (p.data || []).map(x => `
-            <div class="item">
-                <div><b>${esc(x.name || 'Product')}</b><br><small>${convertMoney(x.price_pkr)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small></div>
-                <div class="row-actions" style="flex-wrap:wrap; gap:5px;">
-                    <button class="secondary" data-edit="${esc(x.id)}">Edit</button>
-                    <button class="secondary" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark as Sold Out' : 'Mark as Active'}</button>
-                    <button class="secondary" data-delete="${esc(x.id)}">Delete</button>
-                </div>
-            </div>`).join('') || 'No products yet.';
-
-        $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
-        $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
-            const product = (p.data || []).find(x => String(x.id) === btn.dataset.toggle);
-            btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
-        });
-        $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+        const catHtml = `<div style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px; padding-bottom:5px;">
+            <button class="secondary" onclick="filterAdminProducts('All')" style="white-space:nowrap;">All</button>
+            <button class="secondary" onclick="filterAdminProducts('Watches')" style="white-space:nowrap;">⌚ Watches</button>
+            <button class="secondary" onclick="filterAdminProducts('Wallets')" style="white-space:nowrap;">👛 Wallets</button>
+            <button class="secondary" onclick="filterAdminProducts('Accessories')" style="white-space:nowrap;">🕶️ Accessories</button>
+            <button class="secondary" onclick="filterAdminProducts('Premium')" style="white-space:nowrap;">💎 Premium</button>
+            <button class="secondary" onclick="filterAdminProducts('Perfumes')" style="white-space:nowrap;">🧴 Perfumes</button>
+            <button class="secondary" onclick="filterAdminProducts('Attars')" style="white-space:nowrap;">🌸 Attars</button>
+        </div>`;
+        if (p.error) {
+            $('adminManageProducts').innerHTML = catHtml + esc(p.error.message);
+        } else {
+            window.allAdminProducts = p.data || [];
+            const productsHtml = window.allAdminProducts.map(x => {
+                const imgUrl = (Array.isArray(x.images) && x.images.length > 0) ? x.images[0] : (x.image_url || 'https://placehold.co/100x100?text=GM');
+                return `<div class="item admin-product-item" data-name="${esc(String(x.name || '').toLowerCase())}" style="cursor:default; align-items:flex-start;">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <img src="${esc(imgUrl)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--line);">
+                        <div>
+                            <b>${esc(x.name || 'Product')}</b><br>
+                            <small class="muted">${convertMoney(x.price_pkr)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small>
+                        </div>
+                    </div>
+                    <div class="row-actions" style="display:flex; flex-direction:column; gap:5px;">
+                        <button class="secondary small-btn" data-edit="${esc(x.id)}">Edit</button>
+                        <button class="secondary small-btn" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark Sold Out' : 'Mark Active'}</button>
+                        <button class="secondary small-btn" data-delete="${esc(x.id)}" style="color:#f44336;">Delete</button>
+                    </div>
+                </div>`;
+            }).join('');
+            $('adminManageProducts').innerHTML = catHtml + `<div id="adminProductsListContainer">${productsHtml || 'No products yet.'}</div>`;
+            $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
+            $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
+                const product = window.allAdminProducts.find(x => String(x.id) === btn.dataset.toggle);
+                btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
+            });
+            $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+        }
     }
 
     if ($('adminPendingReviews')) {
@@ -2504,6 +2546,7 @@ async function addOnlineProduct() {
     const name = $('newProduct').value.trim();
     const price = Number($('newPrice').value);
     const rate = Number($('newRate').value);
+    const discount = Number($('newDiscount')?.value) || 0;
     const description = $('newDescription').value.trim();
     const baseRating = Number($('newBaseRating').value) || 4.5;
     const baseReviewsCount = Number($('newBaseReviewsCount').value) || 112;
@@ -2511,6 +2554,7 @@ async function addOnlineProduct() {
 
     if (!name || !Number.isFinite(price) || price < 1) return status('adminStatus', 'Enter a product name and valid price.', 'error');
     if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('adminStatus', 'Commission must be between 0 and 50%.', 'error');
+    if (!Number.isFinite(discount) || discount < 0 || discount > 90) return status('adminStatus', 'Discount must be between 0 and 90%.', 'error');
 
     status('adminStatus', 'Saving product…');
     const images = [];
@@ -2527,14 +2571,14 @@ async function addOnlineProduct() {
     }
 
     const { error } = await sb.from('products').insert({
-        name, price_pkr: price, commission_percent: rate, images,
+        name, price_pkr: price, commission_percent: rate, discount_percent: discount, images,
         image_url: images[0] || null, active: true, description: description || null,
         base_rating: baseRating, base_reviews_count: baseReviewsCount
     });
 
     if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error');
     $('newProduct').value = ''; $('newPrice').value = ''; $('newImageFiles').value = '';
-    $('newRate').value = '5'; $('newDescription').value = '';
+    $('newRate').value = '5'; $('newDiscount').value = '0'; $('newDescription').value = '';
     status('adminStatus', 'Product saved successfully.', 'ok');
     await loadProducts(); await loadAdmin();
 }
@@ -2592,7 +2636,11 @@ function openProductView(index) {
     $('pvpName').textContent = p.name || 'Product';
     $('pvpStars').innerHTML = starsHtml;
     $('pvpReviews').textContent = baseReviews + ' Reviews';
-    $('pvpPrice').textContent = convertMoney(p.price_pkr);
+    let finalPrice = Number(p.price_pkr) || 0;
+    if (p.discount_percent && Number(p.discount_percent) > 0) {
+        finalPrice = finalPrice - (finalPrice * (Number(p.discount_percent) / 100));
+    }
+    $('pvpPrice').textContent = convertMoney(finalPrice);
     $('pvpDescription').textContent = p.description || 'No description available for this product.';
     const descriptionRow = $('pvpDescription').previousElementSibling;
     if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
@@ -2606,7 +2654,14 @@ function openProductView(index) {
             const card = document.createElement('div');
             card.style.cssText = 'min-width:140px;max-width:140px;flex:0 0 140px;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:#fff;';
             card.setAttribute('role', 'button'); card.setAttribute('tabindex', '0');
-            card.innerHTML = `<img src="${esc(rImgs[0])}" alt="${esc(rp.name || 'Product')}" loading="lazy" style="width:100%;height:100px;object-fit:contain;border-radius:8px;background:#f9f9f9;"><div style="font-size:12px;font-weight:bold;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(rp.name || 'Product')}</div><div style="color:#cc0000;font-size:14px;font-weight:bold;">${esc(convertMoney(rp.price_pkr))}</div>`;
+            const relatedOriginalPrice = Number(rp.price_pkr) || 0;
+            const relatedFinalPrice = rp.discount_percent && Number(rp.discount_percent) > 0
+                ? relatedOriginalPrice - (relatedOriginalPrice * (Number(rp.discount_percent) / 100))
+                : relatedOriginalPrice;
+            const relatedPriceHtml = relatedFinalPrice < relatedOriginalPrice
+                ? `<span style="text-decoration:line-through;color:#888;font-size:10px;">${esc(convertMoney(relatedOriginalPrice))}</span><br><span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(relatedFinalPrice))}</span>`
+                : `<span style="color:#cc0000;font-weight:bold;">${esc(convertMoney(relatedFinalPrice))}</span>`;
+            card.innerHTML = `<img src="${esc(rImgs[0])}" alt="${esc(rp.name || 'Product')}" loading="lazy" style="width:100%;height:100px;object-fit:contain;border-radius:8px;background:#f9f9f9;"><div style="font-size:12px;font-weight:bold;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(rp.name || 'Product')}</div><div style="font-size:14px;">${relatedPriceHtml}</div>`;
             card.onclick = () => openProductView(relatedIndex);
             card.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openProductView(relatedIndex); } };
             const relatedImage = card.querySelector('img');
@@ -2619,7 +2674,7 @@ function openProductView(index) {
 
     productQty = 1;
     if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = '1';
-    checkoutData = { id: p.id, name: p.name, price: Number(p.price_pkr) || 0, image: imgs[0], productIndex: index };
+    checkoutData = { id: p.id, name: p.name, price: finalPrice, image: imgs[0], productIndex: index };
     window.currentProductQty = 1;
     // Sold Out Check for Product View Page
     const pvBuyBtn = document.querySelector('#productViewPage .primary[onclick="openCheckoutPage()"]');
@@ -3306,6 +3361,108 @@ window.addEventListener('popstate', (event) => {
 // returns through the app's screens instead of immediately leaving the app.
 if (!history.state || !history.state.page) {
     history.replaceState({ page: 'home' }, '', window.location.pathname + window.location.search + window.location.hash);
+}
+
+// --- Category-wise demo product insert ---
+async function insertDemoByCategory(category) {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const demoProductsByCategory = {
+        Watches: [
+            { name: "Luxury Gold Watch", price_pkr: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
+            { name: "Classic Silver Watch", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
+            { name: "Smart Watch Pro", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
+            { name: "Leather Strap Watch", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Gold Ladies Watch", price_pkr: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
+            { name: "Chronograph Watch", price_pkr: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sporty Digital Watch", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
+            { name: "Minimalist Watch", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" }
+        ],
+        Wallets: [
+            { name: "Classic Leather Wallet", price_pkr: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+            { name: "Brown Bifold Wallet", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Black RFID Wallet", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Slim Card Holder", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ladies Zipper Wallet", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
+            { name: "Travel Passport Holder", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Carbon Fiber Wallet", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Vintage Leather Wallet", price_pkr: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" }
+        ],
+        Accessories: [
+            { name: "Designer Sunglasses", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
+            { name: "Silver Chain Necklace", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+            { name: "Premium Leather Belt", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
+            { name: "Wireless Earbuds Pro", price_pkr: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
+            { name: "Baseball Cap", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
+            { name: "Silk Scarf", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Leather Gloves", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
+            { name: "Keychain Organizer", price_pkr: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" }
+        ],
+        Premium: [
+            { name: "Diamond Ring (Ladies)", price_pkr: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+            { name: "Gold Plated Bracelet", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+            { name: "Pearl Earrings", price_pkr: 145, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+            { name: "Emerald Pendant", price_pkr: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ruby Studs", price_pkr: 190, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sapphire Ring", price_pkr: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+            { name: "Platinum Chain", price_pkr: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+            { name: "Diamond Cufflinks", price_pkr: 220, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" }
+        ],
+        Perfumes: [
+            { name: "Royal Oud Perfume", price_pkr: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Aqua Di Gio", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Essence", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Midnight Musk Perfume", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Citrus Splash", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Vanilla Bloom", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ocean Breeze", price_pkr: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Golden Amber Perfume", price_pkr: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" }
+        ],
+        Attars: [
+            { name: "Arabian Attar Premium", price_pkr: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Musk Al Haramain", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Attar", price_pkr: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sandalwood Attar", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Jasmine Attar", price_pkr: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Amber Attar", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Oud Attar", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "White Musk Attar", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
+        ]
+    };
+    const demoProducts = demoProductsByCategory[category];
+    if (!demoProducts) return alert('Unknown product category.');
+
+    Swal.fire({ title: `Inserting ${category}...`, allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+    try {
+        const rows = demoProducts.map(p => ({
+            name: p.name, price_pkr: p.price_pkr, commission_percent: 10, discount_percent: 0,
+            description: 'High quality premium product from GM Network.',
+            image_url: p.image_url, images: [p.image_url], active: p.active,
+            base_rating: Number((4.5 + (Math.random() * 0.5)).toFixed(1)),
+            base_reviews_count: Math.floor(Math.random() * 100) + 10
+        }));
+        const { error } = await sb.from('products').insert(rows);
+        if (error) throw error;
+        Swal.fire({ icon: 'success', title: 'Done!', text: `${category} products added successfully.`, background: '#0d1c14', color: '#e5b853' });
+        await loadProducts(); await loadAdmin();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message || String(e), background: '#0d1c14', color: '#e5b853' });
+    }
+}
+
+// --- Admin products category filter ---
+function filterAdminProducts(category) {
+    document.querySelectorAll('.admin-product-item').forEach(item => {
+        const name = (item.getAttribute('data-name') || '').toLowerCase();
+        let show = false;
+        if (category === 'All') show = true;
+        else if (category === 'Watches') show = name.includes('watch');
+        else if (category === 'Wallets') show = name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
+        else if (category === 'Accessories') show = ['sunglasses','necklace','belt','earbuds','cap','scarf','gloves','keychain','earrings','bracelet'].some(word => name.includes(word));
+        else if (category === 'Premium') show = ['ring','pendant','studs','cufflinks','platinum chain','diamond'].some(word => name.includes(word));
+        else if (category === 'Perfumes') show = !name.includes('attar') && !name.includes('musk al haramain') && ['perfume','aqua','essence','musk','splash','bloom','breeze','amber'].some(word => name.includes(word));
+        else if (category === 'Attars') show = name.includes('attar') || name.includes('musk al haramain');
+        item.style.display = show ? 'flex' : 'none';
+    });
 }
 
 // Admin master history: read-only financial ledger plus recent orders.

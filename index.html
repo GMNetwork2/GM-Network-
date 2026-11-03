@@ -35,7 +35,7 @@
 textarea.swal2-textarea, #swal-note {
     box-sizing: border-box !important;
     width: 100% !important;
-    height: 80px !important;
+    height: 60px !important;
     resize: none !important;
     border: 1px solid #e5b853 !important;
     background: #050a08 !important;
@@ -633,78 +633,91 @@ input[type="file"]::file-selector-button:hover {
 <section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
 
 <section id="admin" class="view hidden">
-<div class="panel"><h2>Search Member</h2><div class="search-box"><input id="adminSearchInput" placeholder="Enter Member ID or Name..."><button type="button" onclick="searchAdminMember()" class="primary" style="width:auto; padding: 10px 20px; margin-top: 10px;">Search</button></div><div id="adminSearchResult" class="muted">Search result will appear here.</div></div>
-<div class="panel"><h2>Admin Dashboard</h2><div class="stats"><div class="stat"><small>Members</small><strong id="am">500</strong></div><div class="stat"><small>Products</small><strong id="ap">—</strong></div><div class="stat"><small>Total orders</small><strong id="ao">—</strong></div></div><p class="muted">Member list is limited to the latest 20 records.</p></div>
-<div class="panel"><h2>Reset Member Password</h2><p class="muted">Enter member's email to send a password reset link.</p><label>Member Email</label><input id="resetEmail" type="email" placeholder="member@example.com"><button class="primary" onclick="sendPasswordReset()">Send Reset Link</button><div id="resetStatus" class="status hidden"></div></div>
+    <!-- Admin Menu Buttons -->
+    <div class="panel" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:center;">
+        <button class="primary" onclick="openAdminSection('products')" style="background:#2196F3; margin:0;">🛍️ Manage Products</button>
+        <button class="primary" onclick="openAdminSection('members')" style="background:#4CAF50; margin:0;">👥 Manage Members</button>
+        <button class="primary" onclick="openAdminSection('finance')" style="background:#ff9800; margin:0;">💰 Finance &amp; Wallets</button>
+        <button class="primary" onclick="openAdminSection('orders')" style="background:#9C27B0; margin:0;">📦 View Orders</button>
+    </div>
 
-<div class="panel"><h2>Add Product</h2>
-    <button class="primary" onclick="insertDemoProducts()" style="background:#2196F3; margin-bottom:15px;">🚀 Insert 48 Demo Products (Fast Mode)</button>
-    <label>Product name</label><input id="newProduct" placeholder="Product name">
-    <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
-    <label>Description (optional)</label><textarea id="newDescription" rows="3" placeholder="Write product details here..."></textarea>
-    <label>Starting Rating (e.g. 4.5)</label><input id="newBaseRating" type="number" step="0.1" min="0" max="5" value="4.5">
-    <label>Starting Reviews Count (e.g. 120)</label><input id="newBaseReviewsCount" type="number" min="0" value="10">
-    <label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple>
-    <label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5">
-    <button class="primary" onclick="addOnlineProduct()">Save Product</button>
-    <div id="adminStatus" class="status">Admin action status will appear here.</div>
-</div>
+    <!-- Products Section -->
+    <div id="adminSection-products" class="hidden panel">
+        <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
+        <h2>Manage Products</h2>
+        <button class="primary" onclick="insertDemoProducts()" style="background:#2196F3; margin-bottom:15px;">🚀 Insert Demo Products</button>
+        <label>Product name</label><input id="newProduct" placeholder="Product name">
+        <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
+        <label>Description</label><textarea id="newDescription" rows="2"></textarea>
+        <label>Starting Rating</label><input id="newBaseRating" type="number" step="0.1" min="0" max="5" value="4.5">
+        <label>Reviews Count</label><input id="newBaseReviewsCount" type="number" min="0" value="10">
+        <label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple>
+        <label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5">
+        <button class="primary" onclick="addOnlineProduct()">Save Product</button>
+        <div id="adminStatus" class="status">Admin action status will appear here.</div>
+        <h3 style="margin-top:20px;">Manage Banners</h3>
+        <input type="file" id="bannerImg1" accept="image/*">
+        <input type="file" id="bannerImg2" accept="image/*">
+        <input type="file" id="bannerImg3" accept="image/*">
+        <input type="file" id="bannerImg4" accept="image/*">
+        <button class="primary" onclick="saveBanners()">Save Banners</button>
+        <div id="bannerStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">All Products List</h3>
+        <div id="adminManageProducts" class="muted">Loading…</div>
+    </div>
 
-<div class="panel"><h2>Manage Banners (Home Screen)</h2>
-    <p class="muted" style="font-size:12px;">Upload up to 4 banners for the Products page.</p>
-    <label>Upload Banner 1</label><input type="file" id="bannerImg1" accept="image/*">
-    <label>Upload Banner 2</label><input type="file" id="bannerImg2" accept="image/*">
-    <label>Upload Banner 3</label><input type="file" id="bannerImg3" accept="image/*">
-    <label>Upload Banner 4</label><input type="file" id="bannerImg4" accept="image/*">
-    <button class="primary" onclick="saveBanners()">Save Banners</button>
-    <div id="bannerStatus" class="status hidden"></div>
-</div>
+    <!-- Members Section -->
+    <div id="adminSection-members" class="hidden panel">
+        <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
+        <h2>Search Member</h2>
+        <input id="adminSearchInput" placeholder="Enter Member ID or Name...">
+        <button type="button" onclick="searchAdminMember()" class="primary">Search</button>
+        <div id="adminSearchResult" class="muted">Search result will appear here.</div>
+        <h2 style="margin-top:20px;">Reset Member Password</h2>
+        <input id="resetEmail" type="email" placeholder="member@example.com">
+        <button class="primary" onclick="sendPasswordReset()">Send Reset Link</button>
+        <div id="resetStatus" class="status hidden"></div>
+        <h2 style="margin-top:20px;">Recent Members</h2>
+        <div id="adminMembers" class="muted">No data loaded.</div>
+        <h2 style="margin-top:20px;">Customer Reviews (Pending)</h2>
+        <div id="adminPendingReviews" class="muted">Loading reviews…</div>
+    </div>
 
-<div class="panel"><h2>Customer Reviews (Pending Approval)</h2><div id="adminPendingReviews" class="muted">Loading reviews…</div></div>
-<div class="panel"><h2>Manage Products</h2><div id="adminManageProducts" class="muted">Loading…</div></div><div class="panel" style="border-color: var(--gold);">
-    <h2 style="color: var(--gold);">Withdraw Requests</h2>
-    <p class="muted" style="margin-bottom:10px;">Click here to view and manage all withdrawal requests.</p>
-    <button class="primary" type="button" onclick="openWithdrawRequestsModal()">View Withdraw Requests</button>
-</div><div class="panel" style="border-color:var(--gold);">
-    <h2 style="color:var(--gold);">Direct Wallet Add (Manual)</h2>
-    <p class="muted" style="font-size:12px;margin-bottom:10px;">Use this to add funds to a member wallet for testing or manual payments.</p>
-    <label>Member ID or Name</label><input id="adminAddFundsMemberId" placeholder="Enter Member ID or Name...">
-    <label>Amount (USD)</label><input id="adminAddFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
-    <button class="primary" onclick="adminDirectAddFunds()">Add Funds to Member</button>
-    <div id="adminAddFundsStatus" class="status hidden"></div>
-</div>
-<div class="panel" style="border-color: var(--gold);">
-    <h2 style="color: var(--gold);">Deposit System Control</h2>
-    <p class="muted" style="font-size:12px;margin-bottom:10px;">Turn this OFF to stop members from submitting deposit requests.</p>
-    <button class="primary" type="button" onclick="toggleDepositSystem()" id="toggleDepositBtn">Loading...</button>
-</div>
-<div class="panel" style="border-color:#f44336;">
-    <h2 style="color:#f44336;">Direct Wallet Deduct (Manual)</h2>
-    <p class="muted" style="font-size:12px;margin-bottom:10px;">Use this to remove funds from a member wallet, for example if funds were added by mistake.</p>
-    <label>Member ID or Name</label><input id="adminDeductFundsMemberId" placeholder="Enter Member ID or Name...">
-    <label>Amount (USD)</label><input id="adminDeductFundsAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 50">
-    <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds from Member</button>
-    <div id="adminDeductFundsStatus" class="status hidden"></div>
-</div>
-<div class="panel" style="border-color:#2196F3;">
-    <h2 style="color:#2196F3;">Master History (All Transactions)</h2>
-    <p class="muted" style="font-size:12px;margin-bottom:10px;">Review withdrawals, wallet deposits and purchases, plus recent orders. Financial reversals require a protected database transaction.</p>
-    <button class="primary" type="button" onclick="openMasterHistory()" style="background:#2196F3;color:white;">View Master History</button>
-</div>
-<div class="panel" style="border-color: var(--gold);">
-    <h2 style="color: var(--gold);">Wallet Transaction History (Audit)</h2>
-    <p class="muted" style="font-size:12px;margin-bottom:10px;">View the complete deposit and purchase history of any member to help review wallet activity.</p>
-    <label>Member ID or Name</label>
-    <input id="adminHistoryMemberId" placeholder="Enter Member ID or Name...">
-    <button class="primary" onclick="openMemberAuditHistory()">View History</button>
-    <div id="adminHistoryStatus" class="status hidden"></div>
-</div>
-<div class="panel" style="border-color:var(--gold);">
-    <h2 style="color:var(--gold);">Wallet Deposit Requests</h2>
-    <p class="muted" style="margin-bottom:10px;">Click here to review and approve pending member deposits.</p>
-    <button class="primary" type="button" onclick="openWalletDepositsModal()">View Deposit Requests</button>
-</div>
-<div class="panel"><h2>Recent Orders</h2><div id="adminOrders" class="muted">No orders yet.</div></div><div class="panel"><h2>Recent Members</h2><div id="adminMembers" class="muted">No data loaded.</div></div></section>
+    <!-- Finance Section -->
+    <div id="adminSection-finance" class="hidden panel">
+        <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
+        <h2>Finance &amp; Wallets</h2>
+        <h3>Wallet Deposit Requests</h3>
+        <button class="primary" type="button" onclick="openWalletDepositsModal()">View Deposit Requests</button>
+        <h3 style="margin-top:20px;">Withdraw Requests</h3>
+        <button class="primary" type="button" onclick="openWithdrawRequestsModal()">View Withdraw Requests</button>
+        <h3 style="margin-top:20px;">Direct Wallet Add (Manual)</h3>
+        <input id="adminAddFundsMemberId" placeholder="Enter Member ID or Name...">
+        <input id="adminAddFundsAmount" type="number" min="0.01" step="0.01" placeholder="Amount e.g. 50">
+        <button class="primary" onclick="adminDirectAddFunds()">Add Funds</button>
+        <div id="adminAddFundsStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">Direct Wallet Deduct (Manual)</h3>
+        <input id="adminDeductFundsMemberId" placeholder="Enter Member ID or Name...">
+        <input id="adminDeductFundsAmount" type="number" min="0.01" step="0.01" placeholder="Amount e.g. 50">
+        <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds</button>
+        <div id="adminDeductFundsStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">Deposit System Control</h3>
+        <button class="primary" type="button" onclick="toggleDepositSystem()" id="toggleDepositBtn">Loading...</button>
+        <h3 style="margin-top:20px;">Wallet Transaction History (Audit)</h3>
+        <input id="adminHistoryMemberId" placeholder="Enter Member ID or Name...">
+        <button class="primary" onclick="openMemberAuditHistory()">View History</button>
+        <div id="adminHistoryStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">Master History</h3>
+        <button class="primary" type="button" onclick="openMasterHistory()" style="background:#2196F3;color:white;">View Master History</button>
+    </div>
+
+    <!-- Orders Section -->
+    <div id="adminSection-orders" class="hidden panel">
+        <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
+        <h2>Recent Orders</h2>
+        <div id="adminOrders" class="muted">No orders yet.</div>
+    </div>
+</section>
 <footer>GM Network • v12.0</footer></main>
 
 <!-- WhatsApp Floating Button -->
@@ -1586,10 +1599,23 @@ function filterProductsByCategory(categoryName) {
         const name = (p.name || '').toLowerCase();
         if (categoryName === 'Watches') return name.includes('watch');
         if (categoryName === 'Wallets') return name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
-        if (categoryName === 'Accessories') return name.includes('sunglasses') || name.includes('necklace') || name.includes('belt') || name.includes('earbuds') || name.includes('cap') || name.includes('scarf') || name.includes('gloves') || name.includes('keychain');
-        if (categoryName === 'Premium') return p.price_pkr >= 100 || name.includes('ring') || name.includes('bracelet') || name.includes('earrings') || name.includes('pendant') || name.includes('studs') || name.includes('cufflinks') || name.includes('platinum');
-        if (categoryName === 'Perfumes') return name.includes('perfume') || name.includes('aqua') || name.includes('essence') || name.includes('musk') || name.includes('splash') || name.includes('bloom') || name.includes('breeze') || name.includes('amber');
-        if (categoryName === 'Attars') return name.includes('attar');
+        if (categoryName === 'Accessories') {
+            return name.includes('sunglasses') || name.includes('necklace') || name.includes('belt') ||
+                   name.includes('earbuds') || name.includes('cap') || name.includes('scarf') ||
+                   name.includes('gloves') || name.includes('keychain') || name.includes('earrings') || name.includes('bracelet');
+        }
+        if (categoryName === 'Premium') {
+            return name.includes('ring') || name.includes('pendant') || name.includes('studs') ||
+                   name.includes('cufflinks') || name.includes('platinum chain') || name.includes('diamond');
+        }
+        if (categoryName === 'Perfumes') {
+            // Attars containing words such as "musk" or "amber" must not appear here.
+            return !name.includes('attar') && !name.includes('musk al haramain') &&
+                   (name.includes('perfume') || name.includes('aqua') || name.includes('essence') ||
+                    name.includes('musk') || name.includes('splash') || name.includes('bloom') ||
+                    name.includes('breeze') || name.includes('amber'));
+        }
+        if (categoryName === 'Attars') return name.includes('attar') || name.includes('musk al haramain');
         return true;
     });
 
@@ -1999,6 +2025,17 @@ async function toggleDepositSystem() {
     } finally {
         if (btn) btn.disabled = false;
     }
+}
+
+function openAdminSection(sectionId) {
+    document.querySelectorAll('[id^="adminSection-"]').forEach(el => el.classList.add('hidden'));
+    if (!sectionId) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+    const target = document.getElementById('adminSection-' + sectionId);
+    if (target) target.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function loadAdmin() {

@@ -192,7 +192,7 @@ body { overflow-x: hidden; }
 .buy-btn { margin-top: 10px; width: 100%; padding: 8px; font-size: 13px; }
 #bannerSlider { display: flex; gap: 0; overflow-x: auto; padding: 0; margin-bottom: 15px; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 12px; scroll-behavior: smooth; }
 #bannerSlider::-webkit-scrollbar { display: none; }
-#bannerSlider > img, #bannerSlider > .banner-placeholder { flex: 0 0 100%; width: 100%; height: auto; aspect-ratio: 16 / 6; max-height: 240px; scroll-snap-align: start; border-radius: 12px; object-fit: cover; }
+#bannerSlider > img, #bannerSlider > .banner-placeholder { flex: 0 0 100%; width: 100%; height: auto; aspect-ratio: 16 / 6; max-height: 240px; scroll-snap-align: start; border-radius: 12px; object-fit: contain; object-position: center center; background: #0b2017; display: block; }
 #bannerSlider > .banner-placeholder { background: var(--g2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: bold; text-align: center; padding: 10px; border: 1px dashed var(--gold); }
 #relatedProductsSlider { display:flex; gap:10px; overflow-x:auto; padding-bottom:10px; margin-bottom:15px; }
 #relatedProductsSlider img { height:130px; border-radius:12px; object-fit:cover; cursor:pointer; border: 1px solid var(--line); }

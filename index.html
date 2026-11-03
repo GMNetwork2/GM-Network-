@@ -633,6 +633,7 @@ input[type="file"]::file-selector-button:hover {
 <div class="panel"><h2>Reset Member Password</h2><p class="muted">Enter member's email to send a password reset link.</p><label>Member Email</label><input id="resetEmail" type="email" placeholder="member@example.com"><button class="primary" onclick="sendPasswordReset()">Send Reset Link</button><div id="resetStatus" class="status hidden"></div></div>
 
 <div class="panel"><h2>Add Product</h2>
+    <button class="primary" onclick="insertDemoProducts()" style="background:#2196F3; margin-bottom:15px;">🚀 Insert 48 Demo Products (Fast Mode)</button>
     <label>Product name</label><input id="newProduct" placeholder="Product name">
     <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
     <label>Description (optional)</label><textarea id="newDescription" rows="3" placeholder="Write product details here..."></textarea>
@@ -1819,22 +1820,29 @@ async function updateWithdrawalStatus(id, status, editMode = false) {
     if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid status');
 
     const currentModalTitle = document.querySelector('.swal2-title')?.textContent || '';
-    
-    // Edit mode lets the admin choose a new status and write a member-facing note.
+    // Fetch the existing member-facing note so it remains visible when editing.
+    const { data: w, error: withdrawalReadError } = await sb.from('withdrawals')
+        .select('admin_notes').eq('id', id).single();
+    if (withdrawalReadError) {
+        return Swal.fire({ icon: 'error', title: 'Error', text: withdrawalReadError.message || 'Could not load withdrawal details.', background: '#0d1c14', color: '#e5b853' });
+    }
+
     const { value: formValues } = await Swal.fire({
         title: editMode ? 'Edit Withdrawal' : 'Update Withdrawal',
         html: `
-            <p style="margin-bottom:10px;">${editMode ? 'Change the withdrawal status and add an admin note.' : `Mark this withdrawal as <b>${status.toUpperCase()}</b>?`}</p>
-            ${editMode ? `
-                <label style="display:block; margin-bottom:5px; font-weight:bold; text-align:left;">Status</label>
-                <select id="wd-status" class="swal2-select" style="width:100%;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
-                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                    <option value="approved" ${status === 'approved' ? 'selected' : ''}>Approved</option>
-                    <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                </select>
-            ` : ''}
-            <label style="display:block; margin-bottom:5px; font-weight:bold; text-align:left;">Admin Note (For Member)</label>
-            <textarea id="wd-note" class="swal2-textarea" placeholder="Write a note for the member..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none; box-sizing:border-box;"></textarea>
+            <div style="text-align:left; font-size:14px; line-height:1.6; color:#e5e5e5; width:100%; box-sizing:border-box;">
+                <p style="margin-bottom:10px;">${editMode ? 'Change the withdrawal status and add an admin note.' : `Mark this withdrawal as <b>${status.toUpperCase()}</b>?`}</p>
+                ${editMode ? `
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Status</label>
+                    <select id="wd-status" class="swal2-select" style="width:100%;padding:10px; margin-bottom:15px; background:#050a08;color:#fff;border:1px solid #1f3a2c; border-radius:6px; box-sizing:border-box;">
+                        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="approved" ${status === 'approved' ? 'selected' : ''}>Approved</option>
+                        <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                    </select>
+                ` : ''}
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Admin Note (For Member)</label>
+                <textarea id="wd-note" class="swal2-textarea" placeholder="Write a note for the member..." style="width:100%; height:100px; min-height:100px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none; box-sizing:border-box; display:block;">${esc(w?.admin_notes || '')}</textarea>
+            </div>
         `,
         showCancelButton: true,
         confirmButtonColor: '#e5b853',
@@ -1842,6 +1850,8 @@ async function updateWithdrawalStatus(id, status, editMode = false) {
         confirmButtonText: 'Save Changes',
         cancelButtonText: 'Cancel',
         background: '#0d1c14', color: '#e5b853',
+        width: '95%',
+        maxWidth: '500px',
         preConfirm: () => ({
             status: editMode ? document.getElementById('wd-status').value : status,
             admin_notes: document.getElementById('wd-note').value
@@ -1853,24 +1863,24 @@ async function updateWithdrawalStatus(id, status, editMode = false) {
 
     try {
         // Withdrawal ٹیبل اپڈیٹ کریں
-        const { error } = await sb.from('withdrawals').update({ 
+        const { error } = await sb.from('withdrawals').update({
             status: status,
-            admin_notes: adminNote 
+            admin_notes: adminNote
         }).eq('id', id);
         if (error) throw error;
 
         // اگر ٹرگر کام نہ کرے تو دستی طور پر والٹ ٹرانزیکشن بھی اپڈیٹ کریں
         const { data: withdrawal } = await sb.from('withdrawals').select('user_id, amount').eq('id', id).single();
         if (withdrawal) {
-            await sb.from('wallet_transactions').update({ 
-                status: status, 
-                admin_notes: adminNote 
+            await sb.from('wallet_transactions').update({
+                status: status,
+                admin_notes: adminNote
             }).eq('user_id', withdrawal.user_id).eq('type', 'withdrawal').eq('amount', withdrawal.amount);
         }
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, background: '#0d1c14', color: '#e5b853' });
         Toast.fire({ icon: 'success', title: 'Updated to ' + status });
-        
+
         if (currentModalTitle.includes('Master History')) {
             await openMasterHistory();
         } else if (currentModalTitle.includes('Withdrawal Requests')) {
@@ -3376,6 +3386,111 @@ async function markWithdrawalRejected(id) {
         await openMasterHistory();
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Error', text:e.message || 'Could not update withdrawal.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+    }
+}
+
+
+async function insertDemoProducts() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+
+    const confirmResult = await Swal.fire({
+        title: 'Insert 48 Demo Products?',
+        text: "یہ 6 کیٹیگریز میں 48 پروڈکٹس (6 Active, 42 Sold Out) ویب سائٹ پر ڈال دے گا تاکہ ویب سائٹ بھری ہوئی لگے۔",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2196F3',
+        confirmButtonText: 'Yes, Insert Now',
+        background: '#0d1c14', color: '#e5b853'
+    });
+    if (!confirmResult.isConfirmed) return;
+
+    Swal.fire({ title: 'Inserting 48 Products...', text: 'تھوڑا انتظار کریں...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+
+    const demoProducts = [
+        // --- Watches (8) ---
+        { name: "Luxury Gold Watch", price_pkr: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
+        { name: "Classic Silver Watch", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
+        { name: "Smart Watch Pro", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
+        { name: "Leather Strap Watch", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Gold Ladies Watch", price_pkr: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
+        { name: "Chronograph Watch", price_pkr: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sporty Digital Watch", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
+        { name: "Minimalist Watch", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" },
+
+        // --- Wallets (8) ---
+        { name: "Classic Leather Wallet", price_pkr: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+        { name: "Brown Bifold Wallet", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Black RFID Wallet", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Slim Card Holder", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ladies Zipper Wallet", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
+        { name: "Travel Passport Holder", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Carbon Fiber Wallet", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Vintage Leather Wallet", price_pkr: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+
+        // --- Accessories (8) ---
+        { name: "Designer Sunglasses", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
+        { name: "Silver Chain Necklace", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+        { name: "Premium Leather Belt", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
+        { name: "Wireless Earbuds Pro", price_pkr: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
+        { name: "Baseball Cap", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
+        { name: "Silk Scarf", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Leather Gloves", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
+        { name: "Keychain Organizer", price_pkr: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" },
+
+        // --- Premium (8) ---
+        { name: "Diamond Ring (Ladies)", price_pkr: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+        { name: "Gold Plated Bracelet", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+        { name: "Pearl Earrings", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+        { name: "Emerald Pendant", price_pkr: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ruby Studs", price_pkr: 90, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sapphire Ring", price_pkr: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+        { name: "Platinum Chain", price_pkr: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+        { name: "Diamond Cufflinks", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+
+        // --- Perfumes (8) ---
+        { name: "Royal Oud Perfume", price_pkr: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Aqua Di Gio", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Essence", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Midnight Musk", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Citrus Splash", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Vanilla Bloom", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ocean Breeze", price_pkr: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Golden Amber", price_pkr: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+
+        // --- Attars (8) ---
+        { name: "Arabian Attar Premium", price_pkr: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Musk Al Haramain", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Attar", price_pkr: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sandalwood Attar", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Jasmine Attar", price_pkr: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Amber Attar", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Oud Attar", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "White Musk Attar", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
+    ];
+
+    try {
+        for (let i = 0; i < demoProducts.length; i++) {
+            const p = demoProducts[i];
+            const { error } = await sb.from('products').insert({
+                name: p.name,
+                price_pkr: p.price_pkr,
+                commission_percent: 10,
+                description: "High quality premium product from GM Network.",
+                image_url: p.image_url,
+                images: [p.image_url],
+                active: p.active,
+                base_rating: 4.5 + (Math.random() * 0.5),
+                base_reviews_count: Math.floor(Math.random() * 100) + 10
+            });
+            if (error) throw error;
+        }
+
+        await Swal.fire({ icon: 'success', title: 'Done!', text: '48 ڈیمو پروڈکٹس کامیابی سے شامل ہو گئیں۔', background: '#0d1c14', color: '#e5b853' });
+        await loadProducts();
+        await loadAdmin();
+
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#0d1c14', color: '#e5b853' });
     }
 }
 

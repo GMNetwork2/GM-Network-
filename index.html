@@ -398,7 +398,7 @@ input[type="file"]::file-selector-button:hover {
         <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
         <div class="newsletter-form">
             <input type="email" placeholder="Enter your email address" id="newsletterEmail" autocomplete="email">
-            <button type="button" onclick="Swal.fire({icon:'info', title:'VIP Club', text:'Newsletter signup is not connected yet. Please contact GM Network support to subscribe.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853'})">Subscribe</button>
+            <button type="button" onclick="gmPopup('Newsletter signup is not connected yet. Please contact GM Network support to subscribe.', 'VIP Club', 'info')">Subscribe</button>
         </div>
     </div>
 
@@ -983,6 +983,54 @@ let exchangeRates = { USD: 1, PKR: 278, INR: 83, EUR: 0.92, GBP: 0.79 };
 let currentCurrency = 'USD';
 
 const $ = id => document.getElementById(id);
+
+// ===== GM Network branded popup system =====
+// All JavaScript alert() messages across the app use the site's green/gold theme.
+function gmPopup(message, title = 'GM Network', icon = 'info') {
+    const text = String(message ?? '');
+    if (window.Swal) {
+        return window.Swal.fire({
+            icon,
+            title,
+            text,
+            background: '#0d1c14',
+            color: '#e5b853',
+            confirmButtonColor: '#e5b853',
+            confirmButtonText: 'ٹھیک ہے',
+            buttonsStyling: true,
+            customClass: { popup: 'gm-network-popup', title: 'gm-network-popup-title', confirmButton: 'gm-network-popup-confirm' }
+        });
+    }
+    // In-page fallback: do not show the browser's white native alert.
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:20px;';
+        const panel = document.createElement('div');
+        panel.style.cssText = 'width:min(100%,420px);background:#0d1c14;border:1px solid #e5b853;border-radius:18px;padding:24px;color:#e5b853;text-align:center;box-shadow:0 18px 60px #000;';
+        const heading = document.createElement('h3'); heading.textContent = title; heading.style.cssText = 'margin:0 0 12px;font-size:21px;';
+        const body = document.createElement('p'); body.textContent = text; body.style.cssText = 'color:#eee;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;';
+        const button = document.createElement('button'); button.type = 'button'; button.textContent = 'ٹھیک ہے'; button.style.cssText = 'background:#e5b853;color:#0a1f15;border:0;border-radius:10px;padding:11px 24px;font-weight:700;margin-top:12px;';
+        button.onclick = () => { overlay.remove(); resolve({ isConfirmed: true }); };
+        panel.append(heading, body, button); overlay.append(panel); document.body.append(overlay);
+    });
+}
+
+async function gmConfirm(message, title = 'تصدیق کریں') {
+    if (window.Swal) {
+        const result = await window.Swal.fire({
+            icon: 'warning', title, text: String(message ?? ''),
+            showCancelButton: true, confirmButtonText: 'جی ہاں', cancelButtonText: 'منسوخ',
+            confirmButtonColor: '#e5b853', cancelButtonColor: '#4a1a1a',
+            background: '#0d1c14', color: '#e5b853'
+        });
+        return result.isConfirmed;
+    }
+    return false;
+}
+
+// Intercept current and future alert() calls from this app.
+window.alert = function (message) { gmPopup(message); };
+
 
 function status(id, msg, type = '') {
     const el = $(id);
@@ -2342,7 +2390,7 @@ async function updateOrderStatus(orderId, newStatus) {
             color: '#e5b853'
         });
         if (!confirmResult.isConfirmed) return;
-    } else if (!confirm('Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?')) {
+    } else if (!(await gmConfirm('Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?', 'Order Status Change'))) {
         return;
     }
 
@@ -2447,7 +2495,7 @@ async function markAsDelivered(orderId) {
         });
         if (!deliveryConfirm.isConfirmed) return;
     } else {
-        if (!confirm('کیا آپ نے واقعی اپنا آرڈر وصول کر لیا ہے؟')) return;
+        if (!(await gmConfirm('کیا آپ نے واقعی اپنا آرڈر وصول کر لیا ہے؟', 'آرڈر کی تصدیق'))) return;
     }
     const { data: order, error: readError } = await sb.from('orders').select('id,status,buyer_id').eq('id', orderId).eq('buyer_id', user.id).single();
     if (readError || !order) return alert('آرڈر لوڈ نہیں ہو سکا: ' + (readError?.message || 'Order not found.'));
@@ -2473,7 +2521,7 @@ async function markAsDelivered(orderId) {
 async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_pkr || 0); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
 async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
-async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!confirm('Delete this product?')) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
+async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 
 async function loadBanners() {
     const el = $('bannerSlider');
@@ -3084,7 +3132,7 @@ async function approveReview(reviewId) {
 
 async function deleteReview(reviewId) {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    if (!confirm('Delete this review permanently?')) return;
+    if (!(await gmConfirm('Delete this review permanently?', 'Delete Review'))) return;
     const { error } = await sb.from('product_reviews').delete().eq('id', reviewId);
     if (error) return alert('Error deleting review: ' + error.message);
     alert('Review deleted.');

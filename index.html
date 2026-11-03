@@ -974,6 +974,9 @@ const SUPABASE_ANON_KEY = 'sb_publishable_15GSe0dxAxr6whvPkNwZsw_fgJ0_tHs';
 let sb = null;
 let user = null;
 let isAdmin = false;
+// Admin bulk product selection (persists while switching category filters).
+window.adminSelectedProductIds = window.adminSelectedProductIds || new Set();
+window.adminProductFilter = window.adminProductFilter || 'All';
 let currentProduct = null;
 let myProfile = null;
 let totalComm = 0;
@@ -2178,6 +2181,14 @@ async function loadAdmin() {
     }
 
     if($('adminManageProducts')) {
+        const bulkHtml = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:11px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;background:rgba(229,184,83,.06);">
+            <label style="display:flex;align-items:center;gap:7px;margin:0;font-weight:700;white-space:nowrap;">
+                <input id="adminSelectAllProducts" type="checkbox" onchange="toggleSelectAllAdminProducts(this.checked)" style="width:18px;height:18px;accent-color:#e5b853;">
+                Select All (visible)
+            </label>
+            <span id="adminSelectedProductCount" class="muted" style="flex:1;min-width:95px;">0 selected</span>
+            <button id="adminDeleteSelectedBtn" class="primary" type="button" onclick="deleteSelectedAdminProducts()" disabled style="background:#b3261e;margin:0;padding:9px 12px;opacity:.55;">Delete Selected</button>
+        </div>`;
         const catHtml = `<div style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px; padding-bottom:5px;">
             <button class="secondary" onclick="filterAdminProducts('All')" style="white-space:nowrap;">All</button>
             <button class="secondary" onclick="filterAdminProducts('Watches')" style="white-space:nowrap;">⌚ Watches</button>
@@ -2188,15 +2199,18 @@ async function loadAdmin() {
             <button class="secondary" onclick="filterAdminProducts('Attars')" style="white-space:nowrap;">🌸 Attars</button>
         </div>`;
         if (p.error) {
-            $('adminManageProducts').innerHTML = catHtml + esc(p.error.message);
+            $('adminManageProducts').innerHTML = bulkHtml + catHtml + esc(p.error.message);
         } else {
             window.allAdminProducts = p.data || [];
             const productsHtml = window.allAdminProducts.map(x => {
+                const productId = String(x.id);
                 const imgUrl = (Array.isArray(x.images) && x.images.length > 0) ? x.images[0] : (x.image_url || 'https://placehold.co/100x100?text=GM');
-                return `<div class="item admin-product-item" data-name="${esc(String(x.name || '').toLowerCase())}" style="cursor:default; align-items:flex-start;">
-                    <div style="display:flex; gap:10px; align-items:center;">
+                const checked = window.adminSelectedProductIds.has(productId) ? 'checked' : '';
+                return `<div class="item admin-product-item" data-product-id="${esc(productId)}" data-name="${esc(String(x.name || '').toLowerCase())}" style="cursor:default; align-items:flex-start;">
+                    <div style="display:flex; gap:10px; align-items:center;min-width:0;flex:1;">
+                        <input class="admin-product-select" type="checkbox" data-select-product="${esc(productId)}" ${checked} aria-label="Select ${esc(x.name || 'product')}" onchange="setAdminProductSelected('${esc(productId)}',this.checked)" style="width:19px;height:19px;flex-shrink:0;accent-color:#e5b853;">
                         <img src="${esc(imgUrl)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--line);">
-                        <div>
+                        <div style="min-width:0;overflow-wrap:anywhere;">
                             <b>${esc(x.name || 'Product')}</b><br>
                             <small class="muted">${convertMoney(x.price_pkr)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small>
                         </div>
@@ -2208,13 +2222,15 @@ async function loadAdmin() {
                     </div>
                 </div>`;
             }).join('');
-            $('adminManageProducts').innerHTML = catHtml + `<div id="adminProductsListContainer">${productsHtml || 'No products yet.'}</div>`;
+            $('adminManageProducts').innerHTML = bulkHtml + catHtml + `<div id="adminProductsListContainer">${productsHtml || 'No products yet.'}</div>`;
             $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
             $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
                 const product = window.allAdminProducts.find(x => String(x.id) === btn.dataset.toggle);
                 btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
             });
             $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+            filterAdminProducts(window.adminProductFilter || 'All');
+            updateAdminProductSelectionUI();
         }
     }
 
@@ -2521,7 +2537,7 @@ async function markAsDelivered(orderId) {
 async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_pkr || 0); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
 async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
-async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
+async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); } }
 
 async function loadBanners() {
     const el = $('bannerSlider');
@@ -3497,8 +3513,71 @@ async function insertDemoByCategory(category) {
     }
 }
 
-// --- Admin products category filter ---
+// --- Admin product selection and category filter ---
+function setAdminProductSelected(id, checked) {
+    if (!window.adminSelectedProductIds) window.adminSelectedProductIds = new Set();
+    if (checked) window.adminSelectedProductIds.add(String(id));
+    else window.adminSelectedProductIds.delete(String(id));
+    updateAdminProductSelectionUI();
+}
+
+function toggleSelectAllAdminProducts(checked) {
+    document.querySelectorAll('.admin-product-item').forEach(item => {
+        if (item.style.display === 'none') return;
+        const id = String(item.getAttribute('data-product-id') || '');
+        const checkbox = item.querySelector('.admin-product-select');
+        if (!id || !checkbox) return;
+        checkbox.checked = !!checked;
+        if (checked) window.adminSelectedProductIds.add(id);
+        else window.adminSelectedProductIds.delete(id);
+    });
+    updateAdminProductSelectionUI();
+}
+
+function updateAdminProductSelectionUI() {
+    const selected = window.adminSelectedProductIds || new Set();
+    const visibleItems = [...document.querySelectorAll('.admin-product-item')].filter(item => item.style.display !== 'none');
+    const visibleIds = visibleItems.map(item => String(item.getAttribute('data-product-id') || ''));
+    const visibleSelected = visibleIds.filter(id => selected.has(id)).length;
+    const count = $('adminSelectedProductCount');
+    const selectAll = $('adminSelectAllProducts');
+    const deleteBtn = $('adminDeleteSelectedBtn');
+    if (count) count.textContent = `${selected.size} selected`;
+    if (selectAll) {
+        selectAll.checked = visibleIds.length > 0 && visibleSelected === visibleIds.length;
+        selectAll.indeterminate = visibleSelected > 0 && visibleSelected < visibleIds.length;
+    }
+    if (deleteBtn) {
+        deleteBtn.disabled = selected.size === 0;
+        deleteBtn.style.opacity = selected.size ? '1' : '.55';
+    }
+}
+
+async function deleteSelectedAdminProducts() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const ids = [...(window.adminSelectedProductIds || new Set())];
+    if (!ids.length) return alert('Please select at least one product.');
+    const confirmed = await gmConfirm(`آپ ${ids.length} منتخب پروڈکٹس مستقل طور پر ڈیلیٹ کرنے والے ہیں۔ کیا آپ جاری رکھنا چاہتے ہیں؟`, 'Delete Selected Products');
+    if (!confirmed) return;
+    const btn = $('adminDeleteSelectedBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+    try {
+        const { error } = await sb.from('products').delete().in('id', ids);
+        if (error) throw error;
+        ids.forEach(id => window.adminSelectedProductIds.delete(String(id)));
+        await loadProducts();
+        await loadAdmin();
+        if (window.Swal) await Swal.fire({ icon:'success', title:'Deleted', text:`${ids.length} products deleted successfully.`, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        else gmPopup(`${ids.length} products deleted successfully.`);
+    } catch (error) {
+        if (window.Swal) await Swal.fire({ icon:'error', title:'Delete failed', text:error.message || String(error), background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        else gmPopup('Delete failed: ' + (error.message || String(error)));
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete Selected'; }
+    }
+}
+
 function filterAdminProducts(category) {
+    window.adminProductFilter = category || 'All';
     document.querySelectorAll('.admin-product-item').forEach(item => {
         const name = (item.getAttribute('data-name') || '').toLowerCase();
         let show = false;
@@ -3511,6 +3590,7 @@ function filterAdminProducts(category) {
         else if (category === 'Attars') show = name.includes('attar') || name.includes('musk al haramain');
         item.style.display = show ? 'flex' : 'none';
     });
+    updateAdminProductSelectionUI();
 }
 
 // Admin master history: read-only financial ledger plus recent orders.

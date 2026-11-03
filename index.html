@@ -396,7 +396,7 @@ input[type="file"]::file-selector-button:hover {
         <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
         <div class="newsletter-form">
             <input type="email" placeholder="Enter your email address" id="newsletterEmail" autocomplete="email">
-            <button type="button" onclick="alert('Newsletter signup is not connected yet. Please contact GM Network support to subscribe.')">Subscribe</button>
+            <button type="button" onclick="Swal.fire({icon:'info', title:'VIP Club', text:'Newsletter signup is not connected yet. Please contact GM Network support to subscribe.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853'})">Subscribe</button>
         </div>
     </div>
 
@@ -1813,27 +1813,43 @@ function filterWithdrawals() {
     });
 }
 
-async function updateWithdrawalStatus(id, status) {
+async function updateWithdrawalStatus(id, status, editMode = false) {
     if (!isAdmin || !sb) return alert('Admin access required.');
     status = String(status || '').toLowerCase();
     if (!['approved', 'rejected', 'pending'].includes(status)) return alert('Invalid status');
 
     const currentModalTitle = document.querySelector('.swal2-title')?.textContent || '';
     
-    // ایڈمن نوٹ پوچھنے کے لیے
-    const { value: adminNote } = await Swal.fire({
-        title: 'Update Withdrawal',
+    // Edit mode lets the admin choose a new status and write a member-facing note.
+    const { value: formValues } = await Swal.fire({
+        title: editMode ? 'Edit Withdrawal' : 'Update Withdrawal',
         html: `
-            <p style="margin-bottom:10px;">Mark this withdrawal as <b>${status.toUpperCase()}</b>?</p>
+            <p style="margin-bottom:10px;">${editMode ? 'Change the withdrawal status and add an admin note.' : `Mark this withdrawal as <b>${status.toUpperCase()}</b>?`}</p>
+            ${editMode ? `
+                <label style="display:block; margin-bottom:5px; font-weight:bold; text-align:left;">Status</label>
+                <select id="wd-status" class="swal2-select" style="width:100%;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
+                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="approved" ${status === 'approved' ? 'selected' : ''}>Approved</option>
+                    <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                </select>
+            ` : ''}
             <label style="display:block; margin-bottom:5px; font-weight:bold; text-align:left;">Admin Note (For Member)</label>
             <textarea id="wd-note" class="swal2-textarea" placeholder="Write a note for the member..." style="width:100%; height:80px; background:#050a08; color:#fff; border:1px solid #1f3a2c; padding:10px; border-radius:6px; resize:none; box-sizing:border-box;"></textarea>
         `,
         showCancelButton: true,
         confirmButtonColor: '#e5b853',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'Save Changes',
+        cancelButtonText: 'Cancel',
         background: '#0d1c14', color: '#e5b853',
-        preConfirm: () => document.getElementById('wd-note').value
+        preConfirm: () => ({
+            status: editMode ? document.getElementById('wd-status').value : status,
+            admin_notes: document.getElementById('wd-note').value
+        })
     });
-    if (adminNote === undefined) return;
+    if (!formValues) return;
+    status = formValues.status;
+    const adminNote = formValues.admin_notes;
 
     try {
         // Withdrawal ٹیبل اپڈیٹ کریں
@@ -2204,7 +2220,7 @@ async function updateOrderStatus(orderId, newStatus) {
 
     // Read previous status so rewards are only added/reversed on a real transition.
     const { data: currentOrder, error: readError } = await sb.from('orders')
-        .select('buyer_id, unit_price_pkr, status').eq('id', orderId).single();
+        .select('buyer_id, unit_price_pkr, status, quantity').eq('id', orderId).single();
     if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
 
     const previousStatus = String(currentOrder.status || '').toLowerCase();
@@ -2218,6 +2234,8 @@ async function updateOrderStatus(orderId, newStatus) {
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
     const price = Number(currentOrder.unit_price_pkr);
+    const orderQuantity = Math.max(1, Number(currentOrder.quantity) || 1);
+    const finalTotalPrice = price * orderQuantity;
     const buyerId = currentOrder.buyer_id;
     let rewardError = null;
 
@@ -2227,15 +2245,15 @@ async function updateOrderStatus(orderId, newStatus) {
             .select('id, points, referred_by').eq('id', buyerId).single();
         if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
         else {
-            const { error } = await sb.from('profiles').update({ points: Number(buyerData.points || 0) + price }).eq('id', buyerId);
+            const { error } = await sb.from('profiles').update({ points: Number(buyerData.points || 0) + finalTotalPrice }).eq('id', buyerId);
             if (error) rewardError = error;
             let uplineId = buyerData.referred_by;
             let direct = true;
             while (uplineId && !rewardError) {
                 const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
                 if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
-                const values = { points: Number(data.points || 0) + price };
-                if (direct) values.total_commission = Number(data.total_commission || 0) + price * 0.10;
+                const values = { points: Number(data.points || 0) + finalTotalPrice };
+                if (direct) values.total_commission = Number(data.total_commission || 0) + finalTotalPrice * 0.10;
                 const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
                 if (writeErr) { rewardError = writeErr; break; }
                 uplineId = data.referred_by;
@@ -2251,15 +2269,15 @@ async function updateOrderStatus(orderId, newStatus) {
             .select('id, points, referred_by').eq('id', buyerId).single();
         if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
         else {
-            const { error } = await sb.from('profiles').update({ points: Math.max(0, Number(buyerData.points || 0) - price) }).eq('id', buyerId);
+            const { error } = await sb.from('profiles').update({ points: Math.max(0, Number(buyerData.points || 0) - finalTotalPrice) }).eq('id', buyerId);
             if (error) rewardError = error;
             let uplineId = buyerData.referred_by;
             let direct = true;
             while (uplineId && !rewardError) {
                 const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
                 if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
-                const values = { points: Math.max(0, Number(data.points || 0) - price) };
-                if (direct) values.total_commission = Math.max(0, Number(data.total_commission || 0) - price * 0.10);
+                const values = { points: Math.max(0, Number(data.points || 0) - finalTotalPrice) };
+                if (direct) values.total_commission = Math.max(0, Number(data.total_commission || 0) - finalTotalPrice * 0.10);
                 const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
                 if (writeErr) { rewardError = writeErr; break; }
                 uplineId = data.referred_by;
@@ -3253,9 +3271,7 @@ async function openMasterHistory() {
                 <span style="float:right;font-weight:bold;color:${statusColor};">${escText(st.toUpperCase())}</span><br>
                 <small>Amount: ${escText(convertMoney(w.amount ?? 0))} | ${escText(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}</small>
                 <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
-                    ${st !== 'approved' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'approved')" style="background:#4CAF50;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Approve</button>` : ''}
-                    ${st !== 'rejected' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'rejected')" style="background:#f44336;color:white;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Reject</button>` : ''}
-                    ${st !== 'pending' ? `<button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', 'pending')" style="background:#ffcc00;color:#000;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;">Mark Pending</button>` : ''}
+                    <button type="button" onclick="updateWithdrawalStatus('${escText(w.id)}', '${st}', true)" style="background:#e5b853;color:#000;border:0;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold;">✏️ Edit Withdrawal</button>
                 </div>
             </div>`;
         });

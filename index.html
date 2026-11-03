@@ -351,11 +351,13 @@ input[type="file"]::file-selector-button:hover {
     <!-- Shop by Category -->
     <h2 class="section-title">Shop by Category</h2>
     <div class="category-grid">
-        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">⌚</span><h3>Watches</h3></a>
-        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">👛</span><h3>Wallets</h3></a>
-        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">🕶️</span><h3>Accessories</h3></a>
-        <a href="#" class="category-card" onclick="tab('products'); return false;"><span class="cat-icon">💎</span><h3>Premium</h3></a>
-    </div>
+    <a href="#" class="category-card" onclick="openCategory('Watches'); return false;"><span class="cat-icon">⌚</span><h3>Watches</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Wallets'); return false;"><span class="cat-icon">👛</span><h3>Wallets</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Accessories'); return false;"><span class="cat-icon">🕶️</span><h3>Accessories</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Premium'); return false;"><span class="cat-icon">💎</span><h3>Premium</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Perfumes'); return false;"><span class="cat-icon">🧴</span><h3>Perfumes</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Attars'); return false;"><span class="cat-icon">🌸</span><h3>Attars</h3></a>
+</div>
 
     <!-- Featured Products -->
     <div class="featured-section">
@@ -620,7 +622,10 @@ input[type="file"]::file-selector-button:hover {
             <div class="banner-placeholder">Banner 3<br>(Upload via Admin)</div>
             <div class="banner-placeholder">Banner 4<br>(Upload via Admin)</div>
         </div>
-        <h2 style="font-size:20px; margin-bottom:10px;">Premium Products</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h2 style="font-size:20px; margin:0;" id="productPageTitle">Premium Products</h2>
+    <button class="secondary" onclick="loadProducts()" style="padding:5px 10px; font-size:12px;">Show All</button>
+</div>
         <div class="product-grid" id="productList">Loading products…</div>
     </div>
 </section>
@@ -1565,25 +1570,43 @@ async function fetchProductRatings(productIds) {
     return ratingMap;
 }
 
-async function loadProducts() {
-    if (!sb) return;
+function openCategory(categoryName) {
+    tab('products');
+    filterProductsByCategory(categoryName);
+}
+
+function filterProductsByCategory(categoryName) {
+    const titleEl = $('productPageTitle');
+    if (titleEl) titleEl.textContent = categoryName + ' Collection';
+
     const el = $('productList');
-    const { data, error } = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
-    if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
+    if (!window.allProductsData) return;
 
-    window.allProductsData = data || [];
+    const filtered = window.allProductsData.filter(p => {
+        const name = (p.name || '').toLowerCase();
+        if (categoryName === 'Watches') return name.includes('watch');
+        if (categoryName === 'Wallets') return name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
+        if (categoryName === 'Accessories') return name.includes('sunglasses') || name.includes('necklace') || name.includes('belt') || name.includes('earbuds') || name.includes('cap') || name.includes('scarf') || name.includes('gloves') || name.includes('keychain');
+        if (categoryName === 'Premium') return p.price_pkr >= 100 || name.includes('ring') || name.includes('bracelet') || name.includes('earrings') || name.includes('pendant') || name.includes('studs') || name.includes('cufflinks') || name.includes('platinum');
+        if (categoryName === 'Perfumes') return name.includes('perfume') || name.includes('aqua') || name.includes('essence') || name.includes('musk') || name.includes('splash') || name.includes('bloom') || name.includes('breeze') || name.includes('amber');
+        if (categoryName === 'Attars') return name.includes('attar');
+        return true;
+    });
 
-    // Fetch approved review ratings for each product.
-    const productIds = window.allProductsData.map(p => p.id);
-    const ratingsMap = await fetchProductRatings(productIds);
-    el.innerHTML = window.allProductsData.map((p, index) => {
+    renderProductCards(filtered, el);
+}
+
+function renderProductCards(productsToRender, container) {
+    if (!container) return;
+    const ratingsMap = window.currentRatingsMap || {};
+    container.innerHTML = productsToRender.map((p) => {
+        const originalIndex = window.allProductsData.findIndex(prod => prod.id === p.id);
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
         const baseRating = Number(p.base_rating || 5.0);
         const baseReviews = Number(p.base_reviews_count || 0);
         const approved = ratingsMap[p.id] || { total: 0, count: 0 };
         const finalRating = approved.count > 0 ? ((baseRating * baseReviews) + approved.total) / (baseReviews + approved.count) : baseRating;
         const finalReviewsCount = baseReviews + approved.count;
-        const ratingPercent = Math.max(0, Math.min(100, (finalRating / 5) * 100));
         const fullStars = Math.floor(finalRating);
         const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
@@ -1593,7 +1616,7 @@ async function loadProducts() {
         if (hasHalfStar) starsHtml += '⯨';
         for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
         starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
-        return `<div class="product-card" onclick="openProductView(${index})" style="cursor:pointer;">
+        return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
                 <h3>${esc(p.name)}</h3>
@@ -1603,7 +1626,23 @@ async function loadProducts() {
             </div>
             <button class="primary buy-btn" type="button" style="pointer-events:none; ${!p.active ? 'background:#222; color:#555;' : ''};">${p.active ? 'View Details' : 'SOLD OUT'}</button>
         </div>`;
-    }).join('') || '<p class="muted">No active products yet.</p>';
+    }).join('') || '<p class="muted">No products found in this category.</p>';
+}
+
+async function loadProducts() {
+    if (!sb) return;
+    const el = $('productList');
+    const { data, error } = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
+    if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
+
+    window.allProductsData = data || [];
+    if ($('productPageTitle')) $('productPageTitle').textContent = 'Premium Products';
+
+    const productIds = window.allProductsData.map(p => p.id);
+    window.currentRatingsMap = await fetchProductRatings(productIds);
+
+    renderProductCards(window.allProductsData, el);
+
     const featuredEl = $('featuredProductList');
     if (featuredEl) {
         featuredEl.innerHTML = Array.from(el.children).slice(0, 4).map(card => card.outerHTML).join('') || '<p class="muted">No featured products available yet.</p>';
@@ -1614,7 +1653,7 @@ async function loadProducts() {
         const startIndex = totalProducts.length > 4 ? 4 : 0;
         newArrivalsEl.innerHTML = totalProducts.slice(startIndex, startIndex + 4).map(card => card.outerHTML).join('') || '<p class="muted">No new arrivals available yet.</p>';
     }
-    if($('np')) $('np').textContent = String(window.allProductsData.length);
+    if ($('np')) $('np').textContent = String(window.allProductsData.length);
 }
 
 async function loadMyTeam() {
@@ -3394,8 +3433,8 @@ async function insertDemoProducts() {
     if (!isAdmin || !sb) return alert('Admin access required.');
 
     const confirmResult = await Swal.fire({
-        title: 'Insert 48 Demo Products?',
-        text: "یہ 6 کیٹیگریز میں 48 پروڈکٹس (6 Active, 42 Sold Out) ویب سائٹ پر ڈال دے گا تاکہ ویب سائٹ بھری ہوئی لگے۔",
+        title: 'Insert Demo Products?',
+        text: "یہ 6 کیٹیگریز میں پروڈکٹس (6 Active, Baqi Sold Out) ویب سائٹ پر ڈال دے گا۔",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#2196F3',
@@ -3404,7 +3443,7 @@ async function insertDemoProducts() {
     });
     if (!confirmResult.isConfirmed) return;
 
-    Swal.fire({ title: 'Inserting 48 Products...', text: 'تھوڑا انتظار کریں...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'Inserting Products...', text: 'تھوڑا انتظار کریں...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     const demoProducts = [
         // --- Watches (8) ---
@@ -3485,7 +3524,7 @@ async function insertDemoProducts() {
             if (error) throw error;
         }
 
-        await Swal.fire({ icon: 'success', title: 'Done!', text: '48 ڈیمو پروڈکٹس کامیابی سے شامل ہو گئیں۔', background: '#0d1c14', color: '#e5b853' });
+        await Swal.fire({ icon: 'success', title: 'Done!', text: 'تمام پروڈکٹس کامیابی سے شامل ہو گئیں۔', background: '#0d1c14', color: '#e5b853' });
         await loadProducts();
         await loadAdmin();
 

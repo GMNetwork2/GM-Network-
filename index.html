@@ -1545,11 +1545,38 @@ async function loadMyAccountPage() {
         { key: 'diamond', name: 'Diamond 👑', min: 200000, rate: 2 },
         { key: 'crown_diamond', name: 'Crown Diamond 💠', min: 1000000, rate: 1 }
     ];
+    
     const achievedRank = [...GM_RANKS].reverse().find(r => coins >= r.min);
     const currentRank = achievedRank || { name: 'Bronze 🥉', min: 0 };
     const nextRank = GM_RANKS.find(r => coins < r.min);
+    
     const rankRows = GM_RANKS.map(r => `<div class="item"><span>${r.name} — ${r.min.toLocaleString()} Coins</span><b>${coins >= r.min ? 'Achieved' : 'Locked'}</b></div>`).join('');
-    if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Rank: ${currentRank.name}</h3>${nextRank ? `<p class="muted">Next rank: ${nextRank.name} — ${coins.toLocaleString()} / ${nextRank.min.toLocaleString()} Coins</p><progress value="${Math.min(coins,nextRank.min)}" max="${nextRank.min}" style="width:100%"></progress>` : '<p>You have reached the highest rank! 🏆</p>'}<h4 style="margin-top:16px">GM Network Rank Ladder</h4>${rankRows}<p class="muted" style="font-size:12px">Indirect Commission: Silver, Gold, Platinum and Diamond 2%; Crown Diamond 1%. In each referral branch, each rank's commission is assigned to the nearest eligible rank holder above the buyer.</p><p class="muted" style="font-size:12px">Rank Bonus 1501-Coin rule is separate. Bonus amounts and historical timing must be configured/verified before automatic bonus payments can be enabled.</p></div>`;
+
+    // صرف اچیو شدہ رینک کے رولز دکھانا (ہاف پلس ون والا حساب)
+    let activeRulesHtml = '';
+    if (achievedRank) {
+        const halfPlusOne = Math.floor(achievedRank.min / 2) + 1;
+        
+        activeRulesHtml = `<div style="background: rgba(229,184,83,0.1); border: 1px dashed var(--gold); border-radius: 10px; padding: 12px; margin-top: 15px;">
+            <h4 style="color: var(--gold); margin: 0 0 5px; font-size: 14px;">🎉 Your Active Rules (${achievedRank.name})</h4>
+            <p class="muted" style="font-size: 13px; margin: 0 0 5px;">✅ Indirect Commission: <b>${achievedRank.rate}%</b></p>
+            <p class="muted" style="font-size: 12px; margin: 0;">✅ Rank Bonus Rule: You are eligible for Rank Achievement Bonus if one of your lines reached <b>${halfPlusOne.toLocaleString()}</b> coins before you reached ${achievedRank.min.toLocaleString()}.</p>
+        </div>`;
+    } else {
+        activeRulesHtml = `<div style="background: rgba(255,255,255,0.05); border: 1px dashed var(--line); border-radius: 10px; padding: 12px; margin-top: 15px;">
+            <p class="muted" style="font-size: 13px; margin: 0;">Keep working to unlock your first rank (Silver) and start earning indirect commissions & bonuses!</p>
+        </div>`;
+    }
+
+    if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px">
+        <h3>My Rank: ${currentRank.name}</h3>
+        ${nextRank ? `<p class="muted">Next rank: ${nextRank.name} — ${coins.toLocaleString()} / ${nextRank.min.toLocaleString()} Coins</p><progress value="${Math.min(coins,nextRank.min)}" max="${nextRank.min}" style="width:100%"></progress>` : '<p>You have reached the highest rank! 🏆</p>'}
+        
+        ${activeRulesHtml}
+        
+        <h4 style="margin-top:20px; border-bottom:1px solid var(--line); padding-bottom:5px;">GM Network Rank Ladder</h4>
+        ${rankRows}
+    </div>`;
 
     const { data: orders, error } = await sb.from('orders').select('*, products(name)').eq('buyer_id', user.id).order('created_at', { ascending: false });
     if (error) { if($('accTransactions')) $('accTransactions').textContent = 'Could not load transactions: ' + error.message; return; }

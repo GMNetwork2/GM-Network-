@@ -716,6 +716,10 @@ input[type="file"]::file-selector-button:hover {
         <input id="adminDeductFundsAmount" type="number" min="0.01" step="0.01" placeholder="Amount e.g. 50">
         <button class="primary" onclick="adminDirectDeductFunds()" style="background:#f44336;color:white;">Deduct Funds</button>
         <div id="adminDeductFundsStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">🚨 Emergency System Lock</h3>
+        <p class="muted" style="font-size:13px;">اگر سسٹم میں مشکوک سرگرمی یا غلط ٹرانزیکشن نظر آئے تو ممبرز کی نئی خریداری روکنے کے لیے ایپ لاک کریں۔ Admin لاک کھول سکتا ہے اور ریفنڈ/ریورسل کا کام جاری رکھ سکتا ہے۔</p>
+        <button class="primary" type="button" onclick="toggleEmergencyLock()" id="emergencyLockBtn" style="background:#f44336;color:white;margin-bottom:20px;">Checking Lock Status...</button>
+        <div id="emergencyLockStatus" class="muted" style="font-size:12px;margin-bottom:12px;">Lock status is being checked…</div>
         <h3 style="margin-top:20px;">Deposit System Control</h3>
         <button class="primary" type="button" onclick="toggleDepositSystem()" id="toggleDepositBtn">Loading...</button>
         <h3 style="margin-top:20px;">Wallet Transaction History (Audit)</h3>
@@ -986,6 +990,8 @@ const SUPABASE_ANON_KEY = 'sb_publishable_15GSe0dxAxr6whvPkNwZsw_fgJ0_tHs';
 let sb = null;
 let user = null;
 let isAdmin = false;
+let isSystemLocked = false;
+let systemLockStatusLoaded = false;
 // Admin bulk product selection (persists while switching category filters).
 window.adminSelectedProductIds = window.adminSelectedProductIds || new Set();
 window.adminProductFilter = window.adminProductFilter || 'All';
@@ -1172,6 +1178,7 @@ async function init() {
     }
     await fetchExchangeRates();
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    await checkSystemLockStatus();
 
     try {
         const { data, error } = await sb.auth.getSession();
@@ -2211,8 +2218,90 @@ function refreshCheckoutTotals() {
     if ($('coDeliveryNote')) $('coDeliveryNote').textContent = deliveryChargePkr === 0 ? 'Free delivery' : 'Fixed delivery fee: Rs. ' + Number(deliveryChargePkr).toLocaleString('en-PK') + ' PKR';
 }
 
+// ==========================================
+// EMERGENCY SYSTEM LOCK
+// Uses public.system_settings (id=1, is_locked, lock_reason, locked_at).
+// This client-side check blocks member checkout; database-side policies/RPC
+// checks are still required to secure direct API calls.
+// ==========================================
+async function checkSystemLockStatus() {
+    if (!sb) return false;
+    try {
+        const { data, error } = await sb.from('system_settings')
+            .select('is_locked, lock_reason, locked_at').eq('id', 1).maybeSingle();
+        if (error) throw error;
+        isSystemLocked = Boolean(data?.is_locked);
+        systemLockStatusLoaded = true;
+        const btn = $('emergencyLockBtn');
+        const label = $('emergencyLockStatus');
+        if (btn) {
+            btn.textContent = isSystemLocked ? '🔴 UNLOCK SYSTEM' : '🟢 LOCK SYSTEM';
+            btn.style.background = isSystemLocked ? '#16834a' : '#f44336';
+            btn.disabled = !isAdmin;
+        }
+        if (label) label.textContent = isSystemLocked
+            ? '🔒 System is LOCKED. Member checkout is disabled.'
+            : '🔓 System is ACTIVE.';
+        return isSystemLocked;
+    } catch (e) {
+        systemLockStatusLoaded = false;
+        const btn = $('emergencyLockBtn');
+        const label = $('emergencyLockStatus');
+        if (btn) { btn.textContent = 'Lock status unavailable'; btn.disabled = true; }
+        if (label) label.textContent = 'Could not read system_settings: ' + (e.message || e);
+        console.error('Emergency lock status check failed:', e);
+        return false;
+    }
+}
+
+async function toggleEmergencyLock() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    await checkSystemLockStatus();
+    if (!systemLockStatusLoaded) return alert('Lock status could not be verified. Please check system_settings and its permissions.');
+    const nextStatus = !isSystemLocked;
+    const message = nextStatus
+        ? 'کیا آپ واقعی سسٹم لاک کرنا چاہتے ہیں؟ ممبرز نئی خریداری نہیں کر سکیں گے۔'
+        : 'کیا آپ واقعی سسٹم اَن لاک کرنا چاہتے ہیں؟ ممبرز دوبارہ خریداری کر سکیں گے۔';
+    let approved = false;
+    if (window.Swal) {
+        const result = await window.Swal.fire({
+            title: nextStatus ? 'Lock System?' : 'Unlock System?', text: message,
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: nextStatus ? '#f44336' : '#16834a',
+            background: '#0d1c14', color: '#e5b853',
+            confirmButtonText: nextStatus ? 'Yes, Lock' : 'Yes, Unlock'
+        });
+        approved = Boolean(result.isConfirmed);
+    } else {
+        approved = await gmConfirm(message, nextStatus ? 'Lock System' : 'Unlock System');
+    }
+    if (!approved) return;
+    const btn = $('emergencyLockBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const { data, error } = await sb.from('system_settings').update({
+            is_locked: nextStatus,
+            lock_reason: nextStatus ? 'Manual Admin Lock' : null,
+            locked_at: nextStatus ? new Date().toISOString() : null
+        }).eq('id', 1).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('system_settings میں id=1 کا ریکارڈ نہیں ملا۔');
+        await checkSystemLockStatus();
+        if (window.Swal) await window.Swal.fire({
+            icon: 'success', title: 'Updated!',
+            text: isSystemLocked ? 'System locked. Member checkout is disabled.' : 'System unlocked.',
+            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853'
+        });
+    } catch (e) {
+        if (btn) btn.disabled = false;
+        if (window.Swal) await window.Swal.fire({ icon: 'error', title: 'Lock update failed', text: e.message || String(e), background: '#0d1c14', color: '#e5b853' });
+        else alert('Lock update failed: ' + (e.message || e));
+    }
+}
+
 async function loadAdmin() {
     if (!isAdmin || !sb) return;
+    await checkSystemLockStatus();
     await loadDeliveryCharge(true);
 
     const [m, p, o, w, r] = await Promise.all([
@@ -2490,6 +2579,10 @@ async function adminChangeProof(orderId) {
 }  
 // Idempotent order rewards shared by Admin confirmation and Wallet checkout.
 async function processOrderRewards(orderId, reverse = false) {
+    // While locked, do not issue new rewards. Allow reversals so Admin can correct/refund safely.
+    if (!reverse && await checkSystemLockStatus()) {
+        throw new Error('System is LOCKED. New Coins/Commission rewards are paused.');
+    }
     const { data: order, error: orderReadError } = await sb.from('orders')
         .select('id, buyer_id, unit_price_pkr, quantity, rewards_processed').eq('id', orderId).single();
     if (orderReadError || !order) throw orderReadError || new Error('Order not found for reward processing.');
@@ -2543,6 +2636,9 @@ async function updateOrderStatus(orderId, newStatus) {
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
     if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
     newStatus = String(newStatus).toLowerCase();
+    if (newStatus === 'confirmed' && await checkSystemLockStatus()) {
+        return alert('سسٹم ایمرجنسی لاک ہے۔ نئے آرڈرز کی تصدیق فی الحال بند ہے۔ ریفنڈ یا کینسل کی کارروائی جاری رہ سکتی ہے۔');
+    }
 
     if (window.Swal) {
         const confirmResult = await window.Swal.fire({
@@ -3006,6 +3102,9 @@ async function loadCheckoutWalletBalance() {
 
 async function submitCheckout() {
     if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
+    const locked = await checkSystemLockStatus();
+    if (locked) return alert('معذرت، سسٹم فی الحال ایڈمن کی جانب سے لاک ہے۔ آپ ابھی آرڈر نہیں کر سکتے۔');
+    if (!systemLockStatusLoaded) return alert('سسٹم کا لاک اسٹیٹس چیک نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔');
     const name = $('coNameInput').value.trim();
     const phone = $('coPhoneInput').value.trim();
     const street = $('coAddressInput').value.trim();
@@ -3066,6 +3165,7 @@ async function submitCheckout() {
         currentOrderId = result.data.id;
 
         if (paymentMethod === 'wallet') {
+            if (await checkSystemLockStatus()) throw new Error('System is LOCKED. Wallet checkout has been stopped.');
             const oldBalance = Number(wallet.balance || 0);
             const newBalance = oldBalance - orderTotal;
             const { data: updatedWallet, error: debitError } = await sb.from('wallets')

@@ -335,7 +335,7 @@ input[type="file"]::file-selector-button:hover {
 <main>
 <div class="currency-selector"><span class="muted">Currency:</span><select id="currencySelect" onchange="changeCurrency(this.value)"><option value="USD">USD ($)</option><option value="PKR">PKR (₨)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select><span id="currencyRateInfo" class="muted" style="font-size:11px"></span></div>
 
-<section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 29,999 Coins<br>💎 Platinum: 30,000 - 49,999 Coins<br>👑 Diamond: 50,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
+<section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 49,999 Coins<br>💎 Platinum: 50,000 - 199,999 Coins<br>👑 Diamond: 200,000 - 999,999 Coins<br>💠 Crown Diamond: 1,000,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
 
 <section id="home" class="view">
     <!-- VIP Hero Banner -->
@@ -722,6 +722,14 @@ input[type="file"]::file-selector-button:hover {
         <div id="emergencyLockStatus" class="muted" style="font-size:12px;margin-bottom:12px;">Lock status is being checked…</div>
         <h3 style="margin-top:20px;">Deposit System Control</h3>
         <button class="primary" type="button" onclick="toggleDepositSystem()" id="toggleDepositBtn">Loading...</button>
+        <h3 style="margin-top:20px;">🏆 Rank Achievement Bonus Settings</h3>
+        <p class="muted" style="font-size:13px;">Set the one-time bonus amount for each rank.</p>
+        <label>Level 2 (Silver) Bonus ($)</label><input id="bonusSilver" type="number" min="0" placeholder="e.g. 50">
+        <label>Level 3 (Gold) Bonus ($)</label><input id="bonusGold" type="number" min="0" placeholder="e.g. 100">
+        <label>Level 4 (Platinum) Bonus ($)</label><input id="bonusPlatinum" type="number" min="0" placeholder="e.g. 200">
+        <label>Level 5 (Diamond) Bonus ($)</label><input id="bonusDiamond" type="number" min="0" placeholder="e.g. 500">
+        <button class="primary" type="button" onclick="saveRankBonusSettings()">Save Bonus Settings</button>
+        <div id="bonusSettingsStatus" class="status hidden"></div>
         <h3 style="margin-top:20px;">Wallet Transaction History (Audit)</h3>
         <input id="adminHistoryMemberId" placeholder="Enter Member ID or Name...">
         <button class="primary" onclick="openMemberAuditHistory()">View History</button>
@@ -1530,13 +1538,18 @@ async function loadMyAccountPage() {
     if($('accBalance')) $('accBalance').textContent = convertMoney(Number(totalComm).toFixed(2));
     
     const coins = Number(myProfile?.points || 0);
-    let level = 'Bronze 🥉', target = 3000, nextLevelName = 'Silver 🥈';
-    if (coins >= 50000) { level = 'Diamond 👑'; target = null; nextLevelName = ''; }
-    else if (coins >= 30000) { level = 'Platinum 💎'; target = 50000; nextLevelName = 'Diamond 👑'; }
-    else if (coins >= 12000) { level = 'Gold 🥇'; target = 30000; nextLevelName = 'Platinum 💎'; }
-    else if (coins >= 3000) { level = 'Silver 🥈'; target = 12000; nextLevelName = 'Gold 🥇'; }
-    
-    if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Level: ${level}</h3>${target ? `<p class="muted">Next level (${nextLevelName}): ${coins}/${target} coins</p><progress value="${coins}" max="${target}" style="width:100%"></progress>` : '<p>You have reached the highest level! 🏆</p>'}</div>`;
+    const GM_RANKS = [
+        { key: 'silver', name: 'Silver 🥈', min: 3000, rate: 2 },
+        { key: 'gold', name: 'Gold 🥇', min: 12000, rate: 2 },
+        { key: 'platinum', name: 'Platinum 💎', min: 50000, rate: 2 },
+        { key: 'diamond', name: 'Diamond 👑', min: 200000, rate: 2 },
+        { key: 'crown_diamond', name: 'Crown Diamond 💠', min: 1000000, rate: 1 }
+    ];
+    const achievedRank = [...GM_RANKS].reverse().find(r => coins >= r.min);
+    const currentRank = achievedRank || { name: 'Bronze 🥉', min: 0 };
+    const nextRank = GM_RANKS.find(r => coins < r.min);
+    const rankRows = GM_RANKS.map(r => `<div class="item"><span>${r.name} — ${r.min.toLocaleString()} Coins</span><b>${coins >= r.min ? 'Achieved' : 'Locked'}</b></div>`).join('');
+    if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px"><h3>My Rank: ${currentRank.name}</h3>${nextRank ? `<p class="muted">Next rank: ${nextRank.name} — ${coins.toLocaleString()} / ${nextRank.min.toLocaleString()} Coins</p><progress value="${Math.min(coins,nextRank.min)}" max="${nextRank.min}" style="width:100%"></progress>` : '<p>You have reached the highest rank! 🏆</p>'}<h4 style="margin-top:16px">GM Network Rank Ladder</h4>${rankRows}<p class="muted" style="font-size:12px">Indirect Commission: Silver, Gold, Platinum and Diamond 2%; Crown Diamond 1%. In each referral branch, each rank's commission is assigned to the nearest eligible rank holder above the buyer.</p><p class="muted" style="font-size:12px">Rank Bonus 1501-Coin rule is separate. Bonus amounts and historical timing must be configured/verified before automatic bonus payments can be enabled.</p></div>`;
 
     const { data: orders, error } = await sb.from('orders').select('*, products(name)').eq('buyer_id', user.id).order('created_at', { ascending: false });
     if (error) { if($('accTransactions')) $('accTransactions').textContent = 'Could not load transactions: ' + error.message; return; }
@@ -2577,57 +2590,16 @@ async function adminChangeProof(orderId) {
     if (updateError) return alert('Database update failed: ' + updateError.message);
     alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
 }  
-// Idempotent order rewards shared by Admin confirmation and Wallet checkout.
+// Server-side atomic order rewards. Requires gm_network_rank_rewards.sql to be run in Supabase.
 async function processOrderRewards(orderId, reverse = false) {
-    // While locked, do not issue new rewards. Allow reversals so Admin can correct/refund safely.
-    if (!reverse && await checkSystemLockStatus()) {
-        throw new Error('System is LOCKED. New Coins/Commission rewards are paused.');
-    }
-    const { data: order, error: orderReadError } = await sb.from('orders')
-        .select('id, buyer_id, unit_price_pkr, quantity, rewards_processed').eq('id', orderId).single();
-    if (orderReadError || !order) throw orderReadError || new Error('Order not found for reward processing.');
-    const alreadyProcessed = Boolean(order.rewards_processed);
-    if ((!reverse && alreadyProcessed) || (reverse && !alreadyProcessed)) return false;
-
-    // Conditional update prevents two simultaneous paths from awarding the same order twice.
-    const claimQuery = sb.from('orders').update({ rewards_processed: !reverse }).eq('id', orderId)
-        .eq('rewards_processed', alreadyProcessed).select('id').maybeSingle();
-    const { data: claimed, error: claimError } = await claimQuery;
-    if (claimError) throw claimError;
-    if (!claimed) return false;
-
-    try {
-        const amount = Number(order.unit_price_pkr || 0) * Math.max(1, Number(order.quantity) || 1);
-        const { data: buyer, error: buyerError } = await sb.from('profiles')
-            .select('id, points, referred_by').eq('id', order.buyer_id).single();
-        if (buyerError || !buyer) throw buyerError || new Error('Buyer profile not found.');
-        const sign = reverse ? -1 : 1;
-        const { error: buyerUpdateError } = await sb.from('profiles')
-            .update({ points: Math.max(0, Number(buyer.points || 0) + sign * amount) }).eq('id', buyer.id);
-        if (buyerUpdateError) throw buyerUpdateError;
-
-        let uplineId = buyer.referred_by;
-        let direct = true;
-        const visited = new Set([buyer.id]);
-        while (uplineId) {
-            if (visited.has(uplineId)) throw new Error('Referral tree contains a cycle.');
-            visited.add(uplineId);
-            const { data: upline, error: uplineError } = await sb.from('profiles')
-                .select('id, points, total_commission, referred_by').eq('id', uplineId).single();
-            if (uplineError || !upline) throw uplineError || new Error('Upline profile not found.');
-            const values = { points: Math.max(0, Number(upline.points || 0) + sign * amount) };
-            if (direct) values.total_commission = Math.max(0, Number(upline.total_commission || 0) + sign * amount * 0.10);
-            const { error: updateError } = await sb.from('profiles').update(values).eq('id', upline.id);
-            if (updateError) throw updateError;
-            uplineId = upline.referred_by;
-            direct = false;
-        }
-        return true;
-    } catch (err) {
-        // Release the claim so an admin can retry after fixing the underlying issue.
-        await sb.from('orders').update({ rewards_processed: alreadyProcessed }).eq('id', orderId);
-        throw err;
-    }
+    if (!sb) throw new Error('Database connection is unavailable.');
+    if (!reverse && await checkSystemLockStatus()) throw new Error('System is LOCKED. New rewards are paused.');
+    const { data, error } = await sb.rpc('gm_process_order_rewards', {
+        p_order_id: orderId,
+        p_reverse: Boolean(reverse)
+    });
+    if (error) throw new Error('Secure reward RPC failed: ' + error.message + '. Run gm_network_rank_rewards.sql in Supabase first.');
+    return data;
 }
 
 // 🚨 یہاں آپ کا کمیشن سسٹم بالکل محفوظ ہے 🚨
@@ -2685,8 +2657,8 @@ async function updateOrderStatus(orderId, newStatus) {
     }
 
     const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
-        ? '. Coins and direct referral commission were reversed.'
-        : newStatus === 'confirmed' ? ' and coins/commission were distributed.' : '.');
+        ? '. Coins and eligible commissions were reversed.'
+        : newStatus === 'confirmed' ? ' and Coins/eligible commissions were distributed.' : '.');
     if (window.Swal) {
         await window.Swal.fire({
             icon: rewardError ? 'warning' : 'success',
@@ -4084,6 +4056,62 @@ async function insertDemoProducts() {
         Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#0d1c14', color: '#e5b853' });
     }
 }
+
+// ==========================================
+// RANK ACHIEVEMENT BONUS (ADMIN SETTINGS)
+// ==========================================
+async function loadRankBonusSettings() {
+    if (!isAdmin || !sb) return;
+    try {
+        const { data, error } = await sb.from('rank_bonus_settings').select('*');
+        if (error) throw error;
+        if (data) {
+            data.forEach(item => {
+                if (item.level_number === 2 && $('bonusSilver')) $('bonusSilver').value = item.bonus_amount;
+                if (item.level_number === 3 && $('bonusGold')) $('bonusGold').value = item.bonus_amount;
+                if (item.level_number === 4 && $('bonusPlatinum')) $('bonusPlatinum').value = item.bonus_amount;
+                if (item.level_number === 5 && $('bonusDiamond')) $('bonusDiamond').value = item.bonus_amount;
+            });
+        }
+    } catch (e) {
+        console.error('Failed to load bonus settings:', e);
+    }
+}
+
+async function saveRankBonusSettings() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const silver = Number($('bonusSilver').value) || 0;
+    const gold = Number($('bonusGold').value) || 0;
+    const platinum = Number($('bonusPlatinum').value) || 0;
+    const diamond = Number($('bonusDiamond').value) || 0;
+
+    status('bonusSettingsStatus', 'Saving...');
+    try {
+        const updates = [
+            { level_number: 2, bonus_amount: silver, updated_at: new Date().toISOString() },
+            { level_number: 3, bonus_amount: gold, updated_at: new Date().toISOString() },
+            { level_number: 4, bonus_amount: platinum, updated_at: new Date().toISOString() },
+            { level_number: 5, bonus_amount: diamond, updated_at: new Date().toISOString() }
+        ];
+
+        for (const u of updates) {
+            const { error } = await sb.from('rank_bonus_settings').upsert(u, { onConflict: 'level_number' });
+            if (error) throw error;
+        }
+
+        status('bonusSettingsStatus', '✅ Bonus settings saved successfully!', 'ok');
+        if (window.Swal) Swal.fire({ icon: 'success', title: 'Saved!', text: 'Rank bonuses updated.', background: '#0d1c14', color: '#e5b853' });
+    } catch (e) {
+        status('bonusSettingsStatus', 'Error: ' + e.message, 'error');
+    }
+}
+
+// Load these settings when Admin loads
+const originalLoadAdminForBonus = loadAdmin;
+loadAdmin = async function() {
+    await originalLoadAdminForBonus();
+    await loadRankBonusSettings();
+};
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

@@ -1454,20 +1454,61 @@ async function loadProfile() {
     if($('profCommission')) $('profCommission').textContent = convertMoney(Number(totalComm).toFixed(2));
     if($('nc')) $('nc').textContent = convertMoney(Number(totalComm).toFixed(2));
 
-    const { data: selfOrders } = await sb.from('orders').select('unit_price_pkr').eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']);
-    const selfSalesCount = selfOrders ? selfOrders.length : 0;
-    let selfCoinsFromOrders = 0;
-    if (selfOrders) selfOrders.forEach(o => selfCoinsFromOrders += Number(o.unit_price_pkr));
-
-    const { data: teamOrders } = await sb.from('orders').select('unit_price_pkr').eq('referrer_id', user.id).in('status', ['confirmed', 'delivered']);
-    const teamSalesCount = teamOrders ? teamOrders.length : 0;
-    let teamCoinsFromOrders = 0;
-    if (teamOrders) teamOrders.forEach(o => teamCoinsFromOrders += Number(o.unit_price_pkr));
-
-    if($('nm_self')) $('nm_self').textContent = selfCoinsFromOrders.toLocaleString();
-    if($('nm_team')) $('nm_team').textContent = teamCoinsFromOrders.toLocaleString();
-    if($('ns_self')) $('ns_self').textContent = String(selfSalesCount);
-    if($('ns_team')) $('ns_team').textContent = String(teamSalesCount);
+    // Sales and coin totals: count purchased units (quantity), not order rows.
+    // Team includes every level below the signed-in member, not only direct referrals.
+    const fetchAllRows = async (table, columns, configure = q => q) => {
+        const rows = [];
+        for (let from = 0; ; from += 1000) {
+            let q = sb.from(table).select(columns).range(from, from + 999);
+            q = configure(q);
+            const { data, error } = await q;
+            if (error) throw error;
+            rows.push(...(data || []));
+            if (!data || data.length < 1000) break;
+        }
+        return rows;
+    };
+    try {
+        const selfOrders = await fetchAllRows('orders', 'unit_price_pkr, quantity', q => q.eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']));
+        const descendants = new Set();
+        let frontier = [user.id];
+        while (frontier.length) {
+            const next = [];
+            for (let i = 0; i < frontier.length; i += 100) {
+                const parentChunk = frontier.slice(i, i + 100);
+                const children = await fetchAllRows('profiles', 'id, referred_by', q => q.in('referred_by', parentChunk));
+                children.forEach(member => {
+                    if (member.id && !descendants.has(member.id)) {
+                        descendants.add(member.id);
+                        next.push(member.id);
+                    }
+                });
+            }
+            frontier = next;
+        }
+        let teamOrders = [];
+        const descendantIds = Array.from(descendants);
+        for (let i = 0; i < descendantIds.length; i += 100) {
+            const chunk = descendantIds.slice(i, i + 100);
+            const rows = await fetchAllRows('orders', 'unit_price_pkr, quantity', q => q.in('buyer_id', chunk).in('status', ['confirmed', 'delivered']));
+            teamOrders.push(...rows);
+        }
+        const quantityOf = o => Math.max(1, Number(o.quantity) || 1);
+        const selfSalesCount = selfOrders.reduce((sum, o) => sum + quantityOf(o), 0);
+        const teamSalesCount = teamOrders.reduce((sum, o) => sum + quantityOf(o), 0);
+        const selfCoinsFromOrders = selfOrders.reduce((sum, o) => sum + Number(o.unit_price_pkr || 0) * quantityOf(o), 0);
+        const teamCoinsFromOrders = teamOrders.reduce((sum, o) => sum + Number(o.unit_price_pkr || 0) * quantityOf(o), 0);
+        if($('nm_self')) $('nm_self').textContent = selfCoinsFromOrders.toLocaleString();
+        if($('nm_team')) $('nm_team').textContent = teamCoinsFromOrders.toLocaleString();
+        if($('ns_self')) $('ns_self').textContent = String(selfSalesCount);
+        if($('ns_team')) $('ns_team').textContent = String(teamSalesCount);
+    } catch (statsError) {
+        console.error('Team/self sales calculation failed:', statsError);
+        if($('nm_self')) $('nm_self').textContent = '—';
+        if($('nm_team')) $('nm_team').textContent = '—';
+        if($('ns_self')) $('ns_self').textContent = '—';
+        if($('ns_team')) $('ns_team').textContent = '—';
+    }
 }
 
 async function loadMyAccountPage() {
@@ -2447,6 +2488,55 @@ async function adminChangeProof(orderId) {
     if (updateError) return alert('Database update failed: ' + updateError.message);
     alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
 }  
+// Idempotent order rewards shared by Admin confirmation and Wallet checkout.
+async function processOrderRewards(orderId, reverse = false) {
+    const { data: order, error: orderReadError } = await sb.from('orders')
+        .select('id, buyer_id, unit_price_pkr, quantity, rewards_processed').eq('id', orderId).single();
+    if (orderReadError || !order) throw orderReadError || new Error('Order not found for reward processing.');
+    const alreadyProcessed = Boolean(order.rewards_processed);
+    if ((!reverse && alreadyProcessed) || (reverse && !alreadyProcessed)) return false;
+
+    // Conditional update prevents two simultaneous paths from awarding the same order twice.
+    const claimQuery = sb.from('orders').update({ rewards_processed: !reverse }).eq('id', orderId)
+        .eq('rewards_processed', alreadyProcessed).select('id').maybeSingle();
+    const { data: claimed, error: claimError } = await claimQuery;
+    if (claimError) throw claimError;
+    if (!claimed) return false;
+
+    try {
+        const amount = Number(order.unit_price_pkr || 0) * Math.max(1, Number(order.quantity) || 1);
+        const { data: buyer, error: buyerError } = await sb.from('profiles')
+            .select('id, points, referred_by').eq('id', order.buyer_id).single();
+        if (buyerError || !buyer) throw buyerError || new Error('Buyer profile not found.');
+        const sign = reverse ? -1 : 1;
+        const { error: buyerUpdateError } = await sb.from('profiles')
+            .update({ points: Math.max(0, Number(buyer.points || 0) + sign * amount) }).eq('id', buyer.id);
+        if (buyerUpdateError) throw buyerUpdateError;
+
+        let uplineId = buyer.referred_by;
+        let direct = true;
+        const visited = new Set([buyer.id]);
+        while (uplineId) {
+            if (visited.has(uplineId)) throw new Error('Referral tree contains a cycle.');
+            visited.add(uplineId);
+            const { data: upline, error: uplineError } = await sb.from('profiles')
+                .select('id, points, total_commission, referred_by').eq('id', uplineId).single();
+            if (uplineError || !upline) throw uplineError || new Error('Upline profile not found.');
+            const values = { points: Math.max(0, Number(upline.points || 0) + sign * amount) };
+            if (direct) values.total_commission = Math.max(0, Number(upline.total_commission || 0) + sign * amount * 0.10);
+            const { error: updateError } = await sb.from('profiles').update(values).eq('id', upline.id);
+            if (updateError) throw updateError;
+            uplineId = upline.referred_by;
+            direct = false;
+        }
+        return true;
+    } catch (err) {
+        // Release the claim so an admin can retry after fixing the underlying issue.
+        await sb.from('orders').update({ rewards_processed: alreadyProcessed }).eq('id', orderId);
+        throw err;
+    }
+}
+
 // 🚨 یہاں آپ کا کمیشن سسٹم بالکل محفوظ ہے 🚨
 async function updateOrderStatus(orderId, newStatus) {
     if (!isAdmin) return alert('Admin access required.');
@@ -2487,57 +2577,15 @@ async function updateOrderStatus(orderId, newStatus) {
     const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (updateError) return alert('Error updating order: ' + updateError.message);
 
-    const price = Number(currentOrder.unit_price_pkr);
-    const orderQuantity = Math.max(1, Number(currentOrder.quantity) || 1);
-    const finalTotalPrice = price * orderQuantity;
-    const buyerId = currentOrder.buyer_id;
     let rewardError = null;
-
-    // Award coins only when an order newly enters confirmed status.
-    if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
-        const { data: buyerData, error: buyerReadError } = await sb.from('profiles')
-            .select('id, points, referred_by').eq('id', buyerId).single();
-        if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
-        else {
-            const { error } = await sb.from('profiles').update({ points: Number(buyerData.points || 0) + finalTotalPrice }).eq('id', buyerId);
-            if (error) rewardError = error;
-            let uplineId = buyerData.referred_by;
-            let direct = true;
-            while (uplineId && !rewardError) {
-                const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
-                if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
-                const values = { points: Number(data.points || 0) + finalTotalPrice };
-                if (direct) values.total_commission = Number(data.total_commission || 0) + finalTotalPrice * 0.10;
-                const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
-                if (writeErr) { rewardError = writeErr; break; }
-                uplineId = data.referred_by;
-                direct = false;
-            }
+    try {
+        if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
+            await processOrderRewards(orderId, false);
+        } else if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
+            await processOrderRewards(orderId, true);
         }
-    }
-
-    // Reverse rewards only when a previously confirmed order is cancelled/refunded.
-    // Switching between cancelled and refunded will not deduct a second time.
-    if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
-        const { data: buyerData, error: buyerReadError } = await sb.from('profiles')
-            .select('id, points, referred_by').eq('id', buyerId).single();
-        if (buyerReadError || !buyerData) rewardError = buyerReadError || new Error('Buyer profile not found.');
-        else {
-            const { error } = await sb.from('profiles').update({ points: Math.max(0, Number(buyerData.points || 0) - finalTotalPrice) }).eq('id', buyerId);
-            if (error) rewardError = error;
-            let uplineId = buyerData.referred_by;
-            let direct = true;
-            while (uplineId && !rewardError) {
-                const { data, error: readErr } = await sb.from('profiles').select('id, points, total_commission, referred_by').eq('id', uplineId).single();
-                if (readErr || !data) { rewardError = readErr || new Error('Upline profile not found.'); break; }
-                const values = { points: Math.max(0, Number(data.points || 0) - finalTotalPrice) };
-                if (direct) values.total_commission = Math.max(0, Number(data.total_commission || 0) - finalTotalPrice * 0.10);
-                const { error: writeErr } = await sb.from('profiles').update(values).eq('id', uplineId);
-                if (writeErr) { rewardError = writeErr; break; }
-                uplineId = data.referred_by;
-                direct = false;
-            }
-        }
+    } catch (err) {
+        rewardError = err;
     }
 
     const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
@@ -3040,11 +3088,17 @@ async function submitCheckout() {
             if (txnError) console.error('Wallet transaction log failed:', txnError.message);
             
             const { error: confirmError } = await sb.from('orders').update({ status: 'confirmed' }).eq('id', currentOrderId);
-            if (confirmError) console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
+            let rewardError = null;
+            if (!confirmError) {
+                try { await processOrderRewards(currentOrderId, false); }
+                catch (err) { rewardError = err; console.error('Wallet order reward processing failed:', err); }
+            } else console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
             
             alert(confirmError
                 ? 'Wallet was charged, but order status could not be updated. Please contact admin with Order ID: ' + currentOrderId
-                : 'Order placed and wallet payment processed successfully.');
+                : rewardError
+                    ? 'Order is confirmed and wallet payment is complete, but Coins/Commission could not be distributed: ' + (rewardError.message || rewardError) + '. Please contact Admin with Order ID: ' + currentOrderId
+                    : 'Order placed successfully. Coins and referral commission have been distributed.');
             
             $('checkoutPage').classList.add('hidden');
             $('productViewPage').classList.add('hidden');

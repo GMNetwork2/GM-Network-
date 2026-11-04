@@ -696,7 +696,13 @@ input[type="file"]::file-selector-button:hover {
     <div id="adminSection-finance" class="hidden panel">
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
         <h2>Finance &amp; Wallets</h2>
-        <h3>Wallet Deposit Requests</h3>
+        <h3>🚚 Delivery Charges</h3>
+        <p class="muted" style="font-size:13px;">Set one fixed delivery fee for all member orders. Enter the amount in Pakistani Rupees (PKR). Set 0 for free delivery.</p>
+        <label for="adminDeliveryCharge">Delivery fee (PKR)</label>
+        <input id="adminDeliveryCharge" type="number" min="0" step="1" placeholder="e.g. 200">
+        <button class="primary" type="button" onclick="saveDeliveryCharge()">Save Delivery Charges</button>
+        <div id="deliveryChargeAdminStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">Wallet Deposit Requests</h3>
         <button class="primary" type="button" onclick="openWalletDepositsModal()">View Deposit Requests</button>
         <h3 style="margin-top:20px;">Withdraw Requests</h3>
         <button class="primary" type="button" onclick="openWithdrawRequestsModal()">View Withdraw Requests</button>
@@ -905,7 +911,13 @@ input[type="file"]::file-selector-button:hover {
         <!-- Product Summary Card -->
         <div style="background:var(--card-bg);border:1px solid var(--gold);padding:15px;border-radius:12px;margin-bottom:25px;display:flex;gap:15px;align-items:center;">
             <img id="coImage" src="" alt="Selected product" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#050a08;padding:5px;border:1px solid var(--line);">
-            <div><h3 id="coName" style="margin:0 0 5px;font-size:16px;color:var(--ink);"></h3><div id="coPrice" style="color:var(--gold);font-size:20px;font-weight:800;"></div></div>
+            <div style="flex:1;min-width:0;"><h3 id="coName" style="margin:0 0 5px;font-size:16px;color:var(--ink);"></h3><div id="coPrice" style="color:var(--gold);font-size:20px;font-weight:800;"></div></div>
+        </div>
+        <div style="background:var(--card-bg);border:1px solid var(--line);padding:15px;border-radius:12px;margin:-10px 0 25px;">
+            <div style="display:flex;justify-content:space-between;gap:12px;margin:6px 0;"><span>Product Subtotal</span><b id="coSubtotal">—</b></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;margin:6px 0;"><span>Delivery Charges</span><b id="coDeliveryCharge">—</b></div>
+            <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;gap:12px;font-size:17px;color:var(--gold);"><b>Grand Total</b><b id="coGrandTotal">—</b></div>
+            <div id="coDeliveryNote" class="muted" style="font-size:11px;margin-top:7px;"></div>
         </div>
         <!-- Shipping Details Section -->
         <h3 style="margin-bottom:15px;font-size:18px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:8px;">🚚 Shipping Details</h3>
@@ -982,6 +994,8 @@ let myProfile = null;
 let totalComm = 0;
 let currentOrderId = null;
 let checkoutData = null;
+let deliveryChargePkr = 200;
+let deliveryChargeLoaded = false;
 let exchangeRates = { USD: 1, PKR: 278, INR: 83, EUR: 0.92, GBP: 0.79 };
 let currentCurrency = 'USD';
 
@@ -2109,8 +2123,56 @@ function openAdminSection(sectionId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+async function loadDeliveryCharge(forAdmin = false) {
+    if (!sb) return false;
+    const { data, error } = await sb.from('site_settings').select('setting_value').eq('setting_key', 'delivery_charge_pkr').maybeSingle();
+    if (error || !data) {
+        deliveryChargeLoaded = false;
+        if (forAdmin && $('deliveryChargeAdminStatus')) status('deliveryChargeAdminStatus', 'Settings not found. Run the SQL setup shown below, then reload.', 'error');
+        return false;
+    }
+    const amount = Number(data.setting_value);
+    if (!Number.isFinite(amount) || amount < 0) return false;
+    deliveryChargePkr = amount;
+    deliveryChargeLoaded = true;
+    if ($('adminDeliveryCharge')) $('adminDeliveryCharge').value = String(amount);
+    refreshCheckoutTotals();
+    return true;
+}
+
+async function saveDeliveryCharge() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const input = $('adminDeliveryCharge');
+    const amount = Number(input?.value);
+    if (!Number.isFinite(amount) || amount < 0) return status('deliveryChargeAdminStatus', 'Enter a valid amount (0 or more).', 'error');
+    const { error } = await sb.from('site_settings').upsert({ setting_key: 'delivery_charge_pkr', setting_value: amount, updated_at: new Date().toISOString() }, { onConflict: 'setting_key' });
+    if (error) return status('deliveryChargeAdminStatus', 'Could not save: ' + error.message, 'error');
+    deliveryChargePkr = amount;
+    deliveryChargeLoaded = true;
+    refreshCheckoutTotals();
+    status('deliveryChargeAdminStatus', amount === 0 ? 'Free delivery saved successfully.' : 'Delivery fee saved: Rs. ' + amount.toLocaleString('en-PK'), 'ok');
+}
+
+function getDeliveryChargeBase() {
+    const pkrRate = Number(exchangeRates?.PKR || 0);
+    return pkrRate > 0 ? Number(deliveryChargePkr || 0) / pkrRate : 0;
+}
+
+function refreshCheckoutTotals() {
+    if (!checkoutData) return;
+    const subtotal = Number(checkoutData.price || 0) * Number(productQty || 1);
+    const delivery = getDeliveryChargeBase();
+    const total = subtotal + delivery;
+    if ($('coPrice')) $('coPrice').textContent = convertMoney(subtotal);
+    if ($('coSubtotal')) $('coSubtotal').textContent = convertMoney(subtotal);
+    if ($('coDeliveryCharge')) $('coDeliveryCharge').textContent = convertMoney(delivery);
+    if ($('coGrandTotal')) $('coGrandTotal').textContent = convertMoney(total);
+    if ($('coDeliveryNote')) $('coDeliveryNote').textContent = deliveryChargePkr === 0 ? 'Free delivery' : 'Fixed delivery fee: Rs. ' + Number(deliveryChargePkr).toLocaleString('en-PK') + ' PKR';
+}
+
 async function loadAdmin() {
     if (!isAdmin || !sb) return;
+    await loadDeliveryCharge(true);
 
     const [m, p, o, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
@@ -2127,7 +2189,7 @@ async function loadAdmin() {
     if($('adminOrders')) {
         $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => `
             <div class="item" data-order="${esc(x.id)}" style="cursor:pointer">
-                <div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number || '—')} • ${convertMoney(x.unit_price_pkr)}</small></div>
+                <div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number || '—')} • ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}</small></div>
                 <span class="pill">${esc(x.status || 'pending')}</span>
             </div>`).join('') || 'No orders yet.';
 
@@ -2136,7 +2198,7 @@ async function loadAdmin() {
             if (order) {
                 el.onclick = function(e) {
                     e.preventDefault();
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null, order.quantity);
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_amount, order.delivery_charge_pkr, order.delivery_charge_amount, order.total_amount);
                 };
             }
         });
@@ -2329,9 +2391,9 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1) {
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryPkr = null, savedDeliveryAmount = null, savedGrandTotal = null) {
     $('orderDetailName').textContent = name || ('Order …' + String(id).slice(-6));
-    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(price || 0) * orderQty; $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')';
+    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(savedGrandTotal ?? (Number(price || 0) * orderQty + Number(savedDeliveryAmount || 0))); $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')' + (savedDeliveryPkr !== null && savedDeliveryPkr !== undefined ? ' • Delivery: Rs. ' + Number(savedDeliveryPkr).toLocaleString('en-PK') : '');
     $('orderDetailStatus').textContent = String(orderStatus || 'unknown').toUpperCase(); $('orderDetailUserId').textContent = buyerId ? '...' + String(buyerId).slice(-8) : '—'; $('orderDetailMemberCode').textContent = 'Loading…';
     
     if (buyerId) {
@@ -2654,7 +2716,7 @@ function updateQty(change) {
     window.currentProductQty = productQty;
     if ($('pvpQtyDisplay')) $('pvpQtyDisplay').textContent = String(productQty);
     if (checkoutData && $('pvpPrice')) $('pvpPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
-    if ($('coPrice') && checkoutData) $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
+    if ($('coPrice') && checkoutData) refreshCheckoutTotals();
 }
 
 function openProductView(index) {
@@ -2876,6 +2938,10 @@ function openCheckoutPage() {
     history.pushState({ page: 'checkout' }, '', '#checkout');
     $('productViewPage').classList.add('hidden');
     $('checkoutPage').classList.remove('hidden');
+    refreshCheckoutTotals();
+    loadDeliveryCharge(false).then(ok => {
+        if (!ok && $('coDeliveryNote')) $('coDeliveryNote').textContent = 'Delivery fee could not be loaded. Please try again or contact admin.';
+    });
 }
 
 async function loadCheckoutWalletBalance() {
@@ -2902,7 +2968,13 @@ async function submitCheckout() {
 
     const methodInput = document.querySelector('input[name="paymentMethod"]:checked');
     const paymentMethod = methodInput?.value === 'wallet' ? 'wallet' : 'manual';
-    const orderTotal = Number(checkoutData.price || 0) * Number(productQty || 1);
+    if (!deliveryChargeLoaded) {
+        const loaded = await loadDeliveryCharge(false);
+        if (!loaded) return alert('Delivery charges could not be loaded. Please refresh checkout and try again.');
+    }
+    const productSubtotal = Number(checkoutData.price || 0) * Number(productQty || 1);
+    const deliveryChargeBase = getDeliveryChargeBase();
+    const orderTotal = productSubtotal + deliveryChargeBase;
     let wallet = null;
     if (paymentMethod === 'wallet') {
         const { data, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
@@ -2923,6 +2995,10 @@ async function submitCheckout() {
             product_id: checkoutData.id,
             quantity: productQty,
             unit_price_pkr: checkoutData.price,
+            subtotal_amount: productSubtotal,
+            delivery_charge_pkr: Number(deliveryChargePkr || 0),
+            delivery_charge_amount: deliveryChargeBase,
+            total_amount: orderTotal,
             phone_number: phone,
             shipping_address: address,
             status: 'pending',
@@ -2931,10 +3007,10 @@ async function submitCheckout() {
         };
         let result = await sb.from('orders').insert(orderPayload).select('id').single();
         
-        if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message || '')) {
+        if (result.error && /buyer_email|payment_method/i.test(result.error.message || '')) {
             const fallbackPayload = { ...orderPayload };
-            delete fallbackPayload.buyer_email;
-            delete fallbackPayload.payment_method;
+            if (/buyer_email/i.test(result.error.message || '')) delete fallbackPayload.buyer_email;
+            if (/payment_method/i.test(result.error.message || '')) delete fallbackPayload.payment_method;
             result = await sb.from('orders').insert(fallbackPayload).select('id').single();
         }
         

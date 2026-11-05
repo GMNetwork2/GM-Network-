@@ -4018,13 +4018,26 @@ async function openCommissionHistoryModal() {
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
 
-            // کمیشن ریکارڈ اور متعلقہ ممبر کی پروفائل حاصل کریں
+            // ہسٹری کا ڈیٹا حاصل کریں (بغیر Join کے)
             const { data: commissions, error: commError } = await sb.from('commission_logs')
-                .select('*, profiles!commission_logs_user_id_fkey(full_name, member_code)')
+                .select('*')
                 .eq('order_id', order.id)
                 .order('level_number', { ascending: true });
 
             let commissionDetailsHtml = '';
+
+            // اگر ڈیٹا ملا تو ممبرز کے نام الگ سے حاصل کریں
+            let memberProfiles = {};
+            if (commissions && commissions.length > 0) {
+                const userIds = commissions.map(c => c.user_id);
+                const { data: profilesData } = await sb.from('profiles')
+                    .select('id, full_name, member_code')
+                    .in('id', userIds);
+
+                if (profilesData) {
+                    profilesData.forEach(p => { memberProfiles[p.id] = p; });
+                }
+            }
 
             if (commError) {
                 commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
@@ -4032,8 +4045,9 @@ async function openCommissionHistoryModal() {
                 </div>`;
             } else if (commissions && commissions.length > 0) {
                 commissionDetailsHtml = commissions.map(c => {
-                    const memberName = c.profiles?.full_name || 'Unknown Member';
-                    const memberCode = c.profiles?.member_code || 'N/A';
+                    const profile = memberProfiles[c.user_id] || {};
+                    const memberName = profile.full_name || 'Unknown Member';
+                    const memberCode = profile.member_code || 'N/A';
                     const level = c.level_number ? `Level ${c.level_number}` : (c.level_name || 'Direct');
                     const commAmount = Number(c.commission_amount || 0);
                     return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">

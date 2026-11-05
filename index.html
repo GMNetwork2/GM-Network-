@@ -730,26 +730,18 @@ input[type="file"]::file-selector-button:hover {
         <label>Level 5 (Diamond) Bonus ($)</label><input id="bonusDiamond" type="number" min="0" placeholder="e.g. 500">
         <button class="primary" type="button" onclick="saveRankBonusSettings()">Save Bonus Settings</button>
         <div id="bonusSettingsStatus" class="status hidden"></div>
-        <h3 style="margin-top:20px;">🔒 Security &amp; Locked Members</h3>
-        <p class="muted" style="font-size:13px;">Rate limit سے تجاوز کرنے والے ممبرز یہاں نظر آئیں گے۔</p>
-        <button class="primary" type="button" onclick="openSecurityAlertsModal()" style="background:#2196F3;color:white;">View Security Alerts</button>
-        <button class="primary" type="button" onclick="openLockedMembersModal()" style="background:#f44336;color:white;margin-top:8px;">View Locked Members</button>
         <h3 style="margin-top:20px;">Wallet Transaction History (Audit)</h3>
         <input id="adminHistoryMemberId" placeholder="Enter Member ID or Name...">
         <button class="primary" onclick="openMemberAuditHistory()">View History</button>
         <div id="adminHistoryStatus" class="status hidden"></div>
         <h3 style="margin-top:20px;">Master History</h3>
         <button class="primary" type="button" onclick="openMasterHistory()" style="background:#2196F3;color:white;">View Master History</button>
-        <h3 style="margin-top:20px;">💰 Commission Distribution History</h3>
-        <p class="muted" style="font-size:13px;">یہاں دیکھیں کہ کس آرڈر پر کس لیول تک کتنا کمیشن تقسیم ہوا۔</p>
-        <button class="primary" type="button" onclick="openCommissionHistoryModal()" style="background:#4CAF50;color:white;">View Commission History</button>
     </div>
 
     <!-- Orders Section -->
     <div id="adminSection-orders" class="hidden panel">
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
         <h2>Recent Orders</h2>
-        <input id="adminOrderSearchInput" placeholder="Search by Order ID or Phone Number..." oninput="filterAdminOrders()" style="margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid var(--line); background:#050a08; color:#fff;">
         <div id="adminOrders" class="muted">No orders yet.</div>
     </div>
 </section>
@@ -2369,21 +2361,11 @@ async function loadAdmin() {
     if($('ao')) $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
 
     if($('adminOrders')) {
-        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => {
-            const date = x.created_at ? new Date(x.created_at).toLocaleString('en-GB') : '—';
-            const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()}`;
-            return `<div class="item admin-order-item" data-search="${esc(searchTxt)}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;">
-                <div style="width:100%; display:flex; justify-content:space-between;">
-                    <b>Order …${esc(String(x.id).slice(-4))}</b>
-                    <span class="pill">${esc(x.status || 'pending')}</span>
-                </div>
-                <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
-                    <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
-                    <b>Amount:</b> ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}<br>
-                    <b>Date:</b> ${esc(date)}
-                </div>
-            </div>`;
-        }).join('') || 'No orders yet.';
+        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => `
+            <div class="item" data-order="${esc(x.id)}" style="cursor:pointer">
+                <div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number || '—')} • ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}</small></div>
+                <span class="pill">${esc(x.status || 'pending')}</span>
+            </div>`).join('') || 'No orders yet.';
 
         $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
             const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
@@ -3124,17 +3106,6 @@ async function loadCheckoutWalletBalance() {
 async function submitCheckout() {
     if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
     const locked = await checkSystemLockStatus();
-    // ممبر خود لاک ہے یا نہیں چیک کریں
-    try {
-        const { data: myProf, error: profileLockError } = await sb.from('profiles').select('is_locked').eq('id', user.id).maybeSingle();
-        if (profileLockError) throw profileLockError;
-        if (myProf && myProf.is_locked) {
-            return alert('آپ کا اکاؤنٹ سیکیورٹی وجوہات کی بنا پر لاک ہے۔ براہ کرم ایڈمن سے رابطہ کریں۔');
-        }
-    } catch (e) {
-        console.warn('Member lock check failed:', e);
-        return alert('آپ کے اکاؤنٹ کا سیکیورٹی اسٹیٹس چیک نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔');
-    }
     if (locked) return alert('معذرت، سسٹم فی الحال ایڈمن کی جانب سے لاک ہے۔ آپ ابھی آرڈر نہیں کر سکتے۔');
     if (!systemLockStatusLoaded) return alert('سسٹم کا لاک اسٹیٹس چیک نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔');
     const name = $('coNameInput').value.trim();
@@ -3855,216 +3826,6 @@ function filterAdminProducts(category) {
     updateAdminProductSelectionUI();
 }
 
-// ==========================================
-// SECURITY ALERTS & LOCKED MEMBERS (ADMIN)
-// ==========================================
-
-async function openSecurityAlertsModal() {
-    if (!isAdmin || !sb) return alert('Admin access required.');
-
-    Swal.fire({ title: 'Loading Alerts...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
-
-    try {
-        const { data, error } = await sb.from('security_alerts')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50);
-        if (error) throw error;
-
-        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-        if (!data || data.length === 0) {
-            html += '<p style="text-align:center;color:#aaa;">No security alerts found.</p>';
-        } else {
-            data.forEach(a => {
-                const resolved = a.is_resolved;
-                const color = resolved ? '#4CAF50' : '#f44336';
-                const statusText = resolved ? 'RESOLVED' : 'ACTIVE';
-                const date = a.created_at ? new Date(a.created_at).toLocaleString() : '—';
-                const details = a.details ? JSON.stringify(a.details) : '';
-                html += `
-                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                        <b style="color:#e5b853;font-size:14px;">${esc(a.member_name || 'Unknown')}</b>
-                        <span style="color:${color};font-weight:bold;font-size:11px;">${statusText}</span>
-                    </div>
-                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
-                        <b>Member ID:</b> ${esc(a.member_code || '—')}<br>
-                        <b>Type:</b> ${esc(a.alert_type || '—')}<br>
-                        <b>Details:</b> ${esc(details)}<br>
-                        <b>Date:</b> ${esc(date)}
-                    </div>
-                    ${!resolved ? `<button onclick="unlockMemberFromAlert(${JSON.stringify(String(a.user_id || ''))},${JSON.stringify(String(a.id || ''))})" style="margin-top:8px;background:#4CAF50;color:white;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:bold;width:100%;">Unlock This Member</button>` : ''}
-                </div>`;
-            });
-        }
-        html += '</div>';
-
-        await Swal.fire({ title: 'Security Alerts', html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '600px' });
-    } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load alerts.', background: '#0d1c14', color: '#e5b853' });
-    }
-}
-
-async function openLockedMembersModal() {
-    if (!isAdmin || !sb) return alert('Admin access required.');
-
-    Swal.fire({ title: 'Loading Locked Members...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
-
-    try {
-        const { data, error } = await sb.from('profiles')
-            .select('id, full_name, member_code, is_locked')
-            .eq('is_locked', true);
-        if (error) throw error;
-
-        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-        if (!data || data.length === 0) {
-            html += '<p style="text-align:center;color:#aaa;">No locked members found.</p>';
-        } else {
-            data.forEach(m => {
-                html += `
-                <div style="border:1px solid #f44336;border-radius:10px;padding:12px;margin-bottom:10px;background:#1a0a0a;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div>
-                            <b style="color:#e5b853;font-size:14px;">${esc(m.full_name || 'Member')}</b><br>
-                            <span style="color:#aaa;font-size:12px;">ID: ${esc(m.member_code || '—')}</span>
-                        </div>
-                        <button onclick="unlockMemberDirect(${JSON.stringify(String(m.id || ''))})" style="background:#4CAF50;color:white;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:bold;">Unlock</button>
-                    </div>
-                </div>`;
-            });
-        }
-        html += '</div>';
-
-        await Swal.fire({ title: 'Locked Members', html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '600px' });
-    } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load locked members.', background: '#0d1c14', color: '#e5b853' });
-    }
-}
-
-async function unlockMemberFromAlert(userId, alertId) {
-    if (!isAdmin || !sb) return alert('Admin access required.');
-    const confirmResult = await Swal.fire({
-        title: 'Unlock Member?',
-        text: 'This member will be able to place orders again.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#4CAF50',
-        cancelButtonColor: '#555',
-        confirmButtonText: 'Yes, Unlock',
-        background: '#0d1c14', color: '#e5b853'
-    });
-    if (!confirmResult.isConfirmed) return;
-
-    try {
-        const { error } = await sb.rpc('admin_unlock_member', { p_user_id: userId });
-        if (error) throw error;
-        await Swal.fire({ icon: 'success', title: 'Unlocked!', text: 'Member has been unlocked.', background: '#0d1c14', color: '#e5b853' });
-        await openSecurityAlertsModal();
-    } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not unlock member.', background: '#0d1c14', color: '#e5b853' });
-    }
-}
-
-async function unlockMemberDirect(userId) {
-    if (!isAdmin || !sb) return alert('Admin access required.');
-    const confirmResult = await Swal.fire({
-        title: 'Unlock Member?',
-        text: 'This member will be able to place orders again.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#4CAF50',
-        cancelButtonColor: '#555',
-        confirmButtonText: 'Yes, Unlock',
-        background: '#0d1c14', color: '#e5b853'
-    });
-    if (!confirmResult.isConfirmed) return;
-
-    try {
-        const { error } = await sb.rpc('admin_unlock_member', { p_user_id: userId });
-        if (error) throw error;
-        await Swal.fire({ icon: 'success', title: 'Unlocked!', text: 'Member has been unlocked.', background: '#0d1c14', color: '#e5b853' });
-        await openLockedMembersModal();
-    } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not unlock member.', background: '#0d1c14', color: '#e5b853' });
-    }
-}
-
-// ==========================================
-// COMMISSION DISTRIBUTION HISTORY (ADMIN)
-// ==========================================
-async function openCommissionHistoryModal() {
-    if (!isAdmin || !sb) return alert('Admin access required.');
-
-    Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
-
-    try {
-        // حالیہ کنفرمڈ آرڈرز حاصل کریں
-        const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
-            .in('status', ['confirmed', 'delivered'])
-            .order('created_at', { ascending: false })
-            .limit(20);
-
-        if (ordersError) throw ordersError;
-
-        if (!orders || orders.length === 0) {
-            return Swal.fire({ icon: 'info', title: 'No Data', text: 'Abhi tak koi confirmed order nahi hai.', background: '#0d1c14', color: '#e5b853' });
-        }
-
-        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-
-        for (const order of orders) {
-            const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
-            const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
-            const orderShortId = String(order.id).slice(-6);
-
-            // کمیشن ریکارڈ اور متعلقہ ممبر کی پروفائل حاصل کریں
-            const { data: commissions, error: commError } = await sb.from('commission_logs')
-                .select('*, profiles!commission_logs_user_id_fkey(full_name, member_code)')
-                .eq('order_id', order.id)
-                .order('level_number', { ascending: true });
-
-            let commissionDetailsHtml = '';
-
-            if (commError) {
-                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
-                    ⚠️ Commission details load nahi ho sakin. Make sure 'commission_logs' table and its user_id foreign key exist.
-                </div>`;
-            } else if (commissions && commissions.length > 0) {
-                commissionDetailsHtml = commissions.map(c => {
-                    const memberName = c.profiles?.full_name || 'Unknown Member';
-                    const memberCode = c.profiles?.member_code || 'N/A';
-                    const level = c.level_number ? `Level ${c.level_number}` : (c.level_name || 'Direct');
-                    const commAmount = Number(c.commission_amount || 0);
-                    return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">
-                        <span><b style="color:#e5b853;">${esc(level)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>
-                        <span style="color:#4CAF50;white-space:nowrap;">+${esc(convertMoney(commAmount))}</span>
-                    </div>`;
-                }).join('');
-            } else {
-                commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Koi commission record nahi mila is order ke liye.</div>`;
-            }
-
-            html += `
-            <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:12px;background:#0a1f15;">
-                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                    <b style="color:#e5b853;font-size:14px;">Order …${esc(orderShortId)}</b>
-                    <span style="color:#4CAF50;font-size:13px;font-weight:bold;white-space:nowrap;">${esc(convertMoney(orderTotal))}</span>
-                </div>
-                <div style="font-size:11px;color:#888;margin-bottom:10px;">${esc(date)} • Status: ${esc(String(order.status || '').toUpperCase())}</div>
-                <div style="font-size:12px;color:#e5b853;margin-bottom:5px;font-weight:bold;">Commission Distribution:</div>
-                ${commissionDetailsHtml}
-            </div>`;
-        }
-
-        html += '</div>';
-        await Swal.fire({ title: 'Commission History', html: html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
-
-    } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load commission history.', background: '#0d1c14', color: '#e5b853' });
-    }
-}
-
 // Admin master history: read-only financial ledger plus recent orders.
 // Reversals are intentionally not performed in the browser because wallet balance
 // changes and ledger status changes must be atomic and protected by a database RPC.
@@ -4382,16 +4143,6 @@ loadAdmin = async function() {
     await originalLoadAdminForBonus();
     await loadRankBonusSettings();
 };
-
-function filterAdminOrders() {
-    const input = document.getElementById('adminOrderSearchInput');
-    if (!input) return;
-    const term = input.value.toLowerCase().trim();
-    document.querySelectorAll('.admin-order-item').forEach(item => {
-        const searchData = item.getAttribute('data-search') || '';
-        item.style.display = searchData.includes(term) ? 'flex' : 'none';
-    });
-}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

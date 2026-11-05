@@ -740,6 +740,9 @@ input[type="file"]::file-selector-button:hover {
         <div id="adminHistoryStatus" class="status hidden"></div>
         <h3 style="margin-top:20px;">Master History</h3>
         <button class="primary" type="button" onclick="openMasterHistory()" style="background:#2196F3;color:white;">View Master History</button>
+        <h3 style="margin-top:20px;">💰 Commission Distribution History</h3>
+        <p class="muted" style="font-size:13px;">یہاں دیکھیں کہ کس آرڈر پر کس لیول تک کتنا کمیشن تقسیم ہوا۔</p>
+        <button class="primary" type="button" onclick="openCommissionHistoryModal()" style="background:#4CAF50;color:white;">View Commission History</button>
     </div>
 
     <!-- Orders Section -->
@@ -3983,6 +3986,82 @@ async function unlockMemberDirect(userId) {
         await openLockedMembersModal();
     } catch (e) {
         await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not unlock member.', background: '#0d1c14', color: '#e5b853' });
+    }
+}
+
+// ==========================================
+// COMMISSION DISTRIBUTION HISTORY (ADMIN)
+// ==========================================
+async function openCommissionHistoryModal() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+
+    Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+
+    try {
+        // حالیہ کنفرمڈ آرڈرز حاصل کریں
+        const { data: orders, error: ordersError } = await sb.from('orders')
+            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
+            .in('status', ['confirmed', 'delivered'])
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (ordersError) throw ordersError;
+
+        if (!orders || orders.length === 0) {
+            return Swal.fire({ icon: 'info', title: 'No Data', text: 'Abhi tak koi confirmed order nahi hai.', background: '#0d1c14', color: '#e5b853' });
+        }
+
+        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+
+        for (const order of orders) {
+            const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
+            const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
+            const orderShortId = String(order.id).slice(-6);
+
+            // کمیشن ریکارڈ اور متعلقہ ممبر کی پروفائل حاصل کریں
+            const { data: commissions, error: commError } = await sb.from('commission_logs')
+                .select('*, profiles!commission_logs_user_id_fkey(full_name, member_code)')
+                .eq('order_id', order.id)
+                .order('level_number', { ascending: true });
+
+            let commissionDetailsHtml = '';
+
+            if (commError) {
+                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
+                    ⚠️ Commission details load nahi ho sakin. Make sure 'commission_logs' table and its user_id foreign key exist.
+                </div>`;
+            } else if (commissions && commissions.length > 0) {
+                commissionDetailsHtml = commissions.map(c => {
+                    const memberName = c.profiles?.full_name || 'Unknown Member';
+                    const memberCode = c.profiles?.member_code || 'N/A';
+                    const level = c.level_number ? `Level ${c.level_number}` : (c.level_name || 'Direct');
+                    const commAmount = Number(c.commission_amount || 0);
+                    return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">
+                        <span><b style="color:#e5b853;">${esc(level)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>
+                        <span style="color:#4CAF50;white-space:nowrap;">+${esc(convertMoney(commAmount))}</span>
+                    </div>`;
+                }).join('');
+            } else {
+                commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Koi commission record nahi mila is order ke liye.</div>`;
+            }
+
+            html += `
+            <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:12px;background:#0a1f15;">
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                    <b style="color:#e5b853;font-size:14px;">Order …${esc(orderShortId)}</b>
+                    <span style="color:#4CAF50;font-size:13px;font-weight:bold;white-space:nowrap;">${esc(convertMoney(orderTotal))}</span>
+                </div>
+                <div style="font-size:11px;color:#888;margin-bottom:10px;">${esc(date)} • Status: ${esc(String(order.status || '').toUpperCase())}</div>
+                <div style="font-size:12px;color:#e5b853;margin-bottom:5px;font-weight:bold;">Commission Distribution:</div>
+                ${commissionDetailsHtml}
+            </div>`;
+        }
+
+        html += '</div>';
+        await Swal.fire({ title: 'Commission History', html: html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
+
+    } catch (e) {
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load commission history.', background: '#0d1c14', color: '#e5b853' });
     }
 }
 

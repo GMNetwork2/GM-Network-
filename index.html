@@ -3992,15 +3992,18 @@ async function unlockMemberDirect(userId) {
 // ==========================================
 // COMMISSION DISTRIBUTION HISTORY (ADMIN)
 // ==========================================
+// ==========================================
+// COMMISSION DISTRIBUTION HISTORY (ADMIN)
+// ==========================================
 async function openCommissionHistoryModal() {
     if (!isAdmin || !sb) return alert('Admin access required.');
 
     Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // حالیہ کنفرمڈ آرڈرز حاصل کریں
+        // 1. حالیہ کنفرمڈ آرڈرز حاصل کریں
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
+            .select('id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(20);
@@ -4018,37 +4021,30 @@ async function openCommissionHistoryModal() {
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
 
-            // ہسٹری کا ڈیٹا حاصل کریں (بغیر Join کے)
-            const { data: commissions, error: commError } = await sb.from('commission_logs')
+            // 2. اس آرڈر پر ہونے والی کمیشن ٹرانزیکشنز حاصل کریں
+            const { data: commissions } = await sb.from('commission_logs')
                 .select('*')
-                .eq('order_id', order.id)
-                .order('level_number', { ascending: true });
+                .eq('order_id', order.id);
 
             let commissionDetailsHtml = '';
 
-            // اگر ڈیٹا ملا تو ممبرز کے نام الگ سے حاصل کریں
-            let memberProfiles = {};
             if (commissions && commissions.length > 0) {
+                // ممبرز کے نام الگ سے حاصل کریں
                 const userIds = commissions.map(c => c.user_id);
                 const { data: profilesData } = await sb.from('profiles')
                     .select('id, full_name, member_code')
                     .in('id', userIds);
 
+                const memberProfiles = {};
                 if (profilesData) {
                     profilesData.forEach(p => { memberProfiles[p.id] = p; });
                 }
-            }
 
-            if (commError) {
-                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
-                    ⚠️ Commission details load nahi ho sakin. Make sure 'commission_logs' table and its user_id foreign key exist.
-                </div>`;
-            } else if (commissions && commissions.length > 0) {
                 commissionDetailsHtml = commissions.map(c => {
                     const profile = memberProfiles[c.user_id] || {};
-                    const memberName = profile.full_name || 'Unknown Member';
+                    const memberName = profile.full_name || 'Unknown';
                     const memberCode = profile.member_code || 'N/A';
-                    const level = c.level_number ? `Level ${c.level_number}` : (c.level_name || 'Direct');
+                    const level = c.level_number ? `Level ${c.level_number}` : 'Direct';
                     const commAmount = Number(c.commission_amount || 0);
                     return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">
                         <span><b style="color:#e5b853;">${esc(level)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>

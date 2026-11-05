@@ -2697,11 +2697,14 @@ async function updateOrderStatus(orderId, newStatus) {
     let rewardError = null;
     try {
         if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
-            await processOrderRewards(orderId, false);
+            // فنکشن کو کال کریں اور چیک کریں کہ وہ واقعی چلا ہے
+            const rewardResult = await processOrderRewards(orderId, false);
+            console.log("Reward Function Result:", rewardResult);
         } else if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
             await processOrderRewards(orderId, true);
         }
     } catch (err) {
+        console.error("Reward Function Error:", err);
         rewardError = err;
     }
 

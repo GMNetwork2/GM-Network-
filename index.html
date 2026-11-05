@@ -3995,6 +3995,9 @@ async function unlockMemberDirect(userId) {
 // ==========================================
 // COMMISSION DISTRIBUTION HISTORY (ADMIN)
 // ==========================================
+// ==========================================
+// COMMISSION DISTRIBUTION HISTORY (ADMIN)
+// ==========================================
 async function openCommissionHistoryModal() {
     if (!isAdmin || !sb) return alert('Admin access required.');
 
@@ -4022,13 +4025,18 @@ async function openCommissionHistoryModal() {
             const orderShortId = String(order.id).slice(-6);
 
             // 2. اس آرڈر پر ہونے والی کمیشن ٹرانزیکشنز حاصل کریں
-            const { data: commissions } = await sb.from('commission_logs')
+            // ہم order_id کی بجائے order.id (مکمل آئی ڈی) استعمال کر رہے ہیں
+            const { data: commissions, error: commError } = await sb.from('commission_logs')
                 .select('*')
-                .eq('order_id', order.id);
+                .eq('order_id', order.id); 
 
             let commissionDetailsHtml = '';
 
-            if (commissions && commissions.length > 0) {
+            if (commError) {
+                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
+                    ⚠️ Commission details load nahi ho sakin. Error: ${esc(commError.message)}
+                </div>`;
+            } else if (commissions && commissions.length > 0) {
                 // ممبرز کے نام الگ سے حاصل کریں
                 const userIds = commissions.map(c => c.user_id);
                 const { data: profilesData } = await sb.from('profiles')

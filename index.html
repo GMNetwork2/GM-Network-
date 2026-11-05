@@ -742,6 +742,7 @@ input[type="file"]::file-selector-button:hover {
     <div id="adminSection-orders" class="hidden panel">
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
         <h2>Recent Orders</h2>
+        <input id="adminOrderSearchInput" placeholder="Search by Order ID or Phone Number..." oninput="filterAdminOrders()" style="margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid var(--line); background:#050a08; color:#fff;">
         <div id="adminOrders" class="muted">No orders yet.</div>
     </div>
 </section>
@@ -2361,11 +2362,21 @@ async function loadAdmin() {
     if($('ao')) $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
 
     if($('adminOrders')) {
-        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => `
-            <div class="item" data-order="${esc(x.id)}" style="cursor:pointer">
-                <div><b>Order …${esc(String(x.id).slice(-4))}</b><br><small>${esc(x.phone_number || '—')} • ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}</small></div>
-                <span class="pill">${esc(x.status || 'pending')}</span>
-            </div>`).join('') || 'No orders yet.';
+        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => {
+            const date = x.created_at ? new Date(x.created_at).toLocaleString('en-GB') : '—';
+            const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()}`;
+            return `<div class="item admin-order-item" data-search="${esc(searchTxt)}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;">
+                <div style="width:100%; display:flex; justify-content:space-between;">
+                    <b>Order …${esc(String(x.id).slice(-4))}</b>
+                    <span class="pill">${esc(x.status || 'pending')}</span>
+                </div>
+                <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
+                    <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
+                    <b>Amount:</b> ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}<br>
+                    <b>Date:</b> ${esc(date)}
+                </div>
+            </div>`;
+        }).join('') || 'No orders yet.';
 
         $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
             const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
@@ -4143,6 +4154,16 @@ loadAdmin = async function() {
     await originalLoadAdminForBonus();
     await loadRankBonusSettings();
 };
+
+function filterAdminOrders() {
+    const input = document.getElementById('adminOrderSearchInput');
+    if (!input) return;
+    const term = input.value.toLowerCase().trim();
+    document.querySelectorAll('.admin-order-item').forEach(item => {
+        const searchData = item.getAttribute('data-search') || '';
+        item.style.display = searchData.includes(term) ? 'flex' : 'none';
+    });
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>

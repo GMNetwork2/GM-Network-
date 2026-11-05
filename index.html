@@ -3992,27 +3992,19 @@ async function unlockMemberDirect(userId) {
 // ==========================================
 // COMMISSION DISTRIBUTION HISTORY (ADMIN)
 // ==========================================
-// ==========================================
-// COMMISSION DISTRIBUTION HISTORY (ADMIN)
-// ==========================================
-// ==========================================
-// COMMISSION DISTRIBUTION HISTORY (ADMIN)
-// ==========================================
 async function openCommissionHistoryModal() {
     if (!isAdmin || !sb) return alert('Admin access required.');
 
     Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // 1. حالیہ کنفرمڈ آرڈرز حاصل کریں
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, unit_price_pkr, quantity, status, created_at')
+            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(20);
 
         if (ordersError) throw ordersError;
-
         if (!orders || orders.length === 0) {
             return Swal.fire({ icon: 'info', title: 'No Data', text: 'Abhi tak koi confirmed order nahi hai.', background: '#0d1c14', color: '#e5b853' });
         }
@@ -4024,29 +4016,23 @@ async function openCommissionHistoryModal() {
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
 
-            // 2. اس آرڈر پر ہونے والی کمیشن ٹرانزیکشنز حاصل کریں
-            // ہم order_id کی بجائے order.id (مکمل آئی ڈی) استعمال کر رہے ہیں
+            // پہلے ہسٹری سے ڈیٹا لائیں
             const { data: commissions, error: commError } = await sb.from('commission_logs')
                 .select('*')
-                .eq('order_id', order.id); 
+                .eq('order_id', order.id);
 
             let commissionDetailsHtml = '';
 
             if (commError) {
-                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">
-                    ⚠️ Commission details load nahi ho sakin. Error: ${esc(commError.message)}
-                </div>`;
+                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">Error: ${esc(commError.message)}</div>`;
             } else if (commissions && commissions.length > 0) {
                 // ممبرز کے نام الگ سے حاصل کریں
                 const userIds = commissions.map(c => c.user_id);
                 const { data: profilesData } = await sb.from('profiles')
                     .select('id, full_name, member_code')
                     .in('id', userIds);
-
                 const memberProfiles = {};
-                if (profilesData) {
-                    profilesData.forEach(p => { memberProfiles[p.id] = p; });
-                }
+                if (profilesData) profilesData.forEach(p => { memberProfiles[p.id] = p; });
 
                 commissionDetailsHtml = commissions.map(c => {
                     const profile = memberProfiles[c.user_id] || {};
@@ -4060,7 +4046,17 @@ async function openCommissionHistoryModal() {
                     </div>`;
                 }).join('');
             } else {
-                commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Koi commission record nahi mila is order ke liye.</div>`;
+                // اگر ہسٹری میں ڈیٹا نہیں ملا تو یہاں سے خود حساب لگائیں (Fallback)
+                const { data: buyerProfile } = await sb.from('profiles').select('referred_by').eq('id', order.buyer_id).single();
+                if (buyerProfile && buyerProfile.referred_by) {
+                     commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Calculated from Order (Not Logged in DB)</div>`;
+                     commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;color:#4CAF50;padding:3px 0;">
+                        <span><b>Level 1 (Direct)</b></span>
+                        <span>+${esc(convertMoney(orderTotal * 0.10))}</span>
+                     </div>`;
+                } else {
+                     commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Koi commission record nahi mila is order ke liye.</div>`;
+                }
             }
 
             html += `

@@ -4046,12 +4046,17 @@ async function openCommissionHistoryModal() {
                     </div>`;
                 }).join('');
             } else {
-                // اگر ہسٹری میں ڈیٹا نہیں ملا تو یہاں سے خود حساب لگائیں (Fallback)
+                // اگر ہسٹری میں ڈیٹا نہیں ملا تو یہاں سے خود حساب لگائیں (Fallback with ID)
                 const { data: buyerProfile } = await sb.from('profiles').select('referred_by').eq('id', order.buyer_id).single();
                 if (buyerProfile && buyerProfile.referred_by) {
-                     commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Calculated from Order (Not Logged in DB)</div>`;
+                     // ڈائریکٹ بندے کا نام اور ID نکالیں
+                     const { data: directUser } = await sb.from('profiles').select('full_name, member_code').eq('id', buyerProfile.referred_by).single();
+                     const dName = directUser?.full_name || 'Unknown';
+                     const dCode = directUser?.member_code || 'N/A';
+
+                     commissionDetailsHtml = `<div style="color:#ffcc00;font-size:11px;padding:5px;margin-bottom:5px;">(Calculated from Order - DB Log Missing)</div>`;
                      commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;color:#4CAF50;padding:3px 0;">
-                        <span><b>Level 1 (Direct)</b></span>
+                        <span><b>Level 1 (Direct):</b> ${esc(dName)} (${esc(dCode)})</span>
                         <span>+${esc(convertMoney(orderTotal * 0.10))}</span>
                      </div>`;
                 } else {

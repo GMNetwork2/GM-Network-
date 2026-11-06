@@ -730,6 +730,10 @@ input[type="file"]::file-selector-button:hover {
         <label>Level 5 (Diamond) Bonus ($)</label><input id="bonusDiamond" type="number" min="0" placeholder="e.g. 500">
         <button class="primary" type="button" onclick="saveRankBonusSettings()">Save Bonus Settings</button>
         <div id="bonusSettingsStatus" class="status hidden"></div>
+        <h3 style="margin-top:20px;">🏆 Rank Bonus Distribution</h3>
+        <p class="muted" style="font-size:13px;">یہاں سے آپ ممبرز کے رینک بونس چیک کر سکتے ہیں۔ (یہ صرف اس وقت بونس دے گا جب کسی ایک لائن نے آدھے کوائنز مکمل نہ کیے ہوں)</p>
+        <button class="primary" type="button" onclick="runRankBonusCheck()" style="background:#2196F3;color:white;">Run Rank Bonus Check</button>
+        <div id="rankBonusStatus" class="status hidden"></div>
         <h3 style="margin-top:20px;">🔒 Security &amp; Locked Members</h3>
         <p class="muted" style="font-size:13px;">Rate limit سے تجاوز کرنے والے ممبرز یہاں نظر آئیں گے۔</p>
         <button class="primary" type="button" onclick="openSecurityAlertsModal()" style="background:#2196F3;color:white;">View Security Alerts</button>
@@ -1588,7 +1592,7 @@ async function loadMyAccountPage() {
         activeRulesHtml = `<div style="background: rgba(229,184,83,0.1); border: 1px dashed var(--gold); border-radius: 10px; padding: 12px; margin-top: 15px;">
             <h4 style="color: var(--gold); margin: 0 0 5px; font-size: 14px;">🎉 Your Active Rules (${achievedRank.name})</h4>
             <p class="muted" style="font-size: 13px; margin: 0 0 5px;">✅ Indirect Commission: <b>${achievedRank.rate}%</b></p>
-            <p class="muted" style="font-size: 12px; margin: 0;">✅ Rank Bonus Rule: You are eligible for Rank Achievement Bonus if one of your lines reached <b>${halfPlusOne.toLocaleString()}</b> coins before you reached ${achievedRank.min.toLocaleString()}.</p>
+            <p class="muted" style="font-size: 12px; margin: 0;">✅ Rank Bonus Rule: You are eligible for the bonus ONLY IF <b>NO</b> single line has reached <b>${halfPlusOne.toLocaleString()}</b> coins at the time you reach ${achievedRank.min.toLocaleString()} coins. (This prevents double bonuses).</p>
         </div>`;
     } else {
         activeRulesHtml = `<div style="background: rgba(255,255,255,0.05); border: 1px dashed var(--line); border-radius: 10px; padding: 12px; margin-top: 15px;">
@@ -4413,6 +4417,32 @@ async function saveRankBonusSettings() {
         if (window.Swal) Swal.fire({ icon: 'success', title: 'Saved!', text: 'Rank bonuses updated.', background: '#0d1c14', color: '#e5b853' });
     } catch (e) {
         status('bonusSettingsStatus', 'Error: ' + e.message, 'error');
+    }
+}
+
+async function runRankBonusCheck() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    status('rankBonusStatus', 'Checking and granting rank bonuses...');
+    
+    try {
+        // یہاں ہم تمام ممبرز کو چیک کریں گے
+        const { data: profiles, error } = await sb.from('profiles').select('id, full_name');
+        if (error) throw error;
+
+        let successCount = 0;
+        
+        for (const profile of (profiles || [])) {
+            // ہر ممبر کے لیے الگ فنکشن کال کریں
+            const { error: rpcError } = await sb.rpc('gm_grant_rank_bonus_only', { p_user_id: profile.id });
+            if (!rpcError) successCount++;
+        }
+
+        status('rankBonusStatus', `✅ Check completed! Bonuses processed for ${successCount} members.`, 'ok');
+        if (window.Swal) {
+            Swal.fire({ icon: 'success', title: 'Done!', text: 'Rank bonuses checked and distributed successfully.', background: '#0d1c14', color: '#e5b853' });
+        }
+    } catch (e) {
+        status('rankBonusStatus', 'Error: ' + e.message, 'error');
     }
 }
 

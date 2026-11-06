@@ -1548,6 +1548,7 @@ async function loadMyAccountPage() {
     if($('accBankDetails')) $('accBankDetails').textContent = myProfile?.account_details || 'Not Set';
     if($('accBalance')) $('accBalance').textContent = convertMoney(Number(totalComm).toFixed(2));
     
+    // اب ہم ڈیٹا بیس سے آنے والے کوائنز (جو سیلف + ٹیم شامل ہیں) استعمال کریں گے
     const coins = Number(myProfile?.points || 0);
 
     // Auto Rank Calculation
@@ -1619,8 +1620,6 @@ async function loadMyAccountPage() {
         $('accTransactions').querySelectorAll('[data-mark-delivered]').forEach(btn => btn.onclick = () => markAsDelivered(btn.dataset.markDelivered));
     }
 
-    // نیا کوڈ: My Account میں ٹوٹل کوائنز (سیلف + ٹیم) دکھانے کے لیے
-    if($('accCoins')) $('accCoins').textContent = $('nm').textContent;
 }
 
 async function editBankDetails() {

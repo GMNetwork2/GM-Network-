@@ -1549,6 +1549,18 @@ async function loadMyAccountPage() {
     if($('accBalance')) $('accBalance').textContent = convertMoney(Number(totalComm).toFixed(2));
     
     const coins = Number(myProfile?.points || 0);
+
+    // Auto Rank Calculation
+    let currentRankName = 'Bronze 🥉';
+    let nextRankName = 'Silver 🥈';
+    let currentTarget = 3000;
+
+    if (coins >= 1000000) { currentRankName = 'Crown Diamond 💠'; nextRankName = 'Max Level'; currentTarget = 1000000; }
+    else if (coins >= 200000) { currentRankName = 'Diamond 👑'; nextRankName = 'Crown Diamond 💠'; currentTarget = 1000000; }
+    else if (coins >= 50000) { currentRankName = 'Platinum 💎'; nextRankName = 'Diamond 👑'; currentTarget = 200000; }
+    else if (coins >= 12000) { currentRankName = 'Gold 🥇'; nextRankName = 'Platinum 💎'; currentTarget = 50000; }
+    else if (coins >= 3000) { currentRankName = 'Silver 🥈'; nextRankName = 'Gold 🥇'; currentTarget = 12000; }
+
     const GM_RANKS = [
         { key: 'silver', name: 'Silver 🥈', min: 3000, rate: 2 },
         { key: 'gold', name: 'Gold 🥇', min: 12000, rate: 2 },
@@ -1580,8 +1592,9 @@ async function loadMyAccountPage() {
     }
 
     if($('accAchievements')) $('accAchievements').innerHTML = `<div class="panel" style="margin-top:15px">
-        <h3>My Rank: ${currentRank.name}</h3>
-        ${nextRank ? `<p class="muted">Next rank: ${nextRank.name} — ${coins.toLocaleString()} / ${nextRank.min.toLocaleString()} Coins</p><progress value="${Math.min(coins,nextRank.min)}" max="${nextRank.min}" style="width:100%"></progress>` : '<p>You have reached the highest rank! 🏆</p>'}
+        <h3>My Rank: ${currentRankName}</h3>
+        <p class="muted">Next rank: ${nextRankName} — ${coins.toLocaleString()} / ${currentTarget.toLocaleString()} Coins</p>
+        <progress value="${Math.min(coins, currentTarget)}" max="${currentTarget}" style="width:100%"></progress>
         
         ${activeRulesHtml}
         

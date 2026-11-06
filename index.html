@@ -1548,8 +1548,9 @@ async function loadMyAccountPage() {
     if($('accBankDetails')) $('accBankDetails').textContent = myProfile?.account_details || 'Not Set';
     if($('accBalance')) $('accBalance').textContent = convertMoney(Number(totalComm).toFixed(2));
     
-    // اب ہم ڈیٹا بیس سے آنے والے کوائنز (جو سیلف + ٹیم شامل ہیں) استعمال کریں گے
-    const coins = Number(myProfile?.points || 0);
+    // نیا کوڈ: رینک کیلکولیشن کے لیے ڈیٹا بیس سے تازہ ڈیٹا لائیں
+    const { data: freshProfile } = await sb.from('profiles').select('points').eq('id', user.id).single();
+    const coins = Number(freshProfile?.points || 0);
 
     // Auto Rank Calculation
     let currentRankName = 'Bronze 🥉';

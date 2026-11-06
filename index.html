@@ -4063,10 +4063,22 @@ async function openCommissionHistoryModal() {
                     const profile = memberProfiles[c.user_id] || {};
                     const memberName = profile.full_name || 'Unknown';
                     const memberCode = profile.member_code || 'N/A';
-                    const level = c.level_number ? `Level ${c.level_number}` : 'Direct';
+
+                    // لیول کا لفظ ہٹا دیا گیا ہے۔ اب صرف ڈائریکٹ اور رینکس کا نام آئے گا۔
+                    let rankName = 'Direct';
+                    if (c.type === 'Silver') rankName = 'Silver 🥈';
+                    else if (c.type === 'Gold') rankName = 'Gold 🥇';
+                    else if (c.type === 'Platinum') rankName = 'Platinum 💎';
+                    else if (c.type === 'Diamond') rankName = 'Diamond 👑';
+                    else if (c.type === 'Crown') rankName = 'Crown 💠';
+                    else if (c.type === 'indirect') {
+                        // اگر پرانا ڈیٹا ہو تو ڈیٹا بیس کے لیول کی بجائے نام دکھائیں
+                        rankName = 'Indirect';
+                    }
+
                     const commAmount = Number(c.commission_amount || 0);
                     return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">
-                        <span><b style="color:#e5b853;">${esc(level)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>
+                        <span><b style="color:#e5b853;">${esc(rankName)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>
                         <span style="color:#4CAF50;white-space:nowrap;">+${esc(convertMoney(commAmount))}</span>
                     </div>`;
                 }).join('');
@@ -4081,7 +4093,7 @@ async function openCommissionHistoryModal() {
 
                      commissionDetailsHtml = `<div style="color:#ffcc00;font-size:11px;padding:5px;margin-bottom:5px;">(Calculated from Order - DB Log Missing)</div>`;
                      commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;color:#4CAF50;padding:3px 0;">
-                        <span><b>Level 1 (Direct):</b> ${esc(dName)} (${esc(dCode)})</span>
+                        <span><b>Direct:</b> ${esc(dName)} (${esc(dCode)})</span>
                         <span>+${esc(convertMoney(orderTotal * 0.10))}</span>
                      </div>`;
                 } else {

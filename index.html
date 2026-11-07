@@ -1982,11 +1982,9 @@ async function toggleTeamNode(memberId, headerElement) {
     btn.textContent = '−';
 
     try {
-        // اسی profiles/referred_by طریقے سے براہِ راست اس ممبر کی ٹیم حاصل کریں
-        const { data, error } = await sb
-            .from('profiles')
-            .select('id, full_name, member_code, points')
-            .eq('referred_by', memberId);
+        // ہر سطح کے لیے وہی محفوظ RPC استعمال کریں جو پہلی ٹیم لوڈ کرتا ہے۔
+        // profiles پر براہِ راست query کرنے سے RLS کے باعث نیچے کی ٹیم خالی آ سکتی ہے۔
+        const { data, error } = await sb.rpc('get_team_children', { p_parent_id: memberId });
 
         if (error) {
             childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Team load error: ' + esc(error.message) + '</p>';

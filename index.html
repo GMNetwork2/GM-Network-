@@ -4599,7 +4599,12 @@ async function openNetworkWalletHistory() {
     Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // Read-only history view: this does not create, recalculate, or distribute commissions.
+        // 1. ڈیٹا بیس سے ایڈمن کا اصل والٹ بیلنس حاصل کریں
+        const { data: walletData, error: walletError } = await sb.from('admin_network_wallet').select('total_balance').eq('id', 1).single();
+        if (walletError) throw walletError;
+        const currentAdminBalance = Number(walletData?.total_balance || 0);
+
+        // 2. آرڈرز کی ہسٹری حاصل کریں
         const { data: orders, error: ordersError } = await sb.from('orders')
             .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
@@ -4653,7 +4658,6 @@ async function openNetworkWalletHistory() {
                         }
                         const amount = Number(c.commission_amount || 0);
                         orderComm += amount;
-                        // Display-only effective rate calculated from the existing commission log amount.
                         const effectiveRate = orderTotal > 0 ? (amount / orderTotal * 100) : 0;
                         return `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
                             <span style="flex:1;">${esc(rankName)}: ${esc(memberName)} (${esc(memberCode)})<br><small>${effectiveRate.toFixed(2)}% effective rate</small></span>
@@ -4687,15 +4691,24 @@ async function openNetworkWalletHistory() {
             }
         }
 
-        // This is the net result for the 30 orders displayed, not a lifetime network-wallet balance.
         const listedOrdersNet = totalNetworkSale - totalNetworkCommission;
+
+        // ڈیٹا بیس سے حاصل کردہ محفوظ شدہ ایڈمن والٹ بیلنس
+        const walletHeaderHtml = `
+        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px; border:1px solid var(--gold);">
+            <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
+            <h1 style="margin:10px 0 0;font-size:36px;color:var(--gold);">${esc(convertMoney(currentAdminBalance))}</h1>
+            <p style="margin:5px 0 0; font-size:12px; color:#aaa;">یہ بیلنس ڈیٹا بیس میں محفوظ ہے۔</p>
+        </div>`;
+
+        html = walletHeaderHtml + html;
+
         const summaryHtml = `
         <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
-            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Network Summary (Latest 30 Orders)</h4>
+            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Latest 30 Orders Summary</h4>
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Sales:</span><b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Commission Paid:</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
             <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:7px;margin-top:5px;"><b>Net Earning:</b><b style="color:var(--gold);">${esc(convertMoney(listedOrdersNet))}</b></div>
-            <p style="font-size:10px;color:#999;margin:9px 0 0;">یہ رقم صرف دکھائے گئے تازہ ترین 30 آرڈرز کا خالص نتیجہ ہے، مکمل یا سابقہ نیٹ ورک والٹ بیلنس نہیں۔</p>
         </div>`;
         html += summaryHtml + '</div>';
 
@@ -4704,7 +4717,6 @@ async function openNetworkWalletHistory() {
         await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load network history.', background: '#0d1c14', color: '#e5b853' });
     }
 }
-
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>

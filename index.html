@@ -1526,7 +1526,11 @@ async function loadProfile() {
         }
 
         // 2. Self Coins = Total - Downline (آپ کے سسٹم کے مطابق)
-        const selfPoints = totalPoints - downlinePoints;
+        let selfPoints = totalPoints - downlinePoints;
+        // اگر ایڈمن کے پاس ٹوٹل کم ہو تو منفی کی جگہ 0 دکھے
+        if (selfPoints < 0) {
+            selfPoints = 0;
+        }
 
         if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
         if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();
@@ -3694,36 +3698,59 @@ async function openMemberAuditHistory() {
         if (txnError) throw txnError;
 
         let htmlContent = `<h3 style="color:var(--gold);text-align:center;margin-bottom:15px;">History: ${esc(profile.full_name || 'Member')}</h3>`;
+
+        // ٹوٹل کیلکولیشن
+        let totalDeposit = 0;
+        let totalPurchase = 0;
+        let totalWithdrawal = 0;
+
         htmlContent += '<div style="max-height:60vh;overflow-y:auto;text-align:left;padding-right:5px;">';
 
         if (!txns || txns.length === 0) {
             htmlContent += '<p style="text-align:center;color:#aaa;">No transactions found for this member.</p>';
         } else {
             txns.forEach(t => {
-                const isDeposit = String(t.type || '').toLowerCase() === 'deposit';
-                const color = isDeposit ? '#4CAF50' : '#f44336';
-                const sign = isDeposit ? '+' : '−';
-                const proofUrl = String(t.screenshot_url || '');
-                const safeProofUrl = /^https?:\/\//i.test(proofUrl) ? esc(proofUrl) : '';
-                const proofHtml = safeProofUrl
-                    ? `<a href="${safeProofUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);text-decoration:underline;font-size:12px;">View Proof</a>`
-                    : '<span style="color:#888;font-size:12px;">No proof attached</span>';
+                const type = String(t.type || '').toLowerCase();
+                const isDeposit = type === 'deposit';
+                const isPurchase = type === 'purchase';
+                const isWithdrawal = type === 'withdrawal';
+
                 const amount = Number(t.amount);
-                const amountText = Number.isFinite(amount) ? esc(convertMoney(amount)) : esc(String(t.amount ?? '—'));
+                if (isDeposit) totalDeposit += amount;
+                if (isPurchase) totalPurchase += amount;
+                if (isWithdrawal) totalWithdrawal += amount;
+
+                const color = isDeposit ? '#4CAF50' : (isWithdrawal ? '#ff9800' : '#f44336');
+                const sign = isDeposit ? '+' : '-';
                 const dateText = t.created_at ? new Date(t.created_at).toLocaleString() : '—';
+
                 htmlContent += `
                 <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
                     <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;">
-                        <b style="color:${color};font-size:16px;">${sign} ${amountText}</b>
+                        <b style="color:${color};font-size:16px;">${sign} ${esc(convertMoney(amount))}</b>
                         <span class="pill">${esc(t.status || 'unknown')}</span>
                     </div>
                     <div style="font-size:12px;color:#aaa;line-height:1.5;">
                         <b>Type:</b> ${esc(t.type || '—')}<br>
-                        <b>Date:</b> ${esc(dateText)}<br>
-                        <b>Proof:</b> ${proofHtml}
+                        <b>Date:</b> ${esc(dateText)}
                     </div>
                 </div>`;
             });
+
+            // نیچے ٹوٹل
+            htmlContent += `
+            <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
+                <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Total Summary</h4>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+                    <span>Total Deposits:</span> <b style="color:#4CAF50;">+${esc(convertMoney(totalDeposit))}</b>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+                    <span>Total Purchases:</span> <b style="color:#f44336;">-${esc(convertMoney(totalPurchase))}</b>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span>Total Withdrawals:</span> <b style="color:#ff9800;">-${esc(convertMoney(totalWithdrawal))}</b>
+                </div>
+            </div>`;
         }
         htmlContent += '</div>';
 
@@ -4090,31 +4117,29 @@ async function openCommissionHistoryModal() {
 
         if (ordersError) throw ordersError;
         if (!orders || orders.length === 0) {
-            return Swal.fire({ icon: 'info', title: 'No Data', text: 'Abhi tak koi confirmed order nahi hai.', background: '#0d1c14', color: '#e5b853' });
+            return Swal.fire({ icon: 'info', title: 'No Data', text: 'ابھی تک کوئی کنفرمڈ آرڈر نہیں ہے۔', background: '#0d1c14', color: '#e5b853' });
         }
 
-        let html = '<div style="max-height:62vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+        let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
 
         for (const order of orders) {
             const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
 
-            // پہلے ہسٹری سے ڈیٹا لائیں
+            // کمیشن لاگز حاصل کریں
             const { data: commissions, error: commError } = await sb.from('commission_logs')
                 .select('*')
                 .eq('order_id', order.id);
 
             let commissionDetailsHtml = '';
+            let totalOrderComm = 0;
 
             if (commError) {
-                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;padding:8px;background:#0a1f15;border-radius:6px;margin-top:5px;">Error: ${esc(commError.message)}</div>`;
+                commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;">Error: ${esc(commError.message)}</div>`;
             } else if (commissions && commissions.length > 0) {
-                // ممبرز کے نام الگ سے حاصل کریں
                 const userIds = commissions.map(c => c.user_id);
-                const { data: profilesData } = await sb.from('profiles')
-                    .select('id, full_name, member_code')
-                    .in('id', userIds);
+                const { data: profilesData } = await sb.from('profiles').select('id, full_name, member_code').in('id', userIds);
                 const memberProfiles = {};
                 if (profilesData) profilesData.forEach(p => { memberProfiles[p.id] = p; });
 
@@ -4122,51 +4147,47 @@ async function openCommissionHistoryModal() {
                     const profile = memberProfiles[c.user_id] || {};
                     const memberName = profile.full_name || 'Unknown';
                     const memberCode = profile.member_code || 'N/A';
-                    // پرانا لیول سسٹم ہٹا کر رینک کا نام دکھانا
-                    let levelName = 'Direct';
-                    if (c.level_number === 2) levelName = 'Silver 🥈';
-                    else if (c.level_number === 3) levelName = 'Gold 🥇';
-                    else if (c.level_number === 4) levelName = 'Platinum 💎';
-                    else if (c.level_number === 5) levelName = 'Diamond 👑';
-                    else if (c.level_number === 6) levelName = 'Crown 💠';
-                    else if (c.type === 'Silver' || c.type === 'Gold' || c.type === 'Platinum' || c.type === 'Diamond' || c.type === 'Crown') {
-                        // یہ نیا سسٹم ہے، ڈیٹا بیس سے ٹائپ اٹھا رہے ہیں
-                        levelName = c.type;
-                    }
-                    const level = levelName;
+                    let levelName = 'Direct (10%)';
+
+                    if (c.level_number === 2) levelName = 'Level 2 (2%)';
+                    else if (c.level_number === 3) levelName = 'Level 3 (2%)';
+                    else if (c.level_number === 4) levelName = 'Level 4 (2%)';
+                    else if (c.level_number === 5) levelName = 'Level 5 (2%)';
+                    else if (c.level_number === 6) levelName = 'Level 6 (1%)';
+
                     const commAmount = Number(c.commission_amount || 0);
-                    return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1f3a2c;">
-                        <span><b style="color:#e5b853;">${esc(level)}:</b> ${esc(memberName)} (${esc(memberCode)})</span>
-                        <span style="color:#4CAF50;white-space:nowrap;">+${esc(convertMoney(commAmount))}</span>
+                    totalOrderComm += commAmount;
+
+                    return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:6px 0;border-bottom:1px solid #1f3a2c;">
+                        <div style="flex:1;">
+                            <b style="color:#e5b853;">${esc(levelName)}:</b> ${esc(memberName)}<br>
+                            <small style="color:#666;">ID: ${esc(memberCode)}</small>
+                        </div>
+                        <div style="text-align:right;min-width:70px;">
+                            <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(commAmount))}</span>
+                        </div>
                     </div>`;
                 }).join('');
-            } else {
-                // اگر ہسٹری میں ڈیٹا نہیں ملا تو یہاں سے خود حساب لگائیں (Fallback with ID)
-                const { data: buyerProfile } = await sb.from('profiles').select('referred_by').eq('id', order.buyer_id).single();
-                if (buyerProfile && buyerProfile.referred_by) {
-                     // ڈائریکٹ بندے کا نام اور ID نکالیں
-                     const { data: directUser } = await sb.from('profiles').select('full_name, member_code').eq('id', buyerProfile.referred_by).single();
-                     const dName = directUser?.full_name || 'Unknown';
-                     const dCode = directUser?.member_code || 'N/A';
 
-                     commissionDetailsHtml = `<div style="color:#ffcc00;font-size:11px;padding:5px;margin-bottom:5px;">(Calculated from Order - DB Log Missing)</div>`;
-                     commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;font-size:12px;color:#4CAF50;padding:3px 0;">
-                        <span><b>Level 1 (Direct):</b> ${esc(dName)} (${esc(dCode)})</span>
-                        <span>+${esc(convertMoney(orderTotal * 0.10))}</span>
-                     </div>`;
-                } else {
-                     commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">Koi commission record nahi mila is order ke liye.</div>`;
-                }
+                // نیچے ٹوٹل دکھانا
+                commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#fff;padding:8px 0;margin-top:5px;border-top:1px dashed #e5b853;">
+                    <b>Total Deducted:</b>
+                    <div style="text-align:right;">
+                        <span style="color:#f44336;font-weight:bold;">-${esc(convertMoney(totalOrderComm))}</span>
+                    </div>
+                </div>`;
+            } else {
+                commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">اس آرڈر کے لیے کوئی کمیشن ریکارڈ نہیں ملا۔</div>`;
             }
 
             html += `
             <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:12px;background:#0a1f15;">
                 <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
                     <b style="color:#e5b853;font-size:14px;">Order …${esc(orderShortId)}</b>
-                    <span style="color:#4CAF50;font-size:13px;font-weight:bold;white-space:nowrap;">${esc(convertMoney(orderTotal))}</span>
+                    <span style="color:#4CAF50;font-size:13px;font-weight:bold;white-space:nowrap;">+${esc(convertMoney(orderTotal))}</span>
                 </div>
                 <div style="font-size:11px;color:#888;margin-bottom:10px;">${esc(date)} • Status: ${esc(String(order.status || '').toUpperCase())}</div>
-                <div style="font-size:12px;color:#e5b853;margin-bottom:5px;font-weight:bold;">Commission Distribution:</div>
+                <div style="font-size:12px;color:#e5b853;margin-bottom:5px;font-weight:bold;">Commission Deductions:</div>
                 ${commissionDetailsHtml}
             </div>`;
         }
@@ -4175,7 +4196,7 @@ async function openCommissionHistoryModal() {
         await Swal.fire({ title: 'Commission History', html: html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
 
     } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load commission history.', background: '#0d1c14', color: '#e5b853' });
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load history.', background: '#0d1c14', color: '#e5b853' });
     }
 }
 

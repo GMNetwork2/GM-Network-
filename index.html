@@ -764,6 +764,7 @@ input[type="file"]::file-selector-button:hover {
         <h3 style="margin-top:20px;">💰 Commission Distribution History</h3>
         <p class="muted" style="font-size:13px;">یہاں دیکھیں کہ کس آرڈر پر کس لیول تک کتنا کمیشن تقسیم ہوا۔</p>
         <button class="primary" type="button" onclick="openCommissionHistoryModal()" style="background:#4CAF50;color:white;">View Commission History</button>
+        <button class="primary" type="button" onclick="openNetworkWalletHistory()" style="background:#2196F3;color:white;margin-top:8px;">🌐 View Network Wallet History</button>
     </div>
 
     <!-- Orders Section -->
@@ -4160,7 +4161,7 @@ async function openCommissionHistoryModal() {
                 commissionDetailsHtml = `<div style="color:#ffcc00;font-size:12px;">Error: ${esc(commError.message)}</div>`;
             } else if (commissions && commissions.length > 0) {
                 const userIds = commissions.map(c => c.user_id);
-                const { data: profilesData } = await sb.from('profiles').select('id, full_name, member_code').in('id', userIds);
+                const { data: profilesData } = await sb.from('profiles').select('id, full_name, member_code, points').in('id', userIds);
                 const memberProfiles = {};
                 if (profilesData) profilesData.forEach(p => { memberProfiles[p.id] = p; });
 
@@ -4168,20 +4169,37 @@ async function openCommissionHistoryModal() {
                     const profile = memberProfiles[c.user_id] || {};
                     const memberName = profile.full_name || 'Unknown';
                     const memberCode = profile.member_code || 'N/A';
-                    let levelName = 'Direct (10%)';
-
-                    if (c.level_number === 2) levelName = 'Level 2 (2%)';
-                    else if (c.level_number === 3) levelName = 'Level 3 (2%)';
-                    else if (c.level_number === 4) levelName = 'Level 4 (2%)';
-                    else if (c.level_number === 5) levelName = 'Level 5 (2%)';
-                    else if (c.level_number === 6) levelName = 'Level 6 (1%)';
-
+                    // Direct referral commission remains Direct; rank commission shows its rank name.
+                    // This changes history labels only; commission rates and calculations remain untouched.
+                    const commissionType = String(c.type || '').trim().toLowerCase();
+                    const rankNamesByLevel = {
+                        2: 'Silver',
+                        3: 'Gold',
+                        4: 'Platinum',
+                        5: 'Diamond',
+                        6: 'Crown Diamond'
+                    };
+                    const rankNamesByType = {
+                        silver: 'Silver',
+                        gold: 'Gold',
+                        platinum: 'Platinum',
+                        diamond: 'Diamond',
+                        crown: 'Crown Diamond',
+                        'crown diamond': 'Crown Diamond',
+                        crown_diamond: 'Crown Diamond'
+                    };
+                    let rankName;
+                    if (commissionType === 'direct' || commissionType.includes('direct referral')) {
+                        rankName = 'Direct';
+                    } else {
+                        rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank';
+                    }
                     const commAmount = Number(c.commission_amount || 0);
                     totalOrderComm += commAmount;
 
                     return `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#aaa;padding:6px 0;border-bottom:1px solid #1f3a2c;">
                         <div style="flex:1;">
-                            <b style="color:#e5b853;">${esc(levelName)}:</b> ${esc(memberName)}<br>
+                            <b style="color:#e5b853;">${esc(rankName)}:</b> ${esc(memberName)}<br>
                             <small style="color:#666;">ID: ${esc(memberCode)}</small>
                         </div>
                         <div style="text-align:right;min-width:70px;">
@@ -4573,6 +4591,72 @@ function filterAdminOrders() {
         const searchData = item.getAttribute('data-search') || '';
         item.style.display = searchData.includes(term) ? 'flex' : 'none';
     });
+}
+
+
+async function openNetworkWalletHistory() {
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+
+    try {
+        const { data: orders, error } = await sb.from('orders')
+            .select('id, unit_price_pkr, quantity, status, created_at')
+            .in('status', ['confirmed', 'delivered'])
+            .order('created_at', { ascending: false })
+            .limit(30);
+        if (error) throw error;
+
+        let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+        let totalNetworkSale = 0;
+        let totalNetworkCommission = 0;
+
+        if (!orders || orders.length === 0) {
+            html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
+        } else {
+            for (const order of orders) {
+                const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
+                totalNetworkSale += orderTotal;
+                const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
+                const { data: comms, error: commsError } = await sb.from('commission_logs')
+                    .select('commission_amount').eq('order_id', order.id);
+                if (commsError) throw commsError;
+                const orderComm = comms ? comms.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0) : 0;
+                totalNetworkCommission += orderComm;
+
+                html += `
+                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <b style="color:#e5b853;">Order …${esc(String(order.id).slice(-6))}</b>
+                        <b style="color:#4CAF50;">+${esc(convertMoney(orderTotal))}</b>
+                    </div>
+                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
+                        <b>Date:</b> ${esc(date)}<br>
+                        <b>Commission Distributed:</b> <span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span><br>
+                        <b>Net Earning:</b> <span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(orderTotal - orderComm))}</span>
+                    </div>
+                </div>`;
+            }
+        }
+
+        html += `
+        <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
+            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Network Summary</h4>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+                <span>Total Sales:</span> <b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+                <span>Total Commission Paid:</span> <b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:5px;margin-top:5px;">
+                <b>Net Revenue:</b> <b style="color:var(--gold);">${esc(convertMoney(totalNetworkSale - totalNetworkCommission))}</b>
+            </div>
+        </div>`;
+        html += '</div>';
+
+        await Swal.fire({ title: 'Network Wallet', html: html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
+    } catch (e) {
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#0d1c14', color: '#e5b853' });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

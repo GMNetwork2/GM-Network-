@@ -1501,6 +1501,18 @@ async function loadProfile() {
     if($('profCoins')) $('profCoins').textContent = displayTotal.toLocaleString();
     if($('nm')) $('nm').textContent = displayTotal.toLocaleString();
     if($('accCoins')) $('accCoins').textContent = displayTotal.toLocaleString();
+
+    // Dashboard coin breakdown: personal points + all descendant team points.
+    if ($('nm_self')) $('nm_self').textContent = displayTotal.toLocaleString();
+    if ($('nm_team')) $('nm_team').textContent = '…';
+    try {
+        const { data: teamCoins, error: teamCoinsError } = await sb.rpc('get_my_team_coins');
+        if (teamCoinsError) throw teamCoinsError;
+        if ($('nm_team')) $('nm_team').textContent = Number(teamCoins || 0).toLocaleString();
+    } catch (coinStatsError) {
+        console.error('Team coins calculation failed:', coinStatsError);
+        if ($('nm_team')) $('nm_team').textContent = '—';
+    }
     
     // Sales counts (انہیں ویسے ہی رہنے دیں)
     const fetchAllRows = async (table, columns, configure = q => q) => {
@@ -1902,9 +1914,9 @@ async function loadMyTeam() {
     const el = $('teamList');
     if (!user) { el.textContent = 'Please sign in first.'; return; }
     
-    const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', user.id);
+    const { data, error } = await sb.rpc('get_team_children', { p_parent_id: user.id });
     
-    if (error) { el.innerHTML = '<span class="status error">Could not load team: ' + esc(error.message) + '</span>'; return; }
+    if (error) { el.innerHTML = '<span class="status error">Could not load team: ' + esc(error.message) + '. Please run the team access SQL setup.</span>'; return; }
     
     if (!data || data.length === 0) {
         el.innerHTML = '<p class="muted">No team members yet.</p>';
@@ -1942,10 +1954,10 @@ async function toggleTeamNode(memberId, headerElement) {
     childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
     
     try {
-        const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
+        const { data, error } = await sb.rpc('get_team_children', { p_parent_id: memberId });
         
         if (error) {
-            childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
+            childrenContainer.innerHTML = '<p class="muted">Could not load this member’s team. Please check team access setup.</p>';
         } else if (!data || data.length === 0) {
             childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
         } else {
@@ -1975,7 +1987,7 @@ async function viewFullTeam(userId, name) {
     content.innerHTML = 'Loading team tree...';
     $('teamViewerModal').classList.remove('hidden');
 
-    const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', userId);
+    const { data, error } = await sb.rpc('get_team_children', { p_parent_id: userId });
     
     if (error || !data || data.length === 0) {
         content.innerHTML = '<p class="muted">This member has not referred anyone yet.</p>';

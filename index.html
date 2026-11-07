@@ -1491,14 +1491,18 @@ async function loadProfile() {
         else $('profRefCode').textContent = '🔒 Locked';
     }
 
-    // Self + Team totals are calculated below from confirmed/delivered orders.
-    
     totalComm = Number(profile.total_commission || 0);
     if($('profCommission')) $('profCommission').textContent = convertMoney(Number(totalComm).toFixed(2));
     if($('nc')) $('nc').textContent = convertMoney(Number(totalComm).toFixed(2));
 
-    // Sales and coin totals: count purchased units (quantity), not order rows.
-    // Team includes every level below the signed-in member, not only direct referrals.
+    // 🌟 نیا سسٹم: کوائنز سیدھا ڈیٹا بیس سے دکھائیں (بالکل ایڈمن کی ٹیم کی طرح)
+    const displayTotal = Number(profile.points || 0);
+    
+    if($('profCoins')) $('profCoins').textContent = displayTotal.toLocaleString();
+    if($('nm')) $('nm').textContent = displayTotal.toLocaleString();
+    if($('accCoins')) $('accCoins').textContent = displayTotal.toLocaleString();
+    
+    // Sales counts (انہیں ویسے ہی رہنے دیں)
     const fetchAllRows = async (table, columns, configure = q => q) => {
         const rows = [];
         for (let from = 0; ; from += 1000) {
@@ -1539,23 +1543,11 @@ async function loadProfile() {
         const quantityOf = o => Math.max(1, Number(o.quantity) || 1);
         const selfSalesCount = selfOrders.reduce((sum, o) => sum + quantityOf(o), 0);
         const teamSalesCount = teamOrders.reduce((sum, o) => sum + quantityOf(o), 0);
-        const selfCoinsFromOrders = selfOrders.reduce((sum, o) => sum + Number(o.unit_price_pkr || 0) * quantityOf(o), 0);
-        const teamCoinsFromOrders = teamOrders.reduce((sum, o) => sum + Number(o.unit_price_pkr || 0) * quantityOf(o), 0);
-        if($('nm_self')) $('nm_self').textContent = selfCoinsFromOrders.toLocaleString();
-        if($('nm_team')) $('nm_team').textContent = teamCoinsFromOrders.toLocaleString();
-        // Display Fix: Total Coins = Self + Team (for UI)
-        const displayTotal = selfCoinsFromOrders + teamCoinsFromOrders;
-        if($('profCoins')) $('profCoins').textContent = displayTotal.toLocaleString();
-        if($('nm')) $('nm').textContent = displayTotal.toLocaleString();
-        if($('accCoins')) $('accCoins').textContent = displayTotal.toLocaleString(); // For My Account page
+        
         if($('ns_self')) $('ns_self').textContent = String(selfSalesCount);
         if($('ns_team')) $('ns_team').textContent = String(teamSalesCount);
     } catch (statsError) {
         console.error('Team/self sales calculation failed:', statsError);
-        if($('nm_self')) $('nm_self').textContent = '—';
-        if($('nm_team')) $('nm_team').textContent = '—';
-        if($('ns_self')) $('ns_self').textContent = '—';
-        if($('ns_team')) $('ns_team').textContent = '—';
     }
 }
 
@@ -1937,7 +1929,6 @@ async function toggleTeamNode(memberId, headerElement) {
     const childrenContainer = $('children-' + memberId);
     const btn = headerElement.querySelector('.toggle-btn');
     
-    
     if (!childrenContainer || !btn) return;
 
     if (childrenContainer.classList.contains('open')) {
@@ -1947,31 +1938,28 @@ async function toggleTeamNode(memberId, headerElement) {
     }
 
     // ہر بار تازہ ڈیٹا لانے کے لیے پرانا صاف کریں
-    childrenContainer.innerHTML = ''; 
-    if (true) {
-        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
-        const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
-        
-        if (error) {
-            childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
-        } else if (!data || data.length === 0) {
-            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
-        } else {
-            childrenContainer.innerHTML = data.map(x => `
-                <div class="team-member-node">
-                    <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
-                        <div class="member-info">
-                            <span class="member-name">${esc(x.full_name)}</span>
-                            <span class="member-code">ID: ${esc(x.member_code)} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
-                        </div>
-                        <button class="toggle-btn">+</button>
+    childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
+    
+    const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
+    
+    if (error) {
+        childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
+    } else if (!data || data.length === 0) {
+        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
+    } else {
+        childrenContainer.innerHTML = data.map(x => `
+            <div class="team-member-node">
+                <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
+                    <div class="member-info">
+                        <span class="member-name">${esc(x.full_name)}</span>
+                        <span class="member-code">ID: ${esc(x.member_code)} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
                     </div>
-                    <div class="team-member-children" id="children-${x.id}"></div>
+                    <button class="toggle-btn">+</button>
                 </div>
-            `).join('');
-        }
+                <div class="team-member-children" id="children-${x.id}"></div>
+            </div>
+        `).join('');
     }
-
     childrenContainer.classList.add('open');
     btn.textContent = '−';
 }

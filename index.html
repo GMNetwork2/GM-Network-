@@ -1928,7 +1928,7 @@ async function loadMyTeam() {
 async function toggleTeamNode(memberId, headerElement) {
     const childrenContainer = $('children-' + memberId);
     const btn = headerElement.querySelector('.toggle-btn');
-    
+
     if (!childrenContainer || !btn) return;
 
     if (childrenContainer.classList.contains('open')) {
@@ -1938,27 +1938,29 @@ async function toggleTeamNode(memberId, headerElement) {
     }
 
     // ہر بار تازہ ڈیٹا لانے کے لیے پرانا صاف کریں
-    childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
-    
-    const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
-    
-    if (error) {
-        childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
-    } else if (!data || data.length === 0) {
-        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
-    } else {
-        childrenContainer.innerHTML = data.map(x => `
-            <div class="team-member-node">
-                <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
-                    <div class="member-info">
-                        <span class="member-name">${esc(x.full_name)}</span>
-                        <span class="member-code">ID: ${esc(x.member_code)} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
+    childrenContainer.innerHTML = '';
+    if (true) {
+        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
+        const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
+
+        if (error) {
+            childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
+        } else if (!data || data.length === 0) {
+            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
+        } else {
+            childrenContainer.innerHTML = data.map(x => `
+                <div class="team-member-node">
+                    <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
+                        <div class="member-info">
+                            <span class="member-name">${esc(x.full_name)}</span>
+                            <span class="member-code">ID: ${esc(x.member_code)} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
+                        </div>
+                        <button class="toggle-btn">+</button>
                     </div>
-                    <button class="toggle-btn">+</button>
+                    <div class="team-member-children" id="children-${x.id}"></div>
                 </div>
-                <div class="team-member-children" id="children-${x.id}"></div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
     childrenContainer.classList.add('open');
     btn.textContent = '−';

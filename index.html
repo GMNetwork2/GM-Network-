@@ -1946,7 +1946,9 @@ async function toggleTeamNode(memberId, headerElement) {
         return;
     }
 
-    if (childrenContainer.innerHTML.trim() === '') {
+    // ہر بار تازہ ڈیٹا لانے کے لیے پرانا صاف کریں
+    childrenContainer.innerHTML = ''; 
+    if (true) {
         childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
         const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
         

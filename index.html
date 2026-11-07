@@ -607,7 +607,7 @@ input[type="file"]::file-selector-button:hover {
 <div id="loginResetStatus" class="status hidden"></div>
 </div></div><div id="formSignUp" class="hidden"><h2>Create an account</h2><label>Full Name</label><input id="regFullname" autocomplete="name" placeholder="Your name"><label>Email</label><input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 6 characters"><label>Referral Code (required)</label><input id="regRefCode" placeholder="Friend's referral code"><button class="primary" onclick="signUp()">Sign Up</button></div><div id="loggedInProfile" class="hidden"><h2>My Profile</h2><div class="item"><span>Email</span><b id="profEmail"></b></div><div class="item"><span>My Referral Code</span><div style="display:flex;gap:5px;align-items:center"><b id="profRefCode">—</b><button class="secondary small-btn" onclick="copyRefCode()">Copy</button></div></div><div class="item"><div><div class="muted">My Coins</div><b id="profCoins">0</b></div><div><div class="muted">Total Commission</div><b id="profCommission">$0</b></div></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><button class="secondary" onclick="signOut()" style="margin-top:20px;width:100%">Sign Out</button></div><div id="authStatus" class="status">Not signed in.</div></div></section>
 
-<section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>My Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
+<section id="my-account" class="view hidden"><div class="panel"><h2>My Account</h2><div class="item"><span>Name:</span><b id="accName">—</b></div><div class="item"><span>Email:</span><b id="accEmail">—</b></div><div class="item"><span>Member ID:</span><b id="accMemberId">—</b></div><div class="item"><span>Account UUID:</span><b id="accUuid" style="font-size:11px;">—</b></div><div class="item"><span>Referral Code:</span><b id="accRefCode">—</b></div><div class="item"><span>Bank/Wallet Account:</span><div style="display:flex;gap:5px;align-items:center"><b id="accBankDetails" style="font-size:12px;">Not Set</b><button class="secondary small-btn" onclick="editBankDetails()">Edit</button></div></div><div class="item"><span>Total Balance</span><b id="accBalance">$0</b></div><div class="item"><span>Total Coins</span><b id="accCoins">0</b></div><button class="primary" onclick="openWithdraw()">Withdraw Earnings</button><div id="accAchievements"></div><h2 style="margin-top:20px">My Transactions</h2><div id="accTransactions" class="muted">Loading...</div></div></section>
 
 <section id="my-wallet" class="view hidden">
     <div class="panel">
@@ -1533,7 +1533,7 @@ async function loadProfile() {
 
         // Profile page aur my-account page ke liye
         if($('profCoins')) $('profCoins').textContent = selfPoints.toLocaleString(); 
-        if($('accCoins')) $('accCoins').textContent = selfPoints.toLocaleString();
+        if($('accCoins')) $('accCoins').textContent = totalPoints.toLocaleString(); // Total Coins (Self + Team)
 
     } catch (coinStatsError) {
         console.error('Team coins calculation failed:', coinStatsError);
@@ -1604,10 +1604,8 @@ async function loadMyAccountPage() {
     
     // تازہ Self + Team Coins لوڈ کریں؛ یہ loadProfile کے ذریعے accCoins میں آتے ہیں
     await loadProfile();
-    const coinsText = $('accCoins')?.textContent?.replace(/,/g, '').trim();
-    const coins = coinsText && Number.isFinite(Number(coinsText))
-        ? Number(coinsText)
-        : Number(myProfile?.points || 0);
+    // Rank is always calculated from Total Coins (Self + Team), not Self Coins.
+    const coins = Number(myProfile?.points || 0);
 
     // Auto Rank Calculation
     let currentRankName = 'Bronze 🥉';

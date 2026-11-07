@@ -4599,12 +4599,13 @@ async function openNetworkWalletHistory() {
     Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        const { data: orders, error } = await sb.from('orders')
-            .select('id, unit_price_pkr, quantity, status, created_at')
+        // Read-only history view: this does not create, recalculate, or distribute commissions.
+        const { data: orders, error: ordersError } = await sb.from('orders')
+            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(30);
-        if (error) throw error;
+        if (ordersError) throw ordersError;
 
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
         let totalNetworkSale = 0;
@@ -4617,45 +4618,90 @@ async function openNetworkWalletHistory() {
                 const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
                 totalNetworkSale += orderTotal;
                 const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
-                const { data: comms, error: commsError } = await sb.from('commission_logs')
-                    .select('commission_amount').eq('order_id', order.id);
-                if (commsError) throw commsError;
-                const orderComm = comms ? comms.reduce((sum, c) => sum + Number(c.commission_amount || 0), 0) : 0;
-                totalNetworkCommission += orderComm;
 
+                const { data: comms, error: commsError } = await sb.from('commission_logs')
+                    .select('*').eq('order_id', order.id);
+                if (commsError) throw commsError;
+
+                const userIds = [...new Set((comms || []).map(c => c.user_id).filter(Boolean))];
+                const profilesMap = {};
+                if (userIds.length) {
+                    const { data: profilesData, error: profilesError } = await sb.from('profiles')
+                        .select('id, full_name, member_code').in('id', userIds);
+                    if (profilesError) throw profilesError;
+                    (profilesData || []).forEach(p => { profilesMap[p.id] = p; });
+                }
+
+                let orderComm = 0;
+                let commDetailsHtml = '';
+                if (comms && comms.length) {
+                    commDetailsHtml = comms.map(c => {
+                        const profile = profilesMap[c.user_id] || {};
+                        const memberName = profile.full_name || 'Unknown';
+                        const memberCode = profile.member_code || 'N/A';
+                        const commissionType = String(c.type || '').trim().toLowerCase();
+                        const rankNamesByLevel = { 2: 'Silver', 3: 'Gold', 4: 'Platinum', 5: 'Diamond', 6: 'Crown Diamond' };
+                        const rankNamesByType = {
+                            silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond',
+                            crown: 'Crown Diamond', 'crown diamond': 'Crown Diamond', crown_diamond: 'Crown Diamond'
+                        };
+                        let rankName;
+                        if (commissionType === 'direct' || commissionType.includes('direct referral')) {
+                            rankName = 'Direct';
+                        } else {
+                            rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank';
+                        }
+                        const amount = Number(c.commission_amount || 0);
+                        orderComm += amount;
+                        // Display-only effective rate calculated from the existing commission log amount.
+                        const effectiveRate = orderTotal > 0 ? (amount / orderTotal * 100) : 0;
+                        return `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
+                            <span style="flex:1;">${esc(rankName)}: ${esc(memberName)} (${esc(memberCode)})<br><small>${effectiveRate.toFixed(2)}% effective rate</small></span>
+                            <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(amount))}</span>
+                        </div>`;
+                    }).join('');
+                } else {
+                    commDetailsHtml = '<div style="font-size:11px;color:#777;">No commission recorded for this order.</div>';
+                }
+
+                totalNetworkCommission += orderComm;
                 html += `
                 <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;gap:8px;">
                         <b style="color:#e5b853;">Order …${esc(String(order.id).slice(-6))}</b>
                         <b style="color:#4CAF50;">+${esc(convertMoney(orderTotal))}</b>
                     </div>
                     <div style="font-size:12px;color:#aaa;line-height:1.5;">
-                        <b>Date:</b> ${esc(date)}<br>
-                        <b>Commission Distributed:</b> <span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span><br>
-                        <b>Net Earning:</b> <span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(orderTotal - orderComm))}</span>
+                        <b>Date:</b> ${esc(date)}<br><b>Status:</b> ${esc(String(order.status || '').toUpperCase())}
+                    </div>
+                    <div style="border-top:1px dashed #1f3a2c;margin:7px 0;padding-top:7px;">
+                        <b style="color:#e5b853;font-size:12px;">Commission Details:</b>${commDetailsHtml}
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:5px;">
+                        <b>Total Commission:</b><span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;border-top:1px dashed #e5b853;padding-top:5px;">
+                        <b>Net Earning:</b><span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(orderTotal - orderComm))}</span>
                     </div>
                 </div>`;
             }
         }
 
-        html += `
+        // This is the net result for the 30 orders displayed, not a lifetime network-wallet balance.
+        const listedOrdersNet = totalNetworkSale - totalNetworkCommission;
+        const summaryHtml = `
         <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
-            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Network Summary</h4>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                <span>Total Sales:</span> <b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
-                <span>Total Commission Paid:</span> <b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:5px;margin-top:5px;">
-                <b>Net Revenue:</b> <b style="color:var(--gold);">${esc(convertMoney(totalNetworkSale - totalNetworkCommission))}</b>
-            </div>
+            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Network Summary (Latest 30 Orders)</h4>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Sales:</span><b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Commission Paid:</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:7px;margin-top:5px;"><b>Net Earning:</b><b style="color:var(--gold);">${esc(convertMoney(listedOrdersNet))}</b></div>
+            <p style="font-size:10px;color:#999;margin:9px 0 0;">یہ رقم صرف دکھائے گئے تازہ ترین 30 آرڈرز کا خالص نتیجہ ہے، مکمل یا سابقہ نیٹ ورک والٹ بیلنس نہیں۔</p>
         </div>`;
-        html += '</div>';
+        html += summaryHtml + '</div>';
 
-        await Swal.fire({ title: 'Network Wallet', html: html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
+        await Swal.fire({ title: 'Network Wallet History', html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
     } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#0d1c14', color: '#e5b853' });
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load network history.', background: '#0d1c14', color: '#e5b853' });
     }
 }
 

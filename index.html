@@ -1981,11 +1981,8 @@ async function toggleTeamNode(memberId, headerElement) {
     childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
     
     try {
-        // ڈیٹا بیس سے سیدھا اس ممبر کے نیچے والے (downline) ممبرز حاصل کریں
-        const { data, error } = await sb
-            .from('profiles')
-            .select('id, full_name, member_code, points')
-            .eq('referred_by', memberId);
+        // اسی محفوظ RPC کے ذریعے اس ممبر کے براہِ راست downline ممبرز حاصل کریں
+        const { data, error } = await sb.rpc('get_team_children', { p_parent_id: memberId });
         
         if (error) {
             childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">ڈیٹا لوڈ کرنے میں مسئلہ ہوا: ' + error.message + '</p>';

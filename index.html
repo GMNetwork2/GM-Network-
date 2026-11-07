@@ -1931,6 +1931,7 @@ async function toggleTeamNode(memberId, headerElement) {
 
     if (!childrenContainer || !btn) return;
 
+    // اگر باکس پہلے سے کھلا ہے تو بند کریں اور واپس جائیں
     if (childrenContainer.classList.contains('open')) {
         childrenContainer.classList.remove('open');
         btn.textContent = '+';
@@ -1938,11 +1939,11 @@ async function toggleTeamNode(memberId, headerElement) {
     }
 
     // ہر بار تازہ ڈیٹا لانے کے لیے پرانا صاف کریں
-    childrenContainer.innerHTML = '';
-    if (true) {
-        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
+    childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
+    
+    try {
         const { data, error } = await sb.from('profiles').select('id, full_name, member_code, points').eq('referred_by', memberId);
-
+        
         if (error) {
             childrenContainer.innerHTML = '<p class="muted">Error loading downline.</p>';
         } else if (!data || data.length === 0) {
@@ -1961,11 +1962,13 @@ async function toggleTeamNode(memberId, headerElement) {
                 </div>
             `).join('');
         }
+    } catch (err) {
+        childrenContainer.innerHTML = '<p class="muted">Error: ' + err.message + '</p>';
     }
+
     childrenContainer.classList.add('open');
     btn.textContent = '−';
 }
-
 async function viewFullTeam(userId, name) {
     $('teamViewerTitle').textContent = `Team of ${name}`;
     const content = $('teamViewerContent');

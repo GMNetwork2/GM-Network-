@@ -1495,25 +1495,54 @@ async function loadProfile() {
     if($('profCommission')) $('profCommission').textContent = convertMoney(Number(totalComm).toFixed(2));
     if($('nc')) $('nc').textContent = convertMoney(Number(totalComm).toFixed(2));
 
-    // 🌟 نیا سسٹم: کوائنز سیدھا ڈیٹا بیس سے دکھائیں (بالکل ایڈمن کی ٹیم کی طرح)
-    const displayTotal = Number(profile.points || 0);
-    
-    if($('profCoins')) $('profCoins').textContent = displayTotal.toLocaleString();
-    if($('nm')) $('nm').textContent = displayTotal.toLocaleString();
-    if($('accCoins')) $('accCoins').textContent = displayTotal.toLocaleString();
+    // 🌟 نیا سسٹم: کوائنز کا بالکل درست حساب (Total - Downline)
+    const totalPoints = Number(profile.points || 0);
 
-    // Dashboard coin breakdown: personal points + all descendant team points.
-    if ($('nm_self')) $('nm_self').textContent = displayTotal.toLocaleString();
-    if ($('nm_team')) $('nm_team').textContent = '…';
+    if($('accCoins')) $('accCoins').textContent = totalPoints.toLocaleString();
+    if($('nm')) $('nm').textContent = totalPoints.toLocaleString(); // My Coins (Total)
+
     try {
-        const { data: teamCoins, error: teamCoinsError } = await sb.rpc('get_my_team_coins');
-        if (teamCoinsError) throw teamCoinsError;
-        if ($('nm_team')) $('nm_team').textContent = Number(teamCoins || 0).toLocaleString();
+        // 1. نیچے کے تمام ممبرز (Downline) کے کوائنز حاصل کریں
+        let downlinePoints = 0;
+        let descendants = new Set();
+        let frontier = [user.id];
+
+        while (frontier.length > 0) {
+            let nextFrontier = [];
+            for (let i = 0; i < frontier.length; i += 100) {
+                const chunk = frontier.slice(i, i + 100);
+                const { data: children } = await sb.from('profiles').select('id, points, referred_by').in('referred_by', chunk);
+                if (children && children.length > 0) {
+                    children.forEach(child => {
+                        if (!descendants.has(child.id)) {
+                            descendants.add(child.id);
+                            downlinePoints += Number(child.points || 0); // صرف ایک بار جمع کریں
+                            nextFrontier.push(child.id);
+                        }
+                    });
+                }
+            }
+            frontier = nextFrontier;
+        }
+
+        // 2. Self Coins = Total - Downline (آپ کے سسٹم کے مطابق)
+        const selfPoints = totalPoints - downlinePoints;
+
+        if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
+        if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();
+
+        // Profile page aur my-account page ke liye
+        if($('profCoins')) $('profCoins').textContent = selfPoints.toLocaleString(); 
+        if($('accCoins')) $('accCoins').textContent = selfPoints.toLocaleString();
+
     } catch (coinStatsError) {
         console.error('Team coins calculation failed:', coinStatsError);
         if ($('nm_team')) $('nm_team').textContent = '—';
+        if ($('nm_self')) $('nm_self').textContent = totalPoints.toLocaleString();
+        if ($('profCoins')) $('profCoins').textContent = totalPoints.toLocaleString();
+        if ($('accCoins')) $('accCoins').textContent = totalPoints.toLocaleString();
     }
-    
+
     // Sales counts (انہیں ویسے ہی رہنے دیں)
     const fetchAllRows = async (table, columns, configure = q => q) => {
         const rows = [];
@@ -1943,30 +1972,35 @@ async function toggleTeamNode(memberId, headerElement) {
 
     if (!childrenContainer || !btn) return;
 
-    // اگر باکس پہلے سے کھلا ہے تو بند کریں اور واپس جائیں
+    // اگر باکس پہلے سے کھلا ہے تو اسے بند کر دیں
     if (childrenContainer.classList.contains('open')) {
         childrenContainer.classList.remove('open');
         btn.textContent = '+';
         return;
     }
 
-    // ہر بار تازہ ڈیٹا لانے کے لیے پرانا صاف کریں
+    // لوڈنگ کا پیغام دکھائیں
     childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
     
     try {
-        const { data, error } = await sb.rpc('get_team_children', { p_parent_id: memberId });
+        // ڈیٹا بیس سے سیدھا اس ممبر کے نیچے والے (downline) ممبرز حاصل کریں
+        const { data, error } = await sb
+            .from('profiles')
+            .select('id, full_name, member_code, points')
+            .eq('referred_by', memberId);
         
         if (error) {
-            childrenContainer.innerHTML = '<p class="muted">Could not load this member’s team. Please check team access setup.</p>';
+            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">ڈیٹا لوڈ کرنے میں مسئلہ ہوا: ' + error.message + '</p>';
         } else if (!data || data.length === 0) {
             childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
         } else {
+            // ممبرز کو لسٹ میں دکھائیں
             childrenContainer.innerHTML = data.map(x => `
                 <div class="team-member-node">
                     <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
                         <div class="member-info">
-                            <span class="member-name">${esc(x.full_name)}</span>
-                            <span class="member-code">ID: ${esc(x.member_code)} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
+                            <span class="member-name">${esc(x.full_name || 'Member')}</span>
+                            <span class="member-code">ID: ${esc(x.member_code || 'N/A')} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
                         </div>
                         <button class="toggle-btn">+</button>
                     </div>
@@ -1975,9 +2009,10 @@ async function toggleTeamNode(memberId, headerElement) {
             `).join('');
         }
     } catch (err) {
-        childrenContainer.innerHTML = '<p class="muted">Error: ' + err.message + '</p>';
+        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Error: ' + err.message + '</p>';
     }
 
+    // باکس کھولیں
     childrenContainer.classList.add('open');
     btn.textContent = '−';
 }

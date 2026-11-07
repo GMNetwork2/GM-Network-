@@ -1970,47 +1970,51 @@ async function toggleTeamNode(memberId, headerElement) {
 
     if (!childrenContainer || !btn) return;
 
-    // اگر باکس پہلے سے کھلا ہے تو اسے بند کر دیں
+    // پہلے سے کھلا ہو تو بند کریں
     if (childrenContainer.classList.contains('open')) {
         childrenContainer.classList.remove('open');
         btn.textContent = '+';
         return;
     }
 
-    // لوڈنگ کا پیغام دکھائیں
     childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Loading...</p>';
-    
-    try {
-        // اسی محفوظ RPC کے ذریعے اس ممبر کے براہِ راست downline ممبرز حاصل کریں
-        const { data, error } = await sb.rpc('get_team_children', { p_parent_id: memberId });
-        
-        if (error) {
-            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">ڈیٹا لوڈ کرنے میں مسئلہ ہوا: ' + error.message + '</p>';
-        } else if (!data || data.length === 0) {
-            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
-        } else {
-            // ممبرز کو لسٹ میں دکھائیں
-            childrenContainer.innerHTML = data.map(x => `
-                <div class="team-member-node">
-                    <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
-                        <div class="member-info">
-                            <span class="member-name">${esc(x.full_name || 'Member')}</span>
-                            <span class="member-code">ID: ${esc(x.member_code || 'N/A')} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
-                        </div>
-                        <button class="toggle-btn">+</button>
-                    </div>
-                    <div class="team-member-children" id="children-${x.id}"></div>
-                </div>
-            `).join('');
-        }
-    } catch (err) {
-        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Error: ' + err.message + '</p>';
-    }
-
-    // باکس کھولیں
     childrenContainer.classList.add('open');
     btn.textContent = '−';
+
+    try {
+        // اسی profiles/referred_by طریقے سے براہِ راست اس ممبر کی ٹیم حاصل کریں
+        const { data, error } = await sb
+            .from('profiles')
+            .select('id, full_name, member_code, points')
+            .eq('referred_by', memberId);
+
+        if (error) {
+            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Team load error: ' + esc(error.message) + '</p>';
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">No downline members.</p>';
+            return;
+        }
+
+        childrenContainer.innerHTML = data.map(x => `
+            <div class="team-member-node">
+                <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
+                    <div class="member-info">
+                        <span class="member-name">${esc(x.full_name || 'Member')}</span>
+                        <span class="member-code">ID: ${esc(x.member_code || 'N/A')} | Coins: ${Number(x.points || 0).toLocaleString()}</span>
+                    </div>
+                    <button type="button" class="toggle-btn">+</button>
+                </div>
+                <div class="team-member-children" id="children-${x.id}"></div>
+            </div>
+        `).join('');
+    } catch (err) {
+        childrenContainer.innerHTML = '<p class="muted" style="font-size:12px;">Error: ' + esc(err.message || String(err)) + '</p>';
+    }
 }
+
 async function viewFullTeam(userId, name) {
     $('teamViewerTitle').textContent = `Team of ${name}`;
     const content = $('teamViewerContent');

@@ -1526,9 +1526,18 @@ async function loadProfile() {
             frontier = nextFrontier;
         }
 
-        // ہر ممبر اور ایڈمن کے لیے اپنے اور ٹیم کے کوائنز کا اصل حساب
-        let selfPoints = totalPoints - downlinePoints;
-        if (selfPoints < 0) selfPoints = 0;
+        // ایڈمن کے لیے صرف ڈائریکٹ ٹیم کے کوائنز شمار کریں؛ باقی ممبرز کا موجودہ حساب برقرار رہے
+        let selfPoints = totalPoints;
+
+        if (isAdmin) {
+            const { data: directTeam } = await sb.from('profiles').select('points').eq('referred_by', user.id);
+            downlinePoints = (directTeam || []).reduce((sum, m) => sum + Number(m.points || 0), 0);
+            selfPoints = totalPoints - downlinePoints;
+            if (selfPoints < 0) selfPoints = 0;
+        } else {
+            selfPoints = totalPoints - downlinePoints;
+            if (selfPoints < 0) selfPoints = 0;
+        }
 
         if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
         if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();
@@ -3405,8 +3414,34 @@ async function loadMyWallet() {
         // اگر wallet_transactions میں کمیشن کی الگ ہسٹری موجود نہیں تو پروفائل کا مجموعی کمیشن دکھائیں
         const hasCommissionHistory = (txns || []).some(t => String(t.type || '').toLowerCase().includes('commission'));
         const totalCommissionEarned = Number(myProfile?.total_commission || 0);
+
         if (!hasCommissionHistory && totalCommissionEarned > 0) {
-            const commHistory = `
+            const currentWalletBal = Number(wallet?.balance || 0);
+            let finalBalance = currentWalletBal;
+
+            // یہ صرف ڈسپلے ایڈجسٹمنٹ ہے؛ ڈیٹابیس کا اصل والٹ بیلنس تبدیل نہیں ہوتا
+            if (currentWalletBal < totalCommissionEarned) {
+                const extraAmount = totalCommissionEarned - currentWalletBal;
+                const commHistory = `
+                <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <div><b>🎁 Commission Balance Adjustment (Display Only)</b><br><small>Shown from total commission earned; wallet database unchanged</small></div>
+                        <div style="text-align:right;">
+                            <b style="color:green;">+${esc(convertMoney(extraAmount))}</b><br>
+                            <span class="pill">display only</span>
+                        </div>
+                    </div>
+                    <div style="width:100%; font-size:12px; color:var(--muted); margin-top:5px; border-top:1px dashed #1f3a2c; padding-top:5px; display:flex; justify-content:space-between;">
+                        <span>Previous Bal: ${esc(convertMoney(currentWalletBal))}</span>
+                        <span style="color:var(--gold); font-weight:bold;">Shown Bal: ${esc(convertMoney(totalCommissionEarned))}</span>
+                    </div>
+                </div>`;
+                $('walletTransactions').innerHTML = commHistory + $('walletTransactions').innerHTML;
+                finalBalance = totalCommissionEarned;
+            }
+
+            // مجموعی کمیشن کی معلومات والا کارڈ
+            const totalCommCard = `
             <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
                 <div style="display:flex; justify-content:space-between; width:100%;">
                     <div><b>🎁 Total Commission Earned</b><br><small>From Referrals &amp; Team (cumulative total)</small></div>
@@ -3416,7 +3451,11 @@ async function loadMyWallet() {
                     </div>
                 </div>
             </div>`;
-            $('walletTransactions').innerHTML = commHistory + $('walletTransactions').innerHTML;
+            $('walletTransactions').innerHTML = totalCommCard + $('walletTransactions').innerHTML;
+
+            // صرف اسکرین پر دکھایا جانے والا بیلنس؛ اصل checkout/payment validation database سے ہوگا
+            $('walletBalance').textContent = convertMoney(finalBalance);
+            if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(finalBalance);
         }
     }
     $('walletStatus').classList.add('hidden');

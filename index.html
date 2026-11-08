@@ -3406,6 +3406,23 @@ async function loadMyWallet() {
                 </div>
             </div>`;
         }).join('') || '<p>No transactions yet.</p>';
+
+        // اگر wallet_transactions میں کمیشن کی الگ ہسٹری موجود نہیں تو پروفائل کا مجموعی کمیشن دکھائیں
+        const hasCommissionHistory = (txns || []).some(t => String(t.type || '').toLowerCase().includes('commission'));
+        const totalCommissionEarned = Number(myProfile?.total_commission || 0);
+        if (!hasCommissionHistory && totalCommissionEarned > 0) {
+            const commHistory = `
+            <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <div><b>🎁 Total Commission Earned</b><br><small>From Referrals &amp; Team (cumulative total)</small></div>
+                    <div style="text-align:right;">
+                        <b style="color:green;">+${esc(convertMoney(totalCommissionEarned))}</b><br>
+                        <span class="pill">completed</span>
+                    </div>
+                </div>
+            </div>`;
+            $('walletTransactions').innerHTML = commHistory + $('walletTransactions').innerHTML;
+        }
     }
     $('walletStatus').classList.add('hidden');
 }

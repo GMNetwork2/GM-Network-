@@ -1526,10 +1526,12 @@ async function loadProfile() {
             frontier = nextFrontier;
         }
 
-        // 2. ایڈمن اور عام ممبرز سب کے لیے ایک جیسا درست حساب
-        // Total Coins - Team Coins = Self Coins
-        let selfPoints = totalPoints - downlinePoints;
-        if (selfPoints < 0) selfPoints = 0;
+        // 2. ایڈمن کے لیے الگ اور ممبرز کے لیے الگ حساب
+        let selfPoints = totalPoints;
+        if (!isAdmin) {
+            selfPoints = totalPoints - downlinePoints;
+            if (selfPoints < 0) selfPoints = 0;
+        }
 
         if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
         if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();
@@ -3375,13 +3377,16 @@ async function loadMyWallet() {
             const amountNum = Number(t.amount || 0);
             
             // بیلنس کا حساب (Deposit = پلس، Purchase/Withdrawal = مائنس)
-            const currentBalanceAfterTxn = currentRunningBalance;
+            let currentBalanceAfterTxn = currentRunningBalance;
+            let previousBalance = currentBalanceAfterTxn;
+
             if (isDeposit) {
-                currentRunningBalance -= amountNum; // ڈپازٹ سے پہلے کا بیلنس
+                previousBalance = currentBalanceAfterTxn - amountNum;
+                currentRunningBalance = previousBalance;
             } else {
-                currentRunningBalance += amountNum; // خرچ سے پہلے کا بیلنس
+                previousBalance = currentBalanceAfterTxn + amountNum;
+                currentRunningBalance = previousBalance;
             }
-            const previousBalance = currentRunningBalance;
 
             return `
             <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">

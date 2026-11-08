@@ -3374,12 +3374,12 @@ async function loadMyWallet() {
             const sign = positive ? '+' : (isWithdrawal || type === 'purchase' ? '-' : '');
             const amountNum = Number(t.amount || 0);
             
-            // بیلنس کا حساب
+            // بیلنس کا حساب (Deposit = پلس، Purchase/Withdrawal = مائنس)
             const currentBalanceAfterTxn = currentRunningBalance;
-            if (positive) {
-                currentRunningBalance -= amountNum;
+            if (isDeposit) {
+                currentRunningBalance -= amountNum; // ڈپازٹ سے پہلے کا بیلنس
             } else {
-                currentRunningBalance += amountNum;
+                currentRunningBalance += amountNum; // خرچ سے پہلے کا بیلنس
             }
             const previousBalance = currentRunningBalance;
 

@@ -1526,17 +1526,10 @@ async function loadProfile() {
             frontier = nextFrontier;
         }
 
-        // 2. صرف ایڈمن ڈیش بورڈ کی Coins display درست کریں؛ باقی ممبرز کا حساب جوں کا توں رہے
-        let selfPoints;
-        if (isAdmin) {
-            // ایڈمن کے 23,645 ٹوٹل میں سے 137 ذاتی، باقی ٹیم کے
-            selfPoints = Math.min(137, totalPoints);
-            downlinePoints = Math.max(0, totalPoints - selfPoints);
-        } else {
-            // عام ممبرز کے لیے موجودہ حساب بالکل برقرار
-            selfPoints = totalPoints - downlinePoints;
-            if (selfPoints < 0) selfPoints = 0;
-        }
+        // 2. ایڈمن اور عام ممبرز سب کے لیے ایک جیسا درست حساب
+        // Total Coins - Team Coins = Self Coins
+        let selfPoints = totalPoints - downlinePoints;
+        if (selfPoints < 0) selfPoints = 0;
 
         if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
         if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();

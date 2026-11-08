@@ -1526,16 +1526,9 @@ async function loadProfile() {
             frontier = nextFrontier;
         }
 
-        // 2. ایڈمن کے لیے صرف Salam کے کوائنز ٹیم میں دکھائیں؛ عام ممبرز کا حساب برقرار رہے
-        let selfPoints = totalPoints;
-
-        if (isAdmin) {
-            downlinePoints = 23658;
-            selfPoints = totalPoints - downlinePoints;
-        } else {
-            selfPoints = totalPoints - downlinePoints;
-            if (selfPoints < 0) selfPoints = 0;
-        }
+        // ہر ممبر اور ایڈمن کے لیے اپنے اور ٹیم کے کوائنز کا اصل حساب
+        let selfPoints = totalPoints - downlinePoints;
+        if (selfPoints < 0) selfPoints = 0;
 
         if ($('nm_self')) $('nm_self').textContent = selfPoints.toLocaleString();
         if ($('nm_team')) $('nm_team').textContent = downlinePoints.toLocaleString();

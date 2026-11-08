@@ -3411,7 +3411,7 @@ async function loadMyWallet() {
             </div>`;
         }).join('') || '<p>No transactions yet.</p>';
 
-        // اگر wallet_transactions میں کمیشن کی الگ ہسٹری موجود نہیں تو پروفائل کا مجموعی کمیشن دکھائیں
+        // کمیشن کی مجموعی رقم اور تفصیلی ہسٹری کا لنک
         const hasCommissionHistory = (txns || []).some(t => String(t.type || '').toLowerCase().includes('commission'));
         const totalCommissionEarned = Number(myProfile?.total_commission || 0);
 
@@ -3423,9 +3423,9 @@ async function loadMyWallet() {
             if (currentWalletBal < totalCommissionEarned) {
                 const extraAmount = totalCommissionEarned - currentWalletBal;
                 const commHistory = `
-                <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
                     <div style="display:flex; justify-content:space-between; width:100%;">
-                        <div><b>🎁 Commission Balance Adjustment (Display Only)</b><br><small>Shown from total commission earned; wallet database unchanged</small></div>
+                        <div><b>🎁 Commission Balance Adjustment (Display Only)</b><br><small>Tap to view commission details</small></div>
                         <div style="text-align:right;">
                             <b style="color:green;">+${esc(convertMoney(extraAmount))}</b><br>
                             <span class="pill">display only</span>
@@ -3440,11 +3440,11 @@ async function loadMyWallet() {
                 finalBalance = totalCommissionEarned;
             }
 
-            // مجموعی کمیشن کی معلومات والا کارڈ
+            // مجموعی کمیشن کا کلک ہونے والا کارڈ
             const totalCommCard = `
-            <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+            <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
                 <div style="display:flex; justify-content:space-between; width:100%;">
-                    <div><b>🎁 Total Commission Earned</b><br><small>From Referrals &amp; Team (cumulative total)</small></div>
+                    <div><b>🎁 Total Commission Earned</b><br><small>Tap to view complete history</small></div>
                     <div style="text-align:right;">
                         <b style="color:green;">+${esc(convertMoney(totalCommissionEarned))}</b><br>
                         <span class="pill">completed</span>
@@ -3453,9 +3453,19 @@ async function loadMyWallet() {
             </div>`;
             $('walletTransactions').innerHTML = totalCommCard + $('walletTransactions').innerHTML;
 
-            // صرف اسکرین پر دکھایا جانے والا بیلنس؛ اصل checkout/payment validation database سے ہوگا
+            // صرف اسکرین پر دکھایا جانے والا بیلنس؛ ڈیٹابیس اور ادائیگی کی اصل تصدیق تبدیل نہیں ہوتی
             $('walletBalance').textContent = convertMoney(finalBalance);
             if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(finalBalance);
+        } else if (totalCommissionEarned > 0) {
+            // اگر کمیشن ٹرانزیکشنز پہلے سے موجود ہوں تب بھی تفصیلی ہسٹری کھولنے کا راستہ دکھائیں
+            const totalCommCard = `
+            <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <div><b>🎁 Total Commission Earned</b><br><small>Tap to view complete history</small></div>
+                    <div style="text-align:right;"><b style="color:green;">+${esc(convertMoney(totalCommissionEarned))}</b><br><span class="pill">completed</span></div>
+                </div>
+            </div>`;
+            $('walletTransactions').innerHTML = totalCommCard + $('walletTransactions').innerHTML;
         }
     }
     $('walletStatus').classList.add('hidden');
@@ -4781,6 +4791,121 @@ async function openNetworkWalletHistory() {
         await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load network history.', background: '#0d1c14', color: '#e5b853' });
     }
 }
+
+// ==========================================
+// MEMBER COMMISSION DETAILS
+// ==========================================
+async function openCommissionDetailsModal() {
+    if (!user || !sb) return alert('Please sign in first.');
+
+    Swal.fire({
+        title: 'Loading Commission Details...',
+        allowOutsideClick: false,
+        background: '#0d1c14',
+        color: '#e5b853',
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const { data: comms, error } = await sb.from('commission_logs')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+
+        if (!comms || comms.length === 0) {
+            return Swal.fire({
+                icon: 'info',
+                title: 'No Commission History',
+                text: 'There are no commission records found for your account yet.',
+                background: '#0d1c14',
+                color: '#e5b853'
+            });
+        }
+
+        const orderIds = [...new Set(comms.map(c => c.order_id).filter(Boolean))];
+        const ordersMap = {};
+        if (orderIds.length > 0) {
+            const { data: orders, error: ordersError } = await sb.from('orders')
+                .select('id, buyer_id').in('id', orderIds);
+            if (ordersError) throw ordersError;
+            (orders || []).forEach(o => { ordersMap[o.id] = o; });
+        }
+
+        const buyerIds = [...new Set(Object.values(ordersMap).map(o => o.buyer_id).filter(Boolean))];
+        const profilesMap = {};
+        if (buyerIds.length > 0) {
+            const { data: profiles, error: profilesError } = await sb.from('profiles')
+                .select('id, full_name, member_code').in('id', buyerIds);
+            if (profilesError) throw profilesError;
+            (profiles || []).forEach(p => { profilesMap[p.id] = p; });
+        }
+
+        let totalEarned = 0;
+        let historyHtml = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+        comms.forEach(c => {
+            const commAmount = Number(c.commission_amount || 0);
+            totalEarned += commAmount;
+
+            const commissionType = String(c.type || '').trim().toLowerCase();
+            const rankNamesByLevel = { 1: 'Direct', 2: 'Silver', 3: 'Gold', 4: 'Platinum', 5: 'Diamond', 6: 'Crown Diamond' };
+            const rankNamesByType = {
+                direct: 'Direct Referral', silver: 'Silver', gold: 'Gold', platinum: 'Platinum',
+                diamond: 'Diamond', crown: 'Crown Diamond', 'crown diamond': 'Crown Diamond', crown_diamond: 'Crown Diamond'
+            };
+            const rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank Commission';
+            const order = ordersMap[c.order_id] || {};
+            const buyerProfile = profilesMap[order.buyer_id] || {};
+            const buyerName = buyerProfile.full_name || 'Unknown Member';
+            const buyerCode = buyerProfile.member_code || 'N/A';
+
+            let percentText = '';
+            const orderAmount = Number(c.order_amount || 0);
+            if (orderAmount > 0) percentText = `(${(commAmount / orderAmount * 100).toFixed(2)}%)`;
+
+            let dateTimeText = '—';
+            if (c.created_at) {
+                dateTimeText = new Date(c.created_at).toLocaleString('en-GB', {
+                    timeZone: 'Asia/Karachi', day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                });
+            }
+
+            historyHtml += `
+            <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                    <b style="color:#e5b853;font-size:14px;">${esc(rankName)} Commission ${esc(percentText)}</b>
+                    <b style="color:#4CAF50;font-size:15px;white-space:nowrap;">+${esc(convertMoney(commAmount))}</b>
+                </div>
+                <div style="font-size:12px;color:#aaa;line-height:1.6;">
+                    <b>From Member:</b> ${esc(buyerName)} <span style="color:#666;">(ID: ${esc(buyerCode)})</span><br>
+                    <b>Order ID:</b> #${esc(String(c.order_id || '').slice(-6))}<br>
+                    <b>Date &amp; Time:</b> <span style="color:#fff;">${esc(dateTimeText)}</span>
+                </div>
+            </div>`;
+        });
+        historyHtml += '</div>';
+
+        const totalHtml = `
+        <div style="background:var(--g);color:#fff;padding:15px;border-radius:12px;text-align:center;margin-bottom:15px;border:1px solid var(--gold);">
+            <p style="margin:0;font-size:13px;color:#d9e9e1;">Total Commission Earned (Logged)</p>
+            <h2 style="margin:5px 0 0;font-size:28px;color:var(--gold);">${esc(convertMoney(totalEarned))}</h2>
+        </div>`;
+
+        await Swal.fire({
+            title: 'Commission Details', html: totalHtml + historyHtml,
+            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853',
+            confirmButtonText: 'Close', width: '650px'
+        });
+    } catch (e) {
+        console.error(e);
+        await Swal.fire({
+            icon: 'error', title: 'Error', text: e.message || 'Could not load commission details.',
+            background: '#0d1c14', color: '#e5b853'
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>

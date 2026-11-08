@@ -4463,7 +4463,7 @@ async function insertDemoProducts() {
 
     const confirmResult = await Swal.fire({
         title: 'Insert Demo Products?',
-        text: "یہ 6 کیٹیگریز میں پروڈکٹس (6 Active, Baqi Sold Out) ویب سائٹ پر ڈال دے گا۔",
+        text: "یہ 6 کیٹیگریز کے 48 پروڈکٹس شامل کرے گا۔ صرف $150 سے $200 (USD) قیمت والے پروڈکٹس Active ہوں گے، باقی تمام Sold Out رہیں گے۔",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#2196F3',
@@ -4541,12 +4541,14 @@ async function insertDemoProducts() {
             const p = demoProducts[i];
             const { error } = await sb.from('products').insert({
                 name: p.name,
-                price_pkr: p.price_pkr,
+                // Demo prices are authored in USD; the database stores the PKR base amount.
+                price_pkr: Math.round(Number(p.price_pkr) * (Number(exchangeRates.PKR) || 278) * 100) / 100,
                 commission_percent: 10,
                 description: "High quality premium product from GM Network.",
                 image_url: p.image_url,
                 images: [p.image_url],
-                active: p.active,
+                // Keep only products priced from $150 through $200 USD available for sale.
+                active: Number(p.price_pkr) >= 150 && Number(p.price_pkr) <= 200,
                 base_rating: 4.5 + (Math.random() * 0.5),
                 base_reviews_count: Math.floor(Math.random() * 100) + 10
             });

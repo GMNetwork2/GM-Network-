@@ -4673,9 +4673,17 @@ async function openNetworkWalletHistory() {
             .limit(30);
         if (ordersError) throw ordersError;
 
+        // 3. تمام ممبرز کا ڈیٹا ایک ساتھ حاصل کریں (تاکہ نام اور آئی ڈی غائب نہ ہو)
+        const allUserIds = [...new Set(orders.flatMap(o => [o.buyer_id, o.referrer_id]).filter(Boolean))];
+        const allProfilesMap = {};
+        if (allUserIds.length) {
+            const { data: allProfiles } = await sb.from('profiles').select('id, full_name, member_code, referred_by').in('id', allUserIds);
+            (allProfiles || []).forEach(p => { allProfilesMap[p.id] = p; });
+        }
+
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
 
-        // Header
+        // ہیڈر
         html += `
         <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;border:1px solid var(--gold);">
             <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
@@ -4689,20 +4697,6 @@ async function openNetworkWalletHistory() {
         if (!orders || orders.length === 0) {
             html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
         } else {
-            const buyerIds = [...new Set(orders.map(o => o.buyer_id).filter(Boolean))];
-            const buyerProfilesMap = {};
-            if (buyerIds.length) {
-                const { data: buyers } = await sb.from('profiles').select('id, full_name, member_code, referred_by').in('id', buyerIds);
-                (buyers || []).forEach(p => { buyerProfilesMap[p.id] = p; });
-            }
-
-            const allUserIds = [...new Set(orders.flatMap(o => [o.buyer_id, o.referrer_id]).filter(Boolean))];
-            const allProfilesMap = {};
-            if (allUserIds.length) {
-                 const { data: allProfiles } = await sb.from('profiles').select('id, full_name, member_code').in('id', allUserIds);
-                 (allProfiles || []).forEach(p => { allProfilesMap[p.id] = p; });
-            }
-
             for (const order of orders) {
                 const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
                 totalNetworkSale += orderTotal;

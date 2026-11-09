@@ -2454,7 +2454,7 @@ async function loadAdmin() {
     const [m, p, o, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
         sb.from('products').select('*').order('created_at', { ascending: false }),
-        sb.from('orders').select('*, products(name, images, image_url)').order('created_at', { ascending: false }).limit(20),
+        sb.from('orders').select('*').order('created_at', { ascending: false }).limit(20),
         sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10),
         sb.from('product_reviews').select('*, products(name)').eq('is_approved', false).order('created_at', { ascending: false })
     ]);
@@ -2464,6 +2464,12 @@ async function loadAdmin() {
     if($('ao')) $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
 
     if($('adminOrders')) {
+        const adminBuyerIds = [...new Set((o.data || []).map(x => x.buyer_id).filter(Boolean))];
+        const adminBuyerNames = {};
+        if (adminBuyerIds.length) {
+            const { data: adminBuyerProfiles, error: adminBuyerProfilesError } = await sb.from('profiles').select('id, full_name').in('id', adminBuyerIds);
+            if (!adminBuyerProfilesError && adminBuyerProfiles) adminBuyerProfiles.forEach(profile => { adminBuyerNames[profile.id] = profile.full_name; });
+        }
         $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => {
             const date = x.created_at ? new Date(x.created_at).toLocaleString('en-GB') : '—';
             const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()}`;
@@ -2473,7 +2479,7 @@ async function loadAdmin() {
                     <span class="pill">${esc(x.status || 'pending')}</span>
                 </div>
                 <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
-                    <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(x.profiles?.full_name || 'Loading...')}</span><br>
+                    <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(adminBuyerNames[x.buyer_id] || 'Unknown Buyer')}</span><br>
                     <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
                     <b>Amount:</b> ${convertMoney(x.total_usd ?? (Number(x.unit_price_usd || 0) * Number(x.quantity || 1)))}<br>
                     <b>Date:</b> ${esc(date)}
@@ -2484,11 +2490,17 @@ async function loadAdmin() {
         $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
             const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
             if (order) {
-                el.onclick = function(e) {
+                el.onclick = async function(e) {
                     e.preventDefault();
-                    const prodName = order.products?.name || 'Unknown Product';
-                    const prodImg = order.products?.images?.[0] || order.products?.image_url || 'https://placehold.co/100x100?text=Product';
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg);
+                    // orders query no longer embeds products; find the product from the products query result
+                    const orderProduct = (p.data || []).find(product => String(product.id) === String(order.product_id));
+                    const prodName = orderProduct?.name || 'Unknown Product';
+                    const prodImg = orderProduct?.images?.[0] || orderProduct?.image_url || 'https://placehold.co/100x100?text=Product';
+                    // خریدار کا نام نکالیں
+                    let buyerName = 'Unknown Buyer';
+                    const { data: bName } = await sb.rpc('get_order_buyer_name', { p_order_id: order.id });
+                    if (bName) buyerName = bName;
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, buyerName + ' • ' + prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg);
                 };
             }
         });

@@ -350,8 +350,6 @@ input[type="file"]::file-selector-button:hover {
     </nav>
 </aside>  
 <main>
-<div class="currency-selector"><span class="muted">Currency:</span><select id="currencySelect" onchange="changeCurrency(this.value)"><option value="USD">USD ($)</option><option value="PKR">PKR (₨)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select><span id="currencyRateInfo" class="muted" style="font-size:11px"></span></div>
-
 <section id="about" class="view hidden"><div class="panel"><h2>About GM Network</h2><p class="muted section-note">GM Network is a referral-based product sales platform. You can buy products, refer friends, and earn commissions. Your level increases as you earn more coins.</p><h3>How It Works</h3><p class="muted section-note">1. Sign up using a friend's referral code.<br>2. Buy products to unlock your own referral code.<br>3. Share your code with friends and earn commissions when they buy.</p><h3>Levels &amp; Rewards</h3><p class="muted section-note">🥉 Bronze: 0 - 2,999 Coins<br>🥈 Silver: 3,000 - 11,999 Coins<br>🥇 Gold: 12,000 - 49,999 Coins<br>💎 Platinum: 50,000 - 199,999 Coins<br>👑 Diamond: 200,000 - 999,999 Coins<br>💠 Crown Diamond: 1,000,000+ Coins</p><p class="muted section-note">Each level unlocks new rewards and higher commissions.</p></div></section>
 
 <section id="home" class="view">
@@ -714,8 +712,8 @@ input[type="file"]::file-selector-button:hover {
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
         <h2>Finance &amp; Wallets</h2>
         <h3>🚚 Delivery Charges</h3>
-        <p class="muted" style="font-size:13px;">Set one fixed delivery fee for all member orders. Enter the amount in Pakistani Rupees (PKR). Set 0 for free delivery.</p>
-        <label for="adminDeliveryCharge">Delivery fee (PKR)</label>
+        <p class="muted" style="font-size:13px;">Set one fixed delivery fee for all member orders. Enter the delivery fee in USD. Set 0 for free delivery.</p>
+        <label for="adminDeliveryCharge">Delivery fee (USD)</label>
         <input id="adminDeliveryCharge" type="number" min="0" step="1" placeholder="e.g. 200">
         <button class="primary" type="button" onclick="saveDeliveryCharge()">Save Delivery Charges</button>
         <div id="deliveryChargeAdminStatus" class="status hidden"></div>
@@ -1038,10 +1036,8 @@ let myProfile = null;
 let totalComm = 0;
 let currentOrderId = null;
 let checkoutData = null;
-let deliveryChargePkr = 200;
+let deliveryChargeUsd = 0;
 let deliveryChargeLoaded = false;
-let exchangeRates = { USD: 1, PKR: 278, INR: 83, EUR: 0.92, GBP: 0.79 };
-let currentCurrency = 'USD';
 
 const $ = id => document.getElementById(id);
 
@@ -1106,32 +1102,7 @@ function esc(v) {
 }
 
 function convertMoney(usdAmount) {
-    const rate = exchangeRates[currentCurrency] || 1;
-    const converted = Number(usdAmount) * rate;
-    if (currentCurrency === 'PKR') return 'Rs. ' + converted.toLocaleString('en-PK', { maximumFractionDigits: 0 });
-    if (currentCurrency === 'INR') return '₹ ' + converted.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-    if (currentCurrency === 'EUR') return '€' + converted.toLocaleString('de-DE', { maximumFractionDigits: 2 });
-    if (currentCurrency === 'GBP') return '£' + converted.toLocaleString('en-GB', { maximumFractionDigits: 2 });
-    return '$' + converted.toLocaleString('en-US', { maximumFractionDigits: 2 });
-}
-
-async function fetchExchangeRates() {
-    try {
-        const res = await fetch('https://open.er-api.com/v6/latest/USD');
-        const data = await res.json();
-        if (data.result === 'success' && data.rates) {
-            for (const c of ['PKR', 'INR', 'EUR', 'GBP']) exchangeRates[c] = data.rates[c];
-            $('currencyRateInfo').textContent = 'Rates By Exchange Rate API';
-        }
-    } catch (e) {
-        console.warn('Rate fetch failed:', e);
-    }
-}
-
-function changeCurrency(curr) {
-    currentCurrency = curr;
-    loadProducts();
-    if (myProfile) loadProfile();
+    return '$' + Number(usdAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function tab(id, skipHistory = false) {
@@ -1214,7 +1185,6 @@ async function init() {
         status('connection', 'Could not load Supabase. Check your internet connection.', 'error');
         return;
     }
-    await fetchExchangeRates();
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     await checkSystemLockStatus();
 
@@ -1568,7 +1538,7 @@ async function loadProfile() {
         return rows;
     };
     try {
-        const selfOrders = await fetchAllRows('orders', 'unit_price_pkr, quantity', q => q.eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']));
+        const selfOrders = await fetchAllRows('orders', 'unit_price_usd, quantity', q => q.eq('buyer_id', user.id).in('status', ['confirmed', 'delivered']));
         const descendants = new Set();
         let frontier = [user.id];
         while (frontier.length) {
@@ -1589,7 +1559,7 @@ async function loadProfile() {
         const descendantIds = Array.from(descendants);
         for (let i = 0; i < descendantIds.length; i += 100) {
             const chunk = descendantIds.slice(i, i + 100);
-            const rows = await fetchAllRows('orders', 'unit_price_pkr, quantity', q => q.in('buyer_id', chunk).in('status', ['confirmed', 'delivered']));
+            const rows = await fetchAllRows('orders', 'unit_price_usd, quantity', q => q.in('buyer_id', chunk).in('status', ['confirmed', 'delivered']));
             teamOrders.push(...rows);
         }
         const quantityOf = o => Math.max(1, Number(o.quantity) || 1);
@@ -1679,7 +1649,7 @@ async function loadMyAccountPage() {
             const productName = o.products?.name || 'Unknown Product';
             return `<div class="item" style="flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
           <div style="display:flex;justify-content:space-between;width:100%;"><b>Order …${esc(String(o.id || '').slice(-4))}</b><span class="pill">${esc(o.status || 'unknown')}</span></div>
-          <div style="font-size:13px;color:var(--muted);width:100%;"><b>Product:</b> ${esc(productName)}<br><b>Amount:</b> ${convertMoney(o.unit_price_pkr)}<br><b>Date:</b> ${date}<br></div>
+          <div style="font-size:13px;color:var(--muted);width:100%;"><b>Product:</b> ${esc(productName)}<br><b>Amount:</b> ${convertMoney(o.unit_price_usd)}<br><b>Date:</b> ${date}<br></div>
           ${o.status === 'confirmed' ? `<button class="primary small-btn" data-mark-delivered="${esc(o.id)}" style="margin-top:5px;">I Received My Order</button>` : ''}
         </div>`;
         }).join('') || '<p class="muted">No transactions yet.</p>';
@@ -1764,11 +1734,13 @@ async function copyRefCode() {
     }
 }
 
-function openWithdraw() {
+async function openWithdraw() {
     if (!user || !sb) return alert('Please sign in first.');
     $('wdAmount').value = '';
     $('wdAccount').value = myProfile?.account_details || '';
-    status('wdStatus', 'Available commission: ' + convertMoney(totalComm));
+    const { data: wallet, error } = await sb.from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+    if (error) return status('wdStatus', 'Could not check wallet balance: ' + error.message, 'error');
+    status('wdStatus', 'Available withdrawable wallet balance: ' + convertMoney(wallet?.balance || 0));
     $('withdrawModal').classList.remove('hidden');
 }
 
@@ -1777,7 +1749,9 @@ async function submitWithdraw() {
     const amount = Number($('wdAmount').value);
     const accountDetails = $('wdAccount').value.trim();
     if (!Number.isFinite(amount) || amount < 10) return status('wdStatus', 'Minimum withdrawal is $10.', 'error');
-    if (amount > Number(totalComm || 0)) return status('wdStatus', 'Insufficient available commission.', 'error');
+    const { data: availableWallet, error: availableWalletError } = await sb.from('wallets').select('balance').eq('user_id', user.id).maybeSingle();
+    if (availableWalletError) return status('wdStatus', 'Could not verify wallet balance: ' + availableWalletError.message, 'error');
+    if (amount > Number(availableWallet?.balance || 0)) return status('wdStatus', 'Insufficient withdrawable wallet balance.', 'error');
     if (!accountDetails) return status('wdStatus', 'Enter your bank or wallet account details.', 'error');
 
     const btn = $('withdrawModal').querySelector('button.primary');
@@ -1890,14 +1864,14 @@ function renderProductCards(productsToRender, container) {
         const finalReviewsCount = baseReviews + approved.count;
         let priceHtml = '';
         if (p.discount_percent && Number(p.discount_percent) > 0) {
-            const originalPrice = Number(p.price_pkr);
+            const originalPrice = Number(p.price_usd);
             const discountedPrice = originalPrice - (originalPrice * (Number(p.discount_percent) / 100));
             priceHtml = `<div class="price" style="display:flex; flex-direction:column; gap:2px;">
                             <span style="text-decoration:line-through; color:#888; font-size:12px;">${convertMoney(originalPrice)}</span>
                             <span style="color:#4CAF50; font-weight:bold; font-size:16px;">${convertMoney(discountedPrice)}</span>
                          </div>`;
         } else {
-            priceHtml = `<div class="price">${convertMoney(p.price_pkr)}</div>`;
+            priceHtml = `<div class="price">${convertMoney(p.price_usd)}</div>`;
         }
         const fullStars = Math.floor(finalRating);
         const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
@@ -2068,10 +2042,10 @@ async function submitOrder() {
     if (!name || !phone || !address) return alert('Please fill in all fields.');
     status('orderStatus', 'Placing order…');
     
-    const orderPayload = { buyer_id: user.id, buyer_email: user.email || null, product_id: currentProduct.id, quantity: 1, unit_price_pkr: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null };
+    const orderPayload = { buyer_id: user.id, buyer_email: user.email || null, product_id: currentProduct.id, quantity: 1, unit_price_usd: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null };
     let result = await sb.from('orders').insert(orderPayload).select('id').single();
     if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
-        result = await sb.from('orders').insert({ buyer_id: user.id, product_id: currentProduct.id, quantity: 1, unit_price_pkr: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null }).select('id').single();
+        result = await sb.from('orders').insert({ buyer_id: user.id, product_id: currentProduct.id, quantity: 1, unit_price_usd: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null }).select('id').single();
     }
     
     const { data: order, error } = result;
@@ -2317,7 +2291,7 @@ function openAdminSection(sectionId) {
 
 async function loadDeliveryCharge(forAdmin = false) {
     if (!sb) return false;
-    const { data, error } = await sb.from('site_settings').select('setting_value').eq('setting_key', 'delivery_charge_pkr').maybeSingle();
+    const { data, error } = await sb.from('site_settings').select('setting_value').eq('setting_key', 'delivery_charge_usd').maybeSingle();
     if (error || !data) {
         deliveryChargeLoaded = false;
         if (forAdmin && $('deliveryChargeAdminStatus')) status('deliveryChargeAdminStatus', 'Settings not found. Run the SQL setup shown below, then reload.', 'error');
@@ -2325,7 +2299,7 @@ async function loadDeliveryCharge(forAdmin = false) {
     }
     const amount = Number(data.setting_value);
     if (!Number.isFinite(amount) || amount < 0) return false;
-    deliveryChargePkr = amount;
+    deliveryChargeUsd = amount;
     deliveryChargeLoaded = true;
     if ($('adminDeliveryCharge')) $('adminDeliveryCharge').value = String(amount);
     refreshCheckoutTotals();
@@ -2337,17 +2311,17 @@ async function saveDeliveryCharge() {
     const input = $('adminDeliveryCharge');
     const amount = Number(input?.value);
     if (!Number.isFinite(amount) || amount < 0) return status('deliveryChargeAdminStatus', 'Enter a valid amount (0 or more).', 'error');
-    const { error } = await sb.from('site_settings').upsert({ setting_key: 'delivery_charge_pkr', setting_value: amount, updated_at: new Date().toISOString() }, { onConflict: 'setting_key' });
+    const { error } = await sb.from('site_settings').upsert({ setting_key: 'delivery_charge_usd', setting_value: amount, updated_at: new Date().toISOString() }, { onConflict: 'setting_key' });
     if (error) return status('deliveryChargeAdminStatus', 'Could not save: ' + error.message, 'error');
-    deliveryChargePkr = amount;
+    deliveryChargeUsd = amount;
     deliveryChargeLoaded = true;
     refreshCheckoutTotals();
-    status('deliveryChargeAdminStatus', amount === 0 ? 'Free delivery saved successfully.' : 'Delivery fee saved: Rs. ' + amount.toLocaleString('en-PK'), 'ok');
+    status('deliveryChargeAdminStatus', amount === 0 ? 'Free delivery saved successfully.' : 'Delivery fee saved: ' + convertMoney(amount), 'ok');
 }
 
 function getDeliveryChargeBase() {
-    const pkrRate = Number(exchangeRates?.PKR || 0);
-    return pkrRate > 0 ? Number(deliveryChargePkr || 0) / pkrRate : 0;
+    // All checkout/order totals use USD.
+    return Number(deliveryChargeUsd || 0);
 }
 
 function refreshCheckoutTotals() {
@@ -2359,7 +2333,7 @@ function refreshCheckoutTotals() {
     if ($('coSubtotal')) $('coSubtotal').textContent = convertMoney(subtotal);
     if ($('coDeliveryCharge')) $('coDeliveryCharge').textContent = convertMoney(delivery);
     if ($('coGrandTotal')) $('coGrandTotal').textContent = convertMoney(total);
-    if ($('coDeliveryNote')) $('coDeliveryNote').textContent = deliveryChargePkr === 0 ? 'Free delivery' : 'Fixed delivery fee: Rs. ' + Number(deliveryChargePkr).toLocaleString('en-PK') + ' PKR';
+    if ($('coDeliveryNote')) $('coDeliveryNote').textContent = deliveryChargeUsd === 0 ? 'Free delivery' : 'Fixed delivery fee: ' + convertMoney(deliveryChargeUsd) + ' USD';
 }
 
 // ==========================================
@@ -2471,7 +2445,7 @@ async function loadAdmin() {
                 </div>
                 <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
                     <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
-                    <b>Amount:</b> ${convertMoney(x.total_amount ?? (Number(x.unit_price_pkr || 0) * Number(x.quantity || 1)))}<br>
+                    <b>Amount:</b> ${convertMoney(x.total_usd ?? (Number(x.unit_price_usd || 0) * Number(x.quantity || 1)))}<br>
                     <b>Date:</b> ${esc(date)}
                 </div>
             </div>`;
@@ -2482,7 +2456,7 @@ async function loadAdmin() {
             if (order) {
                 el.onclick = function(e) {
                     e.preventDefault();
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_pkr, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_amount, order.delivery_charge_pkr, order.delivery_charge_amount, order.total_amount);
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, 'Order ID: ' + String(order.id).slice(-6), order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd);
                 };
             }
         });
@@ -2558,7 +2532,7 @@ async function loadAdmin() {
                         <img src="${esc(imgUrl)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--line);">
                         <div style="min-width:0;overflow-wrap:anywhere;">
                             <b>${esc(x.name || 'Product')}</b><br>
-                            <small class="muted">${convertMoney(x.price_pkr)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small>
+                            <small class="muted">${convertMoney(x.price_usd)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small>
                         </div>
                     </div>
                     <div class="row-actions" style="display:flex; flex-direction:column; gap:5px;">
@@ -2624,30 +2598,25 @@ async function searchAdminMember() {
     $('adminSearchResult').innerHTML = data.map(x => `<div class="item"><div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points || 0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission || 0)}</b></small></div><div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points || 0})">Edit Coins/Comm</button></div></div>`).join('');
 }
 
-// Admin member password reset
+// Admin-triggered secure password reset: send the member a Supabase recovery email.
+// Admin clients never receive or set another member's password directly.
 async function adminResetMemberPassword(userId) {
-    if (!isAdmin) return alert('Admin access required.');
-
-    const newPassword = prompt('Enter NEW PASSWORD for this member (at least 6 characters):');
-    if (newPassword === null) return;
-    if (newPassword.length < 6) return alert('Password must be at least 6 characters long.');
-
-    alert('Changing password, please wait...');
-
+    if (!isAdmin || !sb) return alert('Admin access required.');
+    const approved = window.Swal
+        ? (await Swal.fire({ title: 'Send Password Reset Email?', text: 'The member will receive a secure password-reset link at their registered email address.', icon: 'question', showCancelButton: true, confirmButtonText: 'Send Reset Email', cancelButtonText: 'Cancel', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' })).isConfirmed
+        : confirm('Send a secure password reset email to this member?');
+    if (!approved) return;
     try {
-        // Password changes must be authorized and executed securely by the backend RPC.
-        const { error } = await sb.rpc('admin_change_user_password', {
-            target_user_id: userId,
-            new_password: newPassword
-        });
-
-        if (error) {
-            alert('Standard reset failed. Error: ' + error.message);
-        } else {
-            alert('Password updated successfully! Member can now login with the new password.');
-        }
+        const { data: memberEmail, error: emailError } = await sb.rpc('admin_get_member_email', { target_user_id: userId });
+        if (emailError) throw emailError;
+        if (!memberEmail) throw new Error('No registered email address was found for this member.');
+        const { error: resetError } = await sb.auth.resetPasswordForEmail(memberEmail);
+        if (resetError) throw resetError;
+        if (window.Swal) await Swal.fire({ icon: 'success', title: 'Reset Email Sent', text: 'A secure password-reset link has been sent to the member.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        else alert('A secure password-reset email has been sent to the member.');
     } catch (err) {
-        alert('Error: ' + err.message);
+        if (window.Swal) await Swal.fire({ icon: 'error', title: 'Reset Failed', text: err.message || String(err), background: '#0d1c14', color: '#e5b853' });
+        else alert('Reset failed: ' + (err.message || String(err)));
     }
 }
 
@@ -2675,9 +2644,9 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryPkr = null, savedDeliveryAmount = null, savedGrandTotal = null) {
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null) {
     $('orderDetailName').textContent = name || ('Order …' + String(id).slice(-6));
-    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(savedGrandTotal ?? (Number(price || 0) * orderQty + Number(savedDeliveryAmount || 0))); $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')' + (savedDeliveryPkr !== null && savedDeliveryPkr !== undefined ? ' • Delivery: Rs. ' + Number(savedDeliveryPkr).toLocaleString('en-PK') : '');
+    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(savedGrandTotal ?? (Number(price || 0) * orderQty + Number(savedDeliveryAmount || 0))); $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')' + (savedDeliveryUsd !== null && savedDeliveryUsd !== undefined ? ' • Delivery: ' + convertMoney(savedDeliveryUsd) : '');
     $('orderDetailStatus').textContent = String(orderStatus || 'unknown').toUpperCase(); $('orderDetailUserId').textContent = buyerId ? '...' + String(buyerId).slice(-8) : '—'; $('orderDetailMemberCode').textContent = 'Loading…';
     
     if (buyerId) {
@@ -2691,6 +2660,21 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
     else proofBox.innerHTML = `<div class="item"><span>Payment Proof</span><b class="muted">Not uploaded</b></div>`;
     
     if (isAdmin) { const changeBox = document.createElement('div'); changeBox.className = 'item'; changeBox.innerHTML = `<span>Change Proof</span><input type="file" id="adminProofUpload" accept="image/*" style="width:auto;"><button class="primary small-btn" onclick="adminChangeProof('${esc(id)}')">Upload</button>`; proofBox.append(changeBox); }
+
+    const historyBox = document.createElement('div');
+    historyBox.style.cssText = 'margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card-bg);';
+    historyBox.innerHTML = '<b style="color:var(--gold)">Order & Reward History</b><div class="muted" style="padding:8px 0">Loading history…</div>';
+    proofBox.append(historyBox);
+    try {
+        const { data: historyRows, error: historyError } = await sb.from('gm_order_status_history')
+            .select('previous_status,new_status,event_type,settlement_cycle,description,created_at')
+            .eq('order_id', id).order('created_at', { ascending:false }).limit(30);
+        if (historyError) throw historyError;
+        historyBox.innerHTML = '<b style="color:var(--gold)">Order & Reward History</b>' +
+            ((historyRows || []).length ? historyRows.map(row => `<div style="border-top:1px solid var(--line);padding:8px 0;font-size:12px"><b>${esc(String(row.new_status || row.event_type || '').toUpperCase())}</b> · ${esc(row.description || '')}<br><span class="muted">${esc(row.created_at ? new Date(row.created_at).toLocaleString() : '')} · Cycle ${Number(row.settlement_cycle || 0)}</span></div>`).join('') : '<div class="muted" style="padding:8px 0">No status history available.</div>');
+    } catch (historyErr) {
+        historyBox.innerHTML = '<b style="color:var(--gold)">Order & Reward History</b><div class="muted" style="padding:8px 0">History will appear after the database SQL update is installed.</div>';
+    }
 
     const actionDiv = $('orderActionButtons'); actionDiv.innerHTML = '';
     if (!isAdmin) {
@@ -2731,87 +2715,72 @@ async function adminChangeProof(orderId) {
     if (updateError) return alert('Database update failed: ' + updateError.message);
     alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
 }  
-// Server-side atomic order rewards. Requires gm_network_rank_rewards.sql to be run in Supabase.
+// Server-side USD order settlement. Run GM_Network_USD_Migration.sql in Supabase first.
 async function processOrderRewards(orderId, reverse = false) {
     if (!sb) throw new Error('Database connection is unavailable.');
     if (!reverse && await checkSystemLockStatus()) throw new Error('System is LOCKED. New rewards are paused.');
-    const { data, error } = await sb.rpc('gm_process_order_rewards', {
+    const { data, error } = await sb.rpc('gm_settle_order_usd', {
         p_order_id: orderId,
         p_reverse: Boolean(reverse)
     });
-    if (error) throw new Error('Secure reward RPC failed: ' + error.message + '. Run gm_network_rank_rewards.sql in Supabase first.');
+    if (error) throw new Error('Secure reward RPC failed: ' + error.message + '. Run GM_Network_USD_Migration.sql in Supabase first.');
     return data;
 }
 
 // 🚨 یہاں آپ کا کمیشن سسٹم بالکل محفوظ ہے 🚨
 async function updateOrderStatus(orderId, newStatus) {
-    if (!isAdmin) return alert('Admin access required.');
+    if (!isAdmin || !sb) return alert('Admin access required.');
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
-    if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
-    newStatus = String(newStatus).toLowerCase();
+    newStatus = String(newStatus || '').toLowerCase();
+    if (!allowedStatuses.includes(newStatus)) return alert('Invalid order status.');
     if (newStatus === 'confirmed' && await checkSystemLockStatus()) {
         return alert('سسٹم ایمرجنسی لاک ہے۔ نئے آرڈرز کی تصدیق فی الحال بند ہے۔ ریفنڈ یا کینسل کی کارروائی جاری رہ سکتی ہے۔');
     }
-
-    if (window.Swal) {
-        const confirmResult = await window.Swal.fire({
-            title: 'Order Status Change',
-            text: 'Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e5b853',
-            cancelButtonColor: '#4a1a1a',
-            confirmButtonText: 'Yes, change it',
-            cancelButtonText: 'Cancel',
-            background: '#0d1c14',
-            color: '#e5b853'
-        });
-        if (!confirmResult.isConfirmed) return;
-    } else if (!(await gmConfirm('Are you sure you want to mark this order as ' + newStatus.toUpperCase() + '?', 'Order Status Change'))) {
+    const { data: currentOrder, error: readError } = await sb.from('orders')
+        .select('status,payment_proof,settlement_state,rewards_processed')
+        .eq('id', orderId).single();
+    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
+    const previousStatus = String(currentOrder.status || '').toLowerCase();
+    if (newStatus === 'confirmed' && previousStatus === 'pending' && !currentOrder.payment_proof) {
+        const msg = 'Payment Proof is missing. Please verify the member payment first, then confirm this order.';
+        if (window.Swal) await Swal.fire({ icon:'warning', title:'Payment Not Verified', text:msg, background:'#0d1c14', color:'#e5b853' });
+        else alert(msg);
         return;
     }
-
-    // Read previous status so rewards are only added/reversed on a real transition.
-    const { data: currentOrder, error: readError } = await sb.from('orders')
-        .select('buyer_id, unit_price_pkr, status, quantity').eq('id', orderId).single();
-    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
-
-    const previousStatus = String(currentOrder.status || '').toLowerCase();
     if (previousStatus === newStatus) {
-        if (window.Swal) await window.Swal.fire({ icon: 'info', title: 'No change', text: 'This order already has this status.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        if (window.Swal) await Swal.fire({ icon:'info', title:'No change', text:'This order already has this status.', background:'#0d1c14', color:'#e5b853' });
         else alert('This order already has this status.');
         return;
     }
-
-    const { error: updateError } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
-    if (updateError) return alert('Error updating order: ' + updateError.message);
-
-    let rewardError = null;
-    try {
-        if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
-            // فنکشن کو کال کریں اور چیک کریں کہ وہ واقعی چلا ہے
-            const rewardResult = await processOrderRewards(orderId, false);
-            console.log("Reward Function Result:", rewardResult);
-        } else if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
-            await processOrderRewards(orderId, true);
-        }
-    } catch (err) {
-        console.error("Reward Function Error:", err);
-        rewardError = err;
-    }
-
-    const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
-        ? '. Coins and eligible commissions were reversed.'
-        : newStatus === 'confirmed' ? ' and Coins/eligible commissions were distributed.' : '.');
+    const confirmText = 'Change order from ' + previousStatus.toUpperCase() + ' to ' + newStatus.toUpperCase() +
+        (['cancelled','refunded'].includes(newStatus) && currentOrder.settlement_state === 'settled'
+            ? '? Previously issued Coins and commissions will be returned automatically.'
+            : newStatus === 'confirmed' && currentOrder.settlement_state === 'reversed'
+                ? '? Coins and commissions will be issued again as a new settlement.' : '?');
     if (window.Swal) {
-        await window.Swal.fire({
-            icon: rewardError ? 'warning' : 'success',
-            title: rewardError ? 'Status updated — reward adjustment needs review' : 'Success!',
-            text: rewardError ? 'Order status changed, but a coin/commission adjustment failed: ' + (rewardError.message || rewardError) : successText,
-            background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'OK'
-        });
-    } else alert(rewardError ? 'Order status changed, but a coin/commission adjustment failed: ' + (rewardError.message || rewardError) : successText);
+        const result = await Swal.fire({ title:'Order Status Change', text:confirmText, icon:'warning', showCancelButton:true,
+            confirmButtonText:'Yes, change it', cancelButtonText:'Cancel', confirmButtonColor:'#e5b853', cancelButtonColor:'#4a1a1a',
+            background:'#0d1c14', color:'#e5b853' });
+        if (!result.isConfirmed) return;
+    } else if (!(await gmConfirm(confirmText, 'Order Status Change'))) return;
 
+    const { data, error } = await sb.rpc('gm_admin_update_order_status', {
+        p_order_id: orderId,
+        p_new_status: newStatus
+    });
+    if (error) {
+        const msg = 'Status and financial adjustment were not applied: ' + error.message;
+        if (window.Swal) await Swal.fire({ icon:'error', title:'Update Failed', text:msg, background:'#0d1c14', color:'#e5b853' });
+        else alert(msg);
+        return;
+    }
+    const successText = newStatus === 'confirmed'
+        ? 'Order confirmed. Coins and eligible commissions have been credited for this settlement cycle.'
+        : ['cancelled','refunded'].includes(newStatus)
+            ? 'Order updated. Any active Coins and commissions were returned automatically; the history is preserved.'
+            : 'Order status updated successfully.';
+    if (window.Swal) await Swal.fire({ icon:'success', title:'Success!', text:successText, background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+    else alert(successText);
     closeOrderDetailModal();
     await loadAdmin();
 }
@@ -2856,8 +2825,8 @@ async function markAsDelivered(orderId) {
     closeOrderDetailModal(); await loadMyAccountPage(); if (isAdmin) await loadAdmin();
 }
 
-async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_pkr || 0); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
-async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_pkr: price, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
+async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_usd || 0).toFixed(2); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
+async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); } }
 
@@ -2916,7 +2885,7 @@ async function saveBanners() {
         if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
     } else {
         const { error } = await sb.from('products').insert({
-            name: 'WEBSITE_BANNERS', price_pkr: 0, commission_percent: 0,
+            name: 'WEBSITE_BANNERS', price_usd: 0, commission_percent: 0,
             active: false, images: updatedImages, image_url: updatedImages[0] || null
         });
         if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
@@ -2957,7 +2926,7 @@ async function addOnlineProduct() {
     }
 
     const { error } = await sb.from('products').insert({
-        name, price_pkr: price, commission_percent: rate, discount_percent: discount, images,
+        name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, discount_percent: discount, images,
         image_url: images[0] || null, active: true, description: description || null,
         base_rating: baseRating, base_reviews_count: baseReviewsCount
     });
@@ -3022,7 +2991,7 @@ function openProductView(index) {
     $('pvpName').textContent = p.name || 'Product';
     $('pvpStars').innerHTML = starsHtml;
     $('pvpReviews').textContent = baseReviews + ' Reviews';
-    let finalPrice = Number(p.price_pkr) || 0;
+    let finalPrice = Number(p.price_usd) || 0;
     if (p.discount_percent && Number(p.discount_percent) > 0) {
         finalPrice = finalPrice - (finalPrice * (Number(p.discount_percent) / 100));
     }
@@ -3040,7 +3009,7 @@ function openProductView(index) {
             const card = document.createElement('div');
             card.style.cssText = 'min-width:140px;max-width:140px;flex:0 0 140px;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:#fff;';
             card.setAttribute('role', 'button'); card.setAttribute('tabindex', '0');
-            const relatedOriginalPrice = Number(rp.price_pkr) || 0;
+            const relatedOriginalPrice = Number(rp.price_usd) || 0;
             const relatedFinalPrice = rp.discount_percent && Number(rp.discount_percent) > 0
                 ? relatedOriginalPrice - (relatedOriginalPrice * (Number(rp.discount_percent) / 100))
                 : relatedOriginalPrice;
@@ -3248,13 +3217,14 @@ async function submitCheckout() {
     }
     const productSubtotal = Number(checkoutData.price || 0) * Number(productQty || 1);
     const deliveryChargeBase = getDeliveryChargeBase();
-    const orderTotal = productSubtotal + deliveryChargeBase;
+    const orderTotal = productSubtotal + deliveryChargeBase; // USD
+    const orderTotalUsd = orderTotal;
     let wallet = null;
     if (paymentMethod === 'wallet') {
         const { data, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
         if (error) return alert('Could not check wallet balance: ' + error.message);
         wallet = data;
-        if (!wallet || Number(wallet.balance || 0) < orderTotal) {
+        if (!wallet || Number(wallet.balance || 0) < orderTotalUsd) {
             return alert('Insufficient wallet balance. Please add funds or choose manual payment.');
         }
     }
@@ -3268,11 +3238,10 @@ async function submitCheckout() {
             buyer_email: user.email || null,
             product_id: checkoutData.id,
             quantity: productQty,
-            unit_price_pkr: checkoutData.price,
-            subtotal_amount: productSubtotal,
-            delivery_charge_pkr: Number(deliveryChargePkr || 0),
-            delivery_charge_amount: deliveryChargeBase,
-            total_amount: orderTotal,
+            unit_price_usd: checkoutData.price,
+            subtotal_usd: productSubtotal,
+            delivery_charge_usd: Number(deliveryChargeUsd || 0),
+            total_usd: orderTotal,
             phone_number: phone,
             shipping_address: address,
             status: 'pending',
@@ -3294,7 +3263,7 @@ async function submitCheckout() {
         if (paymentMethod === 'wallet') {
             if (await checkSystemLockStatus()) throw new Error('System is LOCKED. Wallet checkout has been stopped.');
             const oldBalance = Number(wallet.balance || 0);
-            const newBalance = oldBalance - orderTotal;
+            const newBalance = oldBalance - orderTotalUsd;
             const { data: updatedWallet, error: debitError } = await sb.from('wallets')
                 .update({ balance: newBalance }).eq('id', wallet.id).eq('balance', oldBalance).select('balance').maybeSingle();
             
@@ -3309,8 +3278,9 @@ async function submitCheckout() {
             }
             
             const { error: txnError } = await sb.from('wallet_transactions').insert({
-                wallet_id: wallet.id, user_id: user.id, amount: orderTotal,
-                type: 'purchase', status: 'completed', order_id: currentOrderId
+                wallet_id: wallet.id, user_id: user.id, amount: orderTotalUsd,
+                type: 'purchase', status: 'completed', order_id: currentOrderId,
+                balance_before: oldBalance, balance_after: newBalance
             });
             if (txnError) console.error('Wallet transaction log failed:', txnError.message);
             
@@ -3365,108 +3335,34 @@ async function loadMyWallet() {
     if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(currentBalance);
 
     const { data: txns, error: txnError } = await sb.from('wallet_transactions')
-        .select('id,type,amount,status,created_at,admin_notes')
-        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(15);
+        .select('id,type,amount,status,created_at,admin_notes,balance_before,balance_after,order_id')
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(50);
 
     if (txnError) {
         $('walletTransactions').textContent = 'Could not load transactions: ' + txnError.message;
     } else {
-        let currentRunningBalance = Number(wallet?.balance || 0);
         $('walletTransactions').innerHTML = (txns || []).map(t => {
             const type = String(t.type || '').toLowerCase();
-            const isDeposit = type === 'deposit';
-            const isWithdrawal = type === 'withdrawal';
-            const title = isDeposit ? '➕ Deposit' : (isWithdrawal ? '💸 Withdrawal' : (type === 'purchase' ? '➖ Purchase' : 'Transaction'));
-            const positive = isDeposit;
-            const amountColor = positive ? 'green' : 'red';
-            const sign = positive ? '+' : (isWithdrawal || type === 'purchase' ? '-' : '');
-            const amountNum = Number(t.amount || 0);
-            
-            // بیلنس کا حساب (Deposit = پلس، Purchase/Withdrawal = مائنس)
-            let currentBalanceAfterTxn = currentRunningBalance;
-            let previousBalance = currentBalanceAfterTxn;
-
-            if (isDeposit) {
-                previousBalance = currentBalanceAfterTxn - amountNum;
-                currentRunningBalance = previousBalance;
-            } else {
-                previousBalance = currentBalanceAfterTxn + amountNum;
-                currentRunningBalance = previousBalance;
-            }
-
-            return `
-            <div class="item" style="cursor:default; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; width:100%;">
-                    <div><b>${title}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</small></div>
-                    <div style="text-align:right;">
-                        <b style="color:${amountColor};">${sign}${esc(convertMoney(t.amount))}</b><br>
-                        <span class="pill">${esc(t.status || 'pending')}</span>
-                    </div>
+            const isPositive = ['deposit','commission','rank_bonus','admin_credit','commission_reversal_refund'].includes(type);
+            const titleMap = { deposit:'➕ Deposit', withdrawal:'💸 Withdrawal', purchase:'🛒 Purchase', commission:'🎁 Commission', rank_bonus:'🏆 Rank Bonus', commission_reversal:'↩️ Commission Reversal', admin_adjustment:'⚙️ Admin Adjustment' };
+            const title = titleMap[type] || (type ? type.replaceAll('_',' ') : 'Transaction');
+            const amount = Number(t.amount || 0);
+            const signedAmount = ['withdrawal','purchase'].includes(type) ? -Math.abs(amount) : amount;
+            const sign = signedAmount > 0 ? '+' : (signedAmount < 0 ? '−' : '');
+            const before = t.balance_before === null || t.balance_before === undefined ? null : Number(t.balance_before);
+            const after = t.balance_after === null || t.balance_after === undefined ? null : Number(t.balance_after);
+            const balancesHtml = before === null || after === null
+                ? '<span>Previous/New Balance: Historical balance not recorded</span>'
+                : `<span>Previous Bal: ${esc(convertMoney(before))}</span><span style="color:var(--gold);font-weight:bold;">New Bal: ${esc(convertMoney(after))}</span>`;
+            return `<div class="item" style="cursor:default;flex-direction:column;align-items:flex-start;gap:5px;border-bottom:1px solid var(--line);padding-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;width:100%;gap:8px;">
+                    <div><b>${esc(title)}</b><br><small>${t.created_at ? new Date(t.created_at).toLocaleString() : ''}</small>${t.order_id ? `<br><small>Order: ${esc(String(t.order_id).slice(-8))}</small>` : ''}</div>
+                    <div style="text-align:right;"><b style="color:${isPositive ? '#4CAF50' : '#f44336'};">${sign}${esc(convertMoney(Math.abs(signedAmount)))}</b><br><span class="pill">${esc(t.status || 'completed')}</span></div>
                 </div>
-                ${t.admin_notes ? `<div style="width:100%; font-size:12px; color:#e5b853; background:#0a1f15; padding:8px; border-radius:6px; margin-top:5px; border-left:3px solid #e5b853;"><b>Admin Note:</b> ${esc(t.admin_notes)}</div>` : ''}
-                <div style="width:100%; font-size:12px; color:var(--muted); margin-top:5px; border-top:1px dashed #1f3a2c; padding-top:5px; display:flex; justify-content:space-between;">
-                    <span>Previous Bal: ${esc(convertMoney(previousBalance))}</span>
-                    <span style="color:var(--gold); font-weight:bold;">New Bal: ${esc(convertMoney(currentBalanceAfterTxn))}</span>
-                </div>
+                ${t.admin_notes ? `<div style="width:100%;font-size:12px;color:#e5b853;background:#0a1f15;padding:8px;border-radius:6px;margin-top:5px;">${esc(t.admin_notes)}</div>` : ''}
+                <div style="width:100%;font-size:12px;color:var(--muted);margin-top:5px;border-top:1px dashed #1f3a2c;padding-top:5px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">${balancesHtml}</div>
             </div>`;
         }).join('') || '<p>No transactions yet.</p>';
-
-        // کمیشن کی مجموعی رقم اور تفصیلی ہسٹری کا لنک
-        const hasCommissionHistory = (txns || []).some(t => String(t.type || '').toLowerCase().includes('commission'));
-        const totalCommissionEarned = Number(myProfile?.total_commission || 0);
-
-        if (!hasCommissionHistory && totalCommissionEarned > 0) {
-            const currentWalletBal = Number(wallet?.balance || 0);
-            let finalBalance = currentWalletBal;
-
-            // یہ صرف ڈسپلے ایڈجسٹمنٹ ہے؛ ڈیٹابیس کا اصل والٹ بیلنس تبدیل نہیں ہوتا
-            if (currentWalletBal < totalCommissionEarned) {
-                const extraAmount = totalCommissionEarned - currentWalletBal;
-                const commHistory = `
-                <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <div><b>🎁 Commission Balance Adjustment (Display Only)</b><br><small>Tap to view commission details</small></div>
-                        <div style="text-align:right;">
-                            <b style="color:green;">+${esc(convertMoney(extraAmount))}</b><br>
-                            <span class="pill">display only</span>
-                        </div>
-                    </div>
-                    <div style="width:100%; font-size:12px; color:var(--muted); margin-top:5px; border-top:1px dashed #1f3a2c; padding-top:5px; display:flex; justify-content:space-between;">
-                        <span>Previous Bal: ${esc(convertMoney(currentWalletBal))}</span>
-                        <span style="color:var(--gold); font-weight:bold;">Shown Bal: ${esc(convertMoney(totalCommissionEarned))}</span>
-                    </div>
-                </div>`;
-                $('walletTransactions').innerHTML = commHistory + $('walletTransactions').innerHTML;
-                finalBalance = totalCommissionEarned;
-            }
-
-            // مجموعی کمیشن کا کلک ہونے والا کارڈ
-            const totalCommCard = `
-            <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
-                <div style="display:flex; justify-content:space-between; width:100%;">
-                    <div><b>🎁 Total Commission Earned</b><br><small>Tap to view complete history</small></div>
-                    <div style="text-align:right;">
-                        <b style="color:green;">+${esc(convertMoney(totalCommissionEarned))}</b><br>
-                        <span class="pill">completed</span>
-                    </div>
-                </div>
-            </div>`;
-            $('walletTransactions').innerHTML = totalCommCard + $('walletTransactions').innerHTML;
-
-            // صرف اسکرین پر دکھایا جانے والا بیلنس؛ ڈیٹابیس اور ادائیگی کی اصل تصدیق تبدیل نہیں ہوتی
-            $('walletBalance').textContent = convertMoney(finalBalance);
-            if ($('checkoutWalletBal')) $('checkoutWalletBal').textContent = convertMoney(finalBalance);
-        } else if (totalCommissionEarned > 0) {
-            // اگر کمیشن ٹرانزیکشنز پہلے سے موجود ہوں تب بھی تفصیلی ہسٹری کھولنے کا راستہ دکھائیں
-            const totalCommCard = `
-            <div class="item" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:5px; border-bottom:1px solid var(--line); padding-bottom:10px;" onclick="openCommissionDetailsModal()">
-                <div style="display:flex; justify-content:space-between; width:100%;">
-                    <div><b>🎁 Total Commission Earned</b><br><small>Tap to view complete history</small></div>
-                    <div style="text-align:right;"><b style="color:green;">+${esc(convertMoney(totalCommissionEarned))}</b><br><span class="pill">completed</span></div>
-                </div>
-            </div>`;
-            $('walletTransactions').innerHTML = totalCommCard + $('walletTransactions').innerHTML;
-        }
     }
     $('walletStatus').classList.add('hidden');
 }
@@ -3675,7 +3571,7 @@ async function approveWalletDeposit(txnId, userId) {
         if (balanceError) throw balanceError;
         if (!updated) throw new Error('Wallet balance changed concurrently. Refresh and review before retrying.');
         balanceUpdated = true;
-        const { error: completeError } = await sb.from('wallet_transactions').update({status:'completed'}).eq('id',txnId).eq('status','processing');
+        const { error: completeError } = await sb.from('wallet_transactions').update({status:'completed',balance_before:oldBalance,balance_after:oldBalance+amount}).eq('id',txnId).eq('status','processing');
         if (completeError) throw new Error('Wallet was updated but deposit status could not be completed. Check this transaction manually. '+completeError.message);
         claimed = false;
         await Swal.fire({
@@ -3729,9 +3625,10 @@ async function adminDirectAddFunds() {
         const profile=await findAdminWalletMember(memberInput);
         let {data:wallet,error}=await sb.from('wallets').select('id,balance').eq('user_id',profile.id).maybeSingle();
         if(error) throw error;
+        let old=0, next=amount;
         if(!wallet){const r=await sb.from('wallets').insert({user_id:profile.id,balance:amount}).select('id,balance').single();if(r.error)throw r.error;wallet=r.data;}
-        else {const old=Number(wallet.balance||0);const r=await sb.from('wallets').update({balance:old+amount}).eq('id',wallet.id).eq('balance',old).select('id').maybeSingle();if(r.error)throw r.error;if(!r.data)throw new Error('Wallet changed concurrently. Please retry.');}
-        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'deposit',status:'completed'});
+        else {old=Number(wallet.balance||0);next=old+amount;const r=await sb.from('wallets').update({balance:next}).eq('id',wallet.id).eq('balance',old).select('id').maybeSingle();if(r.error)throw r.error;if(!r.data)throw new Error('Wallet changed concurrently. Please retry.');}
+        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'deposit',status:'completed',balance_before:old,balance_after:next});
         if(logError) throw new Error('Balance changed but history could not be saved; do not retry until checked. '+logError.message);
         status('adminAddFundsStatus',`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`,'ok');
         if (window.Swal) Swal.fire({icon:'success',title:'Success!',text:`Successfully added ${convertMoney(amount)} to ${profile.full_name || 'member'}'s wallet.`,background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
@@ -3756,7 +3653,7 @@ async function adminDirectDeductFunds() {
         const {data:updated,error:updateError}=await sb.from('wallets').update({balance:old-amount}).eq('id',wallet.id).eq('balance',old).select('id').maybeSingle();
         if(updateError) throw updateError;
         if(!updated) throw new Error('Wallet balance changed concurrently. Please retry.');
-        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'purchase',status:'completed'});
+        const {error:logError}=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:profile.id,amount,type:'purchase',status:'completed',balance_before:old,balance_after:old-amount});
         if(logError) throw new Error('Funds were deducted but history could not be saved. Check before retrying. '+logError.message);
         status('adminDeductFundsStatus',`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`,'ok');
         if (window.Swal) Swal.fire({icon:'success',title:'Success!',text:`Successfully deducted ${convertMoney(amount)} from ${profile.full_name || 'member'}'s wallet.`,background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
@@ -3888,64 +3785,64 @@ async function insertDemoByCategory(category) {
     if (!isAdmin || !sb) return alert('Admin access required.');
     const demoProductsByCategory = {
         Watches: [
-            { name: "Luxury Gold Watch", price_pkr: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
-            { name: "Classic Silver Watch", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
-            { name: "Smart Watch Pro", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
-            { name: "Leather Strap Watch", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
-            { name: "Rose Gold Ladies Watch", price_pkr: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
-            { name: "Chronograph Watch", price_pkr: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
-            { name: "Sporty Digital Watch", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
-            { name: "Minimalist Watch", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" }
+            { name: "Luxury Gold Watch", price_usd: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
+            { name: "Classic Silver Watch", price_usd: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
+            { name: "Smart Watch Pro", price_usd: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
+            { name: "Leather Strap Watch", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Gold Ladies Watch", price_usd: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
+            { name: "Chronograph Watch", price_usd: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sporty Digital Watch", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
+            { name: "Minimalist Watch", price_usd: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" }
         ],
         Wallets: [
-            { name: "Classic Leather Wallet", price_pkr: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
-            { name: "Brown Bifold Wallet", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
-            { name: "Black RFID Wallet", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-            { name: "Slim Card Holder", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-            { name: "Ladies Zipper Wallet", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
-            { name: "Travel Passport Holder", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-            { name: "Carbon Fiber Wallet", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
-            { name: "Vintage Leather Wallet", price_pkr: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" }
+            { name: "Classic Leather Wallet", price_usd: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+            { name: "Brown Bifold Wallet", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Black RFID Wallet", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Slim Card Holder", price_usd: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ladies Zipper Wallet", price_usd: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
+            { name: "Travel Passport Holder", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+            { name: "Carbon Fiber Wallet", price_usd: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Vintage Leather Wallet", price_usd: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" }
         ],
         Accessories: [
-            { name: "Designer Sunglasses", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
-            { name: "Silver Chain Necklace", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
-            { name: "Premium Leather Belt", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
-            { name: "Wireless Earbuds Pro", price_pkr: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
-            { name: "Baseball Cap", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
-            { name: "Silk Scarf", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
-            { name: "Leather Gloves", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
-            { name: "Keychain Organizer", price_pkr: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" }
+            { name: "Designer Sunglasses", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
+            { name: "Silver Chain Necklace", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+            { name: "Premium Leather Belt", price_usd: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
+            { name: "Wireless Earbuds Pro", price_usd: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
+            { name: "Baseball Cap", price_usd: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
+            { name: "Silk Scarf", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
+            { name: "Leather Gloves", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
+            { name: "Keychain Organizer", price_usd: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" }
         ],
         Premium: [
-            { name: "Diamond Ring (Ladies)", price_pkr: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
-            { name: "Gold Plated Bracelet", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
-            { name: "Pearl Earrings", price_pkr: 145, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
-            { name: "Emerald Pendant", price_pkr: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
-            { name: "Ruby Studs", price_pkr: 190, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
-            { name: "Sapphire Ring", price_pkr: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
-            { name: "Platinum Chain", price_pkr: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
-            { name: "Diamond Cufflinks", price_pkr: 220, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" }
+            { name: "Diamond Ring (Ladies)", price_usd: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+            { name: "Gold Plated Bracelet", price_usd: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+            { name: "Pearl Earrings", price_usd: 145, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+            { name: "Emerald Pendant", price_usd: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ruby Studs", price_usd: 190, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sapphire Ring", price_usd: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+            { name: "Platinum Chain", price_usd: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+            { name: "Diamond Cufflinks", price_usd: 220, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" }
         ],
         Perfumes: [
-            { name: "Royal Oud Perfume", price_pkr: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-            { name: "Aqua Di Gio", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-            { name: "Rose Essence", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-            { name: "Midnight Musk Perfume", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-            { name: "Citrus Splash", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-            { name: "Vanilla Bloom", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-            { name: "Ocean Breeze", price_pkr: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-            { name: "Golden Amber Perfume", price_pkr: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" }
+            { name: "Royal Oud Perfume", price_usd: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Aqua Di Gio", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Essence", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Midnight Musk Perfume", price_usd: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Citrus Splash", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Vanilla Bloom", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Ocean Breeze", price_usd: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Golden Amber Perfume", price_usd: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" }
         ],
         Attars: [
-            { name: "Arabian Attar Premium", price_pkr: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-            { name: "Musk Al Haramain", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-            { name: "Rose Attar", price_pkr: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-            { name: "Sandalwood Attar", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-            { name: "Jasmine Attar", price_pkr: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-            { name: "Amber Attar", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-            { name: "Oud Attar", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-            { name: "White Musk Attar", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
+            { name: "Arabian Attar Premium", price_usd: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Musk Al Haramain", price_usd: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Rose Attar", price_usd: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Sandalwood Attar", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "Jasmine Attar", price_usd: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+            { name: "Amber Attar", price_usd: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+            { name: "Oud Attar", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+            { name: "White Musk Attar", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
         ]
     };
     const demoProducts = demoProductsByCategory[category];
@@ -3954,7 +3851,7 @@ async function insertDemoByCategory(category) {
     Swal.fire({ title: `Inserting ${category}...`, allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
     try {
         const rows = demoProducts.map(p => ({
-            name: p.name, price_pkr: p.price_pkr, commission_percent: 10, discount_percent: 0,
+            name: p.name, price_usd: p.price_usd, commission_percent: 10, discount_percent: 0,
             description: 'High quality premium product from GM Network.',
             image_url: p.image_url, images: [p.image_url], active: p.active,
             base_rating: Number((4.5 + (Math.random() * 0.5)).toFixed(1)),
@@ -4193,7 +4090,7 @@ async function openCommissionHistoryModal() {
 
     try {
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
+            .select('id, buyer_id, unit_price_usd, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(20);
@@ -4206,7 +4103,7 @@ async function openCommissionHistoryModal() {
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
 
         for (const order of orders) {
-            const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
+            const orderTotal = Number(order.unit_price_usd || 0) * Number(order.quantity || 1);
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
 
@@ -4311,7 +4208,7 @@ async function openMasterHistory() {
         const [wRes, tRes, oRes] = await Promise.all([
             sb.from('withdrawals').select('*').order('created_at', { ascending:false }).limit(50),
             sb.from('wallet_transactions').select('*').order('created_at', { ascending:false }).limit(100),
-            sb.from('orders').select('id,buyer_id,unit_price_pkr,status,created_at').order('created_at', { ascending:false }).limit(50)
+            sb.from('orders').select('id,buyer_id,unit_price_usd,status,created_at').order('created_at', { ascending:false }).limit(50)
         ]);
         if (wRes.error) throw wRes.error;
         if (tRes.error) throw tRes.error;
@@ -4373,7 +4270,7 @@ async function openMasterHistory() {
             html += `<div style="border:1px solid #1f3a2c;border-radius:9px;padding:10px;margin:8px 0;background:#0a1f15;">
                 <b style="color:#e5b853;">${getMemberInfo(o.buyer_id)}</b>
                 <span style="float:right;">${escText(o.status || '—')}</span><br>
-                <small>Order: ${escText(String(o.id || '').slice(-8))} | ${escText(convertMoney(o.unit_price_pkr ?? 0))} | ${escText(o.created_at ? new Date(o.created_at).toLocaleString() : '—')}</small>
+                <small>Order: ${escText(String(o.id || '').slice(-8))} | ${escText(convertMoney(o.unit_price_usd ?? 0))} | ${escText(o.created_at ? new Date(o.created_at).toLocaleString() : '—')}</small>
             </div>`;
         });
 
@@ -4476,64 +4373,64 @@ async function insertDemoProducts() {
 
     const demoProducts = [
         // --- Watches (8) ---
-        { name: "Luxury Gold Watch", price_pkr: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
-        { name: "Classic Silver Watch", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
-        { name: "Smart Watch Pro", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
-        { name: "Leather Strap Watch", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
-        { name: "Rose Gold Ladies Watch", price_pkr: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
-        { name: "Chronograph Watch", price_pkr: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
-        { name: "Sporty Digital Watch", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
-        { name: "Minimalist Watch", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" },
+        { name: "Luxury Gold Watch", price_usd: 150, active: true, image_url: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=500&auto=format&fit=crop" },
+        { name: "Classic Silver Watch", price_usd: 80, active: false, image_url: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=500&auto=format&fit=crop" },
+        { name: "Smart Watch Pro", price_usd: 120, active: false, image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=500&auto=format&fit=crop" },
+        { name: "Leather Strap Watch", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Gold Ladies Watch", price_usd: 110, active: false, image_url: "https://images.unsplash.com/photo-1526045431048-f857369baa09?q=80&w=500&auto=format&fit=crop" },
+        { name: "Chronograph Watch", price_usd: 95, active: false, image_url: "https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sporty Digital Watch", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?q=80&w=500&auto=format&fit=crop" },
+        { name: "Minimalist Watch", price_usd: 50, active: false, image_url: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=500&auto=format&fit=crop" },
 
         // --- Wallets (8) ---
-        { name: "Classic Leather Wallet", price_pkr: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
-        { name: "Brown Bifold Wallet", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
-        { name: "Black RFID Wallet", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-        { name: "Slim Card Holder", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-        { name: "Ladies Zipper Wallet", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
-        { name: "Travel Passport Holder", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
-        { name: "Carbon Fiber Wallet", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
-        { name: "Vintage Leather Wallet", price_pkr: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+        { name: "Classic Leather Wallet", price_usd: 30, active: true, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
+        { name: "Brown Bifold Wallet", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Black RFID Wallet", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Slim Card Holder", price_usd: 15, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ladies Zipper Wallet", price_usd: 28, active: false, image_url: "https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=500&auto=format&fit=crop" },
+        { name: "Travel Passport Holder", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1620106904027-f67300b70f99?q=80&w=500&auto=format&fit=crop" },
+        { name: "Carbon Fiber Wallet", price_usd: 45, active: false, image_url: "https://images.unsplash.com/photo-1601592996763-f05c9c80a7f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Vintage Leather Wallet", price_usd: 32, active: false, image_url: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=500&auto=format&fit=crop" },
 
         // --- Accessories (8) ---
-        { name: "Designer Sunglasses", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
-        { name: "Silver Chain Necklace", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
-        { name: "Premium Leather Belt", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
-        { name: "Wireless Earbuds Pro", price_pkr: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
-        { name: "Baseball Cap", price_pkr: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
-        { name: "Silk Scarf", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
-        { name: "Leather Gloves", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
-        { name: "Keychain Organizer", price_pkr: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" },
+        { name: "Designer Sunglasses", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=500&auto=format&fit=crop" },
+        { name: "Silver Chain Necklace", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+        { name: "Premium Leather Belt", price_usd: 20, active: false, image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=500&auto=format&fit=crop" },
+        { name: "Wireless Earbuds Pro", price_usd: 70, active: true, image_url: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=500&auto=format&fit=crop" },
+        { name: "Baseball Cap", price_usd: 15, active: false, image_url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=500&auto=format&fit=crop" },
+        { name: "Silk Scarf", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1601924928376-3b6b3f8c99f3?q=80&w=500&auto=format&fit=crop" },
+        { name: "Leather Gloves", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1545594861-3c14a2e4d539?q=80&w=500&auto=format&fit=crop" },
+        { name: "Keychain Organizer", price_usd: 10, active: false, image_url: "https://images.unsplash.com/photo-1582552563948-3f5b3f039855?q=80&w=500&auto=format&fit=crop" },
 
         // --- Premium (8) ---
-        { name: "Diamond Ring (Ladies)", price_pkr: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
-        { name: "Gold Plated Bracelet", price_pkr: 80, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
-        { name: "Pearl Earrings", price_pkr: 45, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
-        { name: "Emerald Pendant", price_pkr: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
-        { name: "Ruby Studs", price_pkr: 90, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
-        { name: "Sapphire Ring", price_pkr: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
-        { name: "Platinum Chain", price_pkr: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
-        { name: "Diamond Cufflinks", price_pkr: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+        { name: "Diamond Ring (Ladies)", price_usd: 200, active: true, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+        { name: "Gold Plated Bracelet", price_usd: 80, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
+        { name: "Pearl Earrings", price_usd: 45, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+        { name: "Emerald Pendant", price_usd: 150, active: false, image_url: "https://images.unsplash.com/photo-1599643477874-48b3f8cba37b?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ruby Studs", price_usd: 90, active: false, image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sapphire Ring", price_usd: 180, active: false, image_url: "https://images.unsplash.com/photo-1605100804763-247f67b254be?q=80&w=500&auto=format&fit=crop" },
+        { name: "Platinum Chain", price_usd: 250, active: false, image_url: "https://images.unsplash.com/photo-1599643478514-4a4204b4d5f8?q=80&w=500&auto=format&fit=crop" },
+        { name: "Diamond Cufflinks", price_usd: 120, active: false, image_url: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=500&auto=format&fit=crop" },
 
         // --- Perfumes (8) ---
-        { name: "Royal Oud Perfume", price_pkr: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-        { name: "Aqua Di Gio", price_pkr: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-        { name: "Rose Essence", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-        { name: "Midnight Musk", price_pkr: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-        { name: "Citrus Splash", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-        { name: "Vanilla Bloom", price_pkr: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-        { name: "Ocean Breeze", price_pkr: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-        { name: "Golden Amber", price_pkr: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Royal Oud Perfume", price_usd: 45, active: true, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Aqua Di Gio", price_usd: 60, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Essence", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Midnight Musk", price_usd: 50, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Citrus Splash", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Vanilla Bloom", price_usd: 40, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Ocean Breeze", price_usd: 55, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Golden Amber", price_usd: 65, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
 
         // --- Attars (8) ---
-        { name: "Arabian Attar Premium", price_pkr: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-        { name: "Musk Al Haramain", price_pkr: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-        { name: "Rose Attar", price_pkr: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-        { name: "Sandalwood Attar", price_pkr: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-        { name: "Jasmine Attar", price_pkr: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
-        { name: "Amber Attar", price_pkr: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
-        { name: "Oud Attar", price_pkr: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
-        { name: "White Musk Attar", price_pkr: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
+        { name: "Arabian Attar Premium", price_usd: 25, active: true, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Musk Al Haramain", price_usd: 20, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Rose Attar", price_usd: 18, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Sandalwood Attar", price_usd: 30, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "Jasmine Attar", price_usd: 22, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" },
+        { name: "Amber Attar", price_usd: 28, active: false, image_url: "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=500&auto=format&fit=crop" },
+        { name: "Oud Attar", price_usd: 35, active: false, image_url: "https://images.unsplash.com/photo-1592914610354-fd354ea45e48?q=80&w=500&auto=format&fit=crop" },
+        { name: "White Musk Attar", price_usd: 25, active: false, image_url: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=500&auto=format&fit=crop" }
     ];
 
     try {
@@ -4541,14 +4438,14 @@ async function insertDemoProducts() {
             const p = demoProducts[i];
             const { error } = await sb.from('products').insert({
                 name: p.name,
-                // Demo prices are authored in USD; the database stores the PKR base amount.
-                price_pkr: Math.round(Number(p.price_pkr) * (Number(exchangeRates.PKR) || 278) * 100) / 100,
+                // Product prices are stored and processed directly in USD.
+                price_usd: Math.round(Number(p.price_usd) * 100) / 100,
                 commission_percent: 10,
                 description: "High quality premium product from GM Network.",
                 image_url: p.image_url,
                 images: [p.image_url],
                 // Keep only products priced from $150 through $200 USD available for sale.
-                active: Number(p.price_pkr) >= 150 && Number(p.price_pkr) <= 200,
+                active: Number(p.price_usd) >= 150 && Number(p.price_usd) <= 200,
                 base_rating: 4.5 + (Math.random() * 0.5),
                 base_reviews_count: Math.floor(Math.random() * 100) + 10
             });
@@ -4659,202 +4556,33 @@ function filterAdminOrders() {
 
 async function openNetworkWalletHistory() {
     if (!isAdmin || !sb) return alert('Admin access required.');
-
-    Swal.fire({
-        title: 'Loading Network History...',
-        allowOutsideClick: false,
-        background: '#0d1c14',
-        color: '#e5b853',
-        didOpen: () => Swal.showLoading()
-    });
-
+    Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
     try {
-        const { data: walletData, error: walletError } = await sb
-            .from('admin_network_wallet')
-            .select('total_balance')
-            .eq('id', 1)
-            .single();
-
+        const [{ data: walletData, error: walletError }, { data: entries, error: ledgerError }] = await Promise.all([
+            sb.from('admin_network_wallet').select('total_balance').order('id', { ascending: true }).limit(1).maybeSingle(),
+            sb.from('admin_network_wallet_transactions').select('id,order_id,type,amount,balance_before,balance_after,created_at,description').order('created_at', { ascending: false }).limit(100)
+        ]);
         if (walletError) throw walletError;
-        const currentAdminBalance = Number(walletData?.total_balance || 0);
-
-        const { data: orders, error: ordersError } = await sb
-            .from('orders')
-            .select('id, buyer_id, referrer_id, unit_price_pkr, quantity, status, created_at')
-            .in('status', ['confirmed', 'delivered'])
-            .order('created_at', { ascending: false })
-            .limit(30);
-
-        if (ordersError) throw ordersError;
-
-        const safeOrders = orders || [];
-        const orderIds = safeOrders.map(o => o.id).filter(Boolean);
-
-        // Fetch commission logs first so every commission recipient ID is available.
-        let commissionLogs = [];
-        if (orderIds.length) {
-            const { data: logs, error: logsError } = await sb
-                .from('commission_logs')
-                .select('order_id, user_id, commission_amount, type, level_number')
-                .in('order_id', orderIds);
-
-            if (logsError) throw logsError;
-            commissionLogs = logs || [];
-        }
-
-        // Include buyers, referrers, and all commission recipients.
-        const allUserIds = [...new Set([
-            ...safeOrders.flatMap(o => [o.buyer_id, o.referrer_id]),
-            ...commissionLogs.map(c => c.user_id)
-        ].filter(Boolean))];
-
-        const profilesMap = {};
-        if (allUserIds.length) {
-            const { data: profilesData, error: profilesError } = await sb
-                .from('profiles')
-                .select('id, full_name, member_code')
-                .in('id', allUserIds);
-
-            if (profilesError) throw profilesError;
-            (profilesData || []).forEach(p => { profilesMap[p.id] = p; });
-        }
-
-        const logsByOrder = {};
-        commissionLogs.forEach(log => {
-            const key = String(log.order_id);
-            if (!logsByOrder[key]) logsByOrder[key] = [];
-            logsByOrder[key].push(log);
-        });
-
-        let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
-        html += `
-        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;border:1px solid var(--gold);">
-            <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
-            <h1 style="margin:10px 0 0;font-size:36px;color:var(--gold);">${esc(convertMoney(currentAdminBalance))}</h1>
+        if (ledgerError) throw ledgerError;
+        const balance = Number(walletData?.total_balance || 0);
+        const rows = entries || [];
+        const html = `<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">
+            <div style="background:var(--g);padding:18px;border-radius:12px;text-align:center;border:1px solid var(--gold);margin-bottom:15px;">
+                <small>Admin Network Wallet — USD</small><h1 style="color:var(--gold);margin:8px 0 0;">${esc(convertMoney(balance))}</h1>
+            </div>
+            ${rows.map(t => `<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:9px;background:#0a1f15;">
+                <div style="display:flex;justify-content:space-between;gap:8px;"><b style="color:var(--gold);">${esc(String(t.type || 'Transaction').replaceAll('_',' '))}</b><b style="color:${Number(t.amount)>=0?'#4CAF50':'#f44336'};">${Number(t.amount)>=0?'+':'−'}${esc(convertMoney(Math.abs(Number(t.amount||0))))}</b></div>
+                <small style="color:var(--muted);">${t.created_at ? new Date(t.created_at).toLocaleString() : ''}${t.order_id ? ' · Order ' + esc(String(t.order_id).slice(-8)) : ''}</small>
+                <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:7px;margin-top:7px;font-size:12px;color:var(--muted);"><span>Previous: ${esc(convertMoney(t.balance_before))}</span><b style="color:var(--gold);">New: ${esc(convertMoney(t.balance_after))}</b></div>
+                ${t.description ? `<small>${esc(t.description)}</small>` : ''}
+            </div>`).join('') || '<p style="text-align:center;color:#aaa;">No network wallet transactions recorded yet.</p>'}
         </div>`;
-
-        let totalNetworkSale = 0;
-        let totalNetworkCommission = 0;
-
-        if (!safeOrders.length) {
-            html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
-        } else {
-            for (const order of safeOrders) {
-                const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
-                totalNetworkSale += orderTotal;
-
-                const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
-                const buyer = profilesMap[order.buyer_id] || {};
-                const comms = logsByOrder[String(order.id)] || [];
-
-                let orderComm = 0;
-                let directHtml = '';
-                let rankCommissionsHtml = '';
-
-                comms.forEach(c => {
-                    const profile = profilesMap[c.user_id] || {};
-                    const commAmount = Number(c.commission_amount || 0);
-                    orderComm += commAmount;
-
-                    const type = String(c.type || '').trim().toLowerCase();
-                    const rankNames = {
-                        silver: 'Silver',
-                        gold: 'Gold',
-                        platinum: 'Platinum',
-                        diamond: 'Diamond',
-                        crown: 'Crown Diamond',
-                        crown_diamond: 'Crown Diamond'
-                    };
-                    const label = type === 'direct'
-                        ? 'Direct Commission'
-                        : `${rankNames[type] || (type ? type.replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase()) : 'Rank')} Commission`;
-
-                    // Report the actual percentage represented by the saved DB amount.
-                    const actualRate = orderTotal > 0 ? (commAmount / orderTotal) * 100 : 0;
-                    const rateText = `(${actualRate.toFixed(2)}% of order)`;
-                    const memberInfo = `<br><small style="color:#aaa;">Member: ${esc(profile.full_name || 'Unknown')} (ID: ${esc(profile.member_code || 'N/A')})</small>`;
-                    const commissionRow = `
-                        <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:7px;padding-bottom:7px;border-bottom:1px dashed #31513e;">
-                            <span style="flex:1;min-width:0;">
-                                <b style="color:#e5b853;">${esc(label)} ${esc(rateText)}</b>${memberInfo}
-                            </span>
-                            <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(commAmount))}</b>
-                        </div>`;
-
-                    if (type === 'direct') directHtml += commissionRow;
-                    else rankCommissionsHtml += commissionRow;
-                });
-
-                totalNetworkCommission += orderComm;
-                const netEarning = orderTotal - orderComm;
-
-                html += `
-                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;gap:8px;">
-                        <b style="color:#e5b853;">Order …${esc(String(order.id).slice(-6))}</b>
-                        <b style="color:#4CAF50;">+${esc(convertMoney(orderTotal))}</b>
-                    </div>
-                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
-                        <b>Date:</b> ${esc(date)}<br>
-                        <b>Status:</b> ${esc(String(order.status || '').toUpperCase())}<br>
-                        <b>Purchased By:</b> ${esc(buyer.full_name || 'Unknown')} (ID: ${esc(buyer.member_code || 'N/A')})
-                    </div>
-                    <div style="border-top:1px dashed #1f3a2c;margin:7px 0;padding-top:7px;">
-                        <b style="color:#e5b853;font-size:12px;">Commission Details:</b>
-                        ${directHtml || '<div style="font-size:12px;color:#aaa;margin-top:6px;">No direct commission log found.</div>'}
-                        ${rankCommissionsHtml ? `<div style="margin-top:8px;"><small style="color:#e5b853;">Rank Commissions (DB Logs)</small>${rankCommissionsHtml}</div>` : ''}
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:5px;gap:8px;">
-                        <b>Total Commission (from DB):</b>
-                        <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(orderComm))}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;border-top:1px dashed #e5b853;padding-top:7px;gap:8px;">
-                        <b>Net Earning (Sale − Logged Commission):</b>
-                        <span style="color:#4CAF50;font-weight:bold;white-space:nowrap;">${esc(convertMoney(netEarning))}</span>
-                    </div>
-                </div>`;
-            }
-        }
-
-        const listedOrdersNet = totalNetworkSale - totalNetworkCommission;
-        html += `
-        <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
-            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Latest Orders Summary (Last 30)</h4>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;gap:8px;">
-                <span>Total Sales:</span><b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;gap:8px;">
-                <span>Total Commission (DB Logs):</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:7px;margin-top:5px;gap:8px;">
-                <b>Net Earning:</b><b style="color:var(--gold);">${esc(convertMoney(listedOrdersNet))}</b>
-            </div>
-            <p style="font-size:11px;color:#aaa;line-height:1.5;margin:10px 0 0;">
-                Commission amounts and percentages are based on saved commission_logs. This report does not invent or recalculate payouts.
-            </p>
-        </div>`;
-        html += '</div>';
-
-        await Swal.fire({
-            title: 'Network Wallet History',
-            html,
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853',
-            confirmButtonText: 'Close',
-            width: '650px'
-        });
+        await Swal.fire({ title: 'Network Wallet History (USD)', html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
     } catch (e) {
-        await Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: e.message || 'Could not load network history.',
-            background: '#0d1c14',
-            color: '#e5b853',
-            confirmButtonColor: '#e5b853'
-        });
+        await Swal.fire({ icon: 'error', title: 'Network History Error', text: e.message || 'Could not load network ledger.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     }
 }
+
 async function openCommissionDetailsModal() {
     if (!user || !sb) return alert('Please sign in first.');
 

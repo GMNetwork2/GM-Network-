@@ -4132,9 +4132,9 @@ async function openCommissionHistoryModal() {
     Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // آرڈرز اور ان کے ساتھ خریدار کا نام (profiles) دونوں لائیں
+        // 1. پہلے صرف آرڈرز لائیں (بغیر نام کے)
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_usd, quantity, status, created_at, profiles!buyer_id(full_name)')
+            .select('id, buyer_id, unit_price_usd, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(20);
@@ -4144,13 +4144,23 @@ async function openCommissionHistoryModal() {
             return Swal.fire({ icon: 'info', title: 'No Data', text: 'ابھی تک کوئی کنفرمڈ آرڈر نہیں ہے۔', background: '#0d1c14', color: '#e5b853' });
         }
 
+        // 2. اب تمام آرڈرز کے خریداروں کی آئی ڈی نکالیں اور ان کے نام لائیں
+        const buyerIds = [...new Set(orders.map(o => o.buyer_id).filter(Boolean))];
+        const buyerNames = {};
+        if (buyerIds.length > 0) {
+            const { data: profiles, error: pErr } = await sb.from('profiles').select('id, full_name').in('id', buyerIds);
+            if (!pErr && profiles) {
+                profiles.forEach(p => { buyerNames[p.id] = p.full_name; });
+            }
+        }
+
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
 
         for (const order of orders) {
             const orderTotal = Number(order.unit_price_usd || 0) * Number(order.quantity || 1);
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
-            const buyerName = order.profiles?.full_name || 'Unknown Buyer'; // خریدار کا نام یہاں سے آیا
+            const buyerName = buyerNames[order.buyer_id] || 'Unknown Buyer'; // خریدار کا نام یہاں سے لیا
 
             // کمیشن لاگز حاصل کریں
             const { data: commissions, error: commError } = await sb.from('commission_logs')

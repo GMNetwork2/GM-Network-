@@ -2454,7 +2454,7 @@ async function loadAdmin() {
     const [m, p, o, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
         sb.from('products').select('*').order('created_at', { ascending: false }),
-        sb.from('orders').select('*, products(name, images, image_url)').order('created_at', { ascending: false }).limit(20),
+        sb.from('orders').select('*, products(name, images, image_url), profiles(full_name)').order('created_at', { ascending: false }).limit(20),
         sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10),
         sb.from('product_reviews').select('*, products(name)').eq('is_approved', false).order('created_at', { ascending: false })
     ]);
@@ -2473,6 +2473,7 @@ async function loadAdmin() {
                     <span class="pill">${esc(x.status || 'pending')}</span>
                 </div>
                 <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
+                    <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(x.profiles?.full_name || 'Loading...')}</span><br>
                     <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
                     <b>Amount:</b> ${convertMoney(x.total_usd ?? (Number(x.unit_price_usd || 0) * Number(x.quantity || 1)))}<br>
                     <b>Date:</b> ${esc(date)}
@@ -2690,7 +2691,10 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
     
     if (buyerId) {
         const { data: customerProfile, error: customerProfileError } = await sb.from('profiles').select('full_name,member_code').eq('id', buyerId).maybeSingle();
-        if (!customerProfileError && customerProfile) { $('orderDetailMemberCode').textContent = customerProfile.member_code || 'Member ID not assigned'; }
+        if (!customerProfileError && customerProfile) {
+            $('orderDetailName').textContent = (name || 'Product') + ' • ' + (customerProfile.full_name || 'Member') + ' • Order …' + String(id).slice(-6);
+            $('orderDetailMemberCode').textContent = customerProfile.member_code || 'Member ID not assigned';
+        }
         else $('orderDetailMemberCode').textContent = 'Member profile not found';
     } else $('orderDetailMemberCode').textContent = '—';
 

@@ -4691,7 +4691,7 @@ async function openNetworkWalletHistory() {
         if (walletError) throw walletError;
         const currentAdminBalance = Number(walletData?.total_balance || 0);
 
-        // 2. آرڈرز کی ہسٹری حاصل کریں
+        // 2. آرڈرز کی ہسٹری حاصل کریں (صرف کنفرمڈ اور ڈیلیورڈ)
         const { data: orders, error: ordersError } = await sb.from('orders')
             .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
@@ -4702,6 +4702,9 @@ async function openNetworkWalletHistory() {
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
         let totalNetworkSale = 0;
         let totalNetworkCommission = 0;
+        
+        // پراویئس اور نیو بیلنس کا حساب رکھنے کے لیے
+        let runningNetworkBalance = currentAdminBalance;
 
         if (!orders || orders.length === 0) {
             html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
@@ -4711,6 +4714,7 @@ async function openNetworkWalletHistory() {
                 totalNetworkSale += orderTotal;
                 const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
 
+                // کمیشن لاگز حاصل کریں
                 const { data: comms, error: commsError } = await sb.from('commission_logs')
                     .select('*').eq('order_id', order.id);
                 if (commsError) throw commsError;
@@ -4758,6 +4762,11 @@ async function openNetworkWalletHistory() {
                 totalNetworkCommission += orderComm;
                 const netEarning = orderTotal - orderComm;
 
+                // ہر آرڈر کا الگ بیلنس ڈسپلے کریں (کوئی فیک کیلکولیشن نہیں)
+                const newBal = runningNetworkBalance;
+                const previousBal = newBal - netEarning;
+                runningNetworkBalance = previousBal;
+
                 html += `
                 <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:5px;gap:8px;">
@@ -4775,6 +4784,10 @@ async function openNetworkWalletHistory() {
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;border-top:1px dashed #e5b853;padding-top:5px;">
                         <b>Net Earning:</b><span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(netEarning))}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px;border-top:1px solid #1f3a2c;padding-top:6px;color:#aaa;">
+                        <span>Previous Bal: ${esc(convertMoney(previousBal))}</span>
+                        <span style="color:var(--gold);font-weight:bold;">New Bal: ${esc(convertMoney(newBal))}</span>
                     </div>
                 </div>`;
             }

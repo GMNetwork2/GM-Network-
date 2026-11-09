@@ -4662,14 +4662,15 @@ async function openNetworkWalletHistory() {
     Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // 1. ڈیٹا بیس سے ایڈمن کا اصل والٹ بیلنس حاصل کریں
-        const { data: walletData, error: walletError } = await sb.from('admin_network_wallet').select('total_balance').eq('id', 1).single();
+        // محفوظ شدہ ایڈمن والٹ بیلنس صرف پڑھا جاتا ہے؛ اس فنکشن میں کوئی ادائیگی نہیں ہوتی۔
+        const { data: walletData, error: walletError } = await sb.from('admin_network_wallet')
+            .select('total_balance').eq('id', 1).single();
         if (walletError) throw walletError;
         const currentAdminBalance = Number(walletData?.total_balance || 0);
 
-        // 2. آرڈرز کی ہسٹری حاصل کریں
+        // کنفرم اور ڈیلیورڈ آرڈرز، خریدار اور ریفرل لنک کے ریفرر سمیت۔
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
+            .select('id, buyer_id, referrer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(30);
@@ -4678,65 +4679,104 @@ async function openNetworkWalletHistory() {
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
         let totalNetworkSale = 0;
         let totalNetworkCommission = 0;
-        // آرڈرز descending ہیں؛ موجودہ بیلنس سے تازہ ترین آرڈر کا حساب الٹا چلائیں
         let runningNetworkBalance = currentAdminBalance;
 
         if (!orders || orders.length === 0) {
             html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
         } else {
+            // خریداروں اور ریفررز کی پروفائلز ایک ہی بار حاصل کریں۔
+            const buyerIds = [...new Set(orders.map(o => o.buyer_id).filter(Boolean))];
+            const buyerProfilesMap = {};
+            if (buyerIds.length) {
+                const { data: buyers, error: buyersError } = await sb.from('profiles')
+                    .select('id, full_name, member_code, referred_by').in('id', buyerIds);
+                if (buyersError) throw buyersError;
+                (buyers || []).forEach(p => { buyerProfilesMap[p.id] = p; });
+            }
+
+            const referrerIds = [...new Set(orders.map(o => {
+                const buyer = buyerProfilesMap[o.buyer_id] || {};
+                return o.referrer_id || buyer.referred_by;
+            }).filter(Boolean))];
+            const referrerProfilesMap = {};
+            if (referrerIds.length) {
+                const { data: referrers, error: referrersError } = await sb.from('profiles')
+                    .select('id, full_name, member_code').in('id', referrerIds);
+                if (referrersError) throw referrersError;
+                (referrers || []).forEach(p => { referrerProfilesMap[p.id] = p; });
+            }
+
             for (const order of orders) {
                 const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
                 totalNetworkSale += orderTotal;
                 const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
+                const buyer = buyerProfilesMap[order.buyer_id] || {};
+                const referrerId = order.referrer_id || buyer.referred_by || null;
+                const referrer = referrerId ? (referrerProfilesMap[referrerId] || {}) : {};
+                const directCommission = orderTotal * 0.10;
+                const linkCommission = referrerId ? orderTotal * 0.02 : 0;
 
                 const { data: comms, error: commsError } = await sb.from('commission_logs')
                     .select('*').eq('order_id', order.id);
                 if (commsError) throw commsError;
 
-                const userIds = [...new Set((comms || []).map(c => c.user_id).filter(Boolean))];
-                const profilesMap = {};
-                if (userIds.length) {
-                    const { data: profilesData, error: profilesError } = await sb.from('profiles')
-                        .select('id, full_name, member_code').in('id', userIds);
-                    if (profilesError) throw profilesError;
-                    (profilesData || []).forEach(p => { profilesMap[p.id] = p; });
+                // Direct/Link کی پرانی لاگز کو دوبارہ جمع نہیں کرتے؛ 10% اور 2% اوپر الگ حساب ہوتے ہیں۔
+                const rankComms = (comms || []).filter(c => {
+                    const t = String(c.type || '').trim().toLowerCase();
+                    return !['direct', 'direct referral', 'referral', 'referral_link', 'link'].includes(t);
+                });
+                const rankUserIds = [...new Set(rankComms.map(c => c.user_id).filter(Boolean))];
+                const rankProfilesMap = {};
+                if (rankUserIds.length) {
+                    const { data: rankProfiles, error: rankProfilesError } = await sb.from('profiles')
+                        .select('id, full_name, member_code').in('id', rankUserIds);
+                    if (rankProfilesError) throw rankProfilesError;
+                    (rankProfiles || []).forEach(p => { rankProfilesMap[p.id] = p; });
                 }
 
-                let orderComm = 0;
-                let commDetailsHtml = '';
-                if (comms && comms.length) {
-                    commDetailsHtml = comms.map(c => {
-                        const profile = profilesMap[c.user_id] || {};
-                        const memberName = profile.full_name || 'Unknown';
-                        const memberCode = profile.member_code || 'N/A';
-                        const commissionType = String(c.type || '').trim().toLowerCase();
-                        const rankNamesByLevel = { 2: 'Silver', 3: 'Gold', 4: 'Platinum', 5: 'Diamond', 6: 'Crown Diamond' };
-                        const rankNamesByType = {
-                            silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond',
-                            crown: 'Crown Diamond', 'crown diamond': 'Crown Diamond', crown_diamond: 'Crown Diamond'
-                        };
-                        let rankName;
-                        if (commissionType === 'direct' || commissionType.includes('direct referral')) {
-                            rankName = 'Direct';
-                        } else {
-                            rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank';
-                        }
-                        const amount = Number(c.commission_amount || 0);
-                        orderComm += amount;
-                        const effectiveRate = orderTotal > 0 ? (amount / orderTotal * 100) : 0;
-                        return `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
-                            <span style="flex:1;">${esc(rankName)}: ${esc(memberName)} (${esc(memberCode)})<br><small>${effectiveRate.toFixed(2)}% effective rate</small></span>
-                            <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(amount))}</span>
-                        </div>`;
-                    }).join('');
-                } else {
-                    commDetailsHtml = '<div style="font-size:11px;color:#777;">No commission recorded for this order.</div>';
-                }
+                let rankCommissionTotal = 0;
+                const rankDetailsHtml = rankComms.map(c => {
+                    const profile = rankProfilesMap[c.user_id] || {};
+                    const commissionType = String(c.type || '').trim().toLowerCase();
+                    const rankNamesByLevel = { 2: 'Silver', 3: 'Gold', 4: 'Platinum', 5: 'Diamond', 6: 'Crown Diamond' };
+                    const rankNamesByType = {
+                        silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond',
+                        crown: 'Crown Diamond', 'crown diamond': 'Crown Diamond', crown_diamond: 'Crown Diamond'
+                    };
+                    const rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank';
+                    const amount = Number(c.commission_amount || 0);
+                    rankCommissionTotal += amount;
+                    return `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
+                        <span style="flex:1;"><b style="color:#e5b853;">${esc(rankName)}:</b> ${esc(profile.full_name || 'Unknown')} (${esc(profile.member_code || 'N/A')})</span>
+                        <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(amount))}</span>
+                    </div>`;
+                }).join('');
 
+                const buyerName = buyer.full_name || 'Unknown Member';
+                const buyerCode = buyer.member_code || String(order.buyer_id || 'N/A').slice(0, 8);
+                const referrerName = referrer.full_name || 'Unknown Referrer';
+                const referrerCode = referrer.member_code || String(referrerId || 'N/A').slice(0, 8);
+
+                const directHtml = `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:7px;">
+                    <span style="flex:1;"><b style="color:#e5b853;">Direct Commission (10%)</b><br><small style="color:#999;">Order amount کا 10% — حسابی رقم</small></span>
+                    <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(directCommission))}</b>
+                </div>`;
+                const linkHtml = referrerId ? `<div style="border-top:1px dashed #31513e;margin-top:7px;padding-top:7px;">
+                    <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;">
+                        <span style="flex:1;"><b style="color:#e5b853;">Referral Link Commission (2%)</b><br><small style="color:#aaa;">Link Referrer: ${esc(referrerName)} — ID: ${esc(referrerCode)}</small></span>
+                        <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(linkCommission))}</b>
+                    </div>
+                    <div style="font-size:11px;color:#aaa;margin-top:5px;line-height:1.6;">
+                        <b>Shopping Member:</b> ${esc(buyerName)}<br>
+                        <b>Shopping Member ID:</b> ${esc(buyerCode)}<br>
+                        <b>Shopping Amount:</b> ${esc(convertMoney(orderTotal))}
+                    </div>
+                </div>` : `<div style="font-size:11px;color:#888;margin-top:7px;">Referral Link: اس آرڈر کے ساتھ کوئی ریفرر ID منسلک نہیں ہے، اس لیے 2% شامل نہیں کیا گیا۔</div>`;
+
+                const otherDetailsHtml = rankDetailsHtml ? `<div style="border-top:1px dashed #31513e;margin-top:7px;padding-top:5px;"><small style="color:#e5b853;">Additional Rank Commissions (DB Logs)</small>${rankDetailsHtml}</div>` : '';
+                const orderComm = directCommission + linkCommission + rankCommissionTotal;
                 totalNetworkCommission += orderComm;
                 const netEarning = orderTotal - orderComm;
-
-                // تازہ ترین آرڈر سے پیچھے جاتے ہوئے ہر آرڈر کا بیلنس دکھائیں
                 const newBal = runningNetworkBalance;
                 const previousBal = newBal - netEarning;
                 runningNetworkBalance = previousBal;
@@ -4748,13 +4788,15 @@ async function openNetworkWalletHistory() {
                         <b style="color:#4CAF50;">+${esc(convertMoney(orderTotal))}</b>
                     </div>
                     <div style="font-size:12px;color:#aaa;line-height:1.5;">
-                        <b>Date:</b> ${esc(date)}<br><b>Status:</b> ${esc(String(order.status || '').toUpperCase())}
+                        <b>Date:</b> ${esc(date)}<br><b>Status:</b> ${esc(String(order.status || '').toUpperCase())}<br>
+                        <b>Purchased By:</b> ${esc(buyerName)} (ID: ${esc(buyerCode)})
                     </div>
                     <div style="border-top:1px dashed #1f3a2c;margin:7px 0;padding-top:7px;">
-                        <b style="color:#e5b853;font-size:12px;">Commission Details:</b>${commDetailsHtml}
+                        <b style="color:#e5b853;font-size:12px;">Commission Details:</b>
+                        ${directHtml}${linkHtml}${otherDetailsHtml}
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:5px;">
-                        <b>Total Commission:</b><span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span>
+                        <b>Total Calculated Commission:</b><span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;border-top:1px dashed #e5b853;padding-top:5px;">
                         <b>Net Earning:</b><span style="color:#4CAF50;font-weight:bold;">${esc(convertMoney(netEarning))}</span>
@@ -4768,29 +4810,27 @@ async function openNetworkWalletHistory() {
         }
 
         const listedOrdersNet = totalNetworkSale - totalNetworkCommission;
-
-        // ڈیٹا بیس سے حاصل کردہ محفوظ شدہ ایڈمن والٹ بیلنس
         const walletHeaderHtml = `
-        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px; border:1px solid var(--gold);">
+        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;border:1px solid var(--gold);">
             <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
             <h1 style="margin:10px 0 0;font-size:36px;color:var(--gold);">${esc(convertMoney(currentAdminBalance))}</h1>
-            <p style="margin:5px 0 0; font-size:12px; color:#aaa;">یہ بیلنس ڈیٹا بیس میں محفوظ ہے۔</p>
+            <p style="margin:5px 0 0;font-size:12px;color:#aaa;">یہ بیلنس ڈیٹا بیس میں محفوظ ہے۔</p>
         </div>`;
-
         html = walletHeaderHtml + html;
 
         const summaryHtml = `
         <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
             <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Latest 30 Orders Summary</h4>
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Sales:</span><b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Commission Paid:</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Calculated Commission (10% + eligible 2% + ranks):</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
             <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:7px;margin-top:5px;"><b>Net Earning:</b><b style="color:var(--gold);">${esc(convertMoney(listedOrdersNet))}</b></div>
+            <p style="font-size:10px;color:#aaa;line-height:1.5;margin:10px 0 0;">نوٹ: 10% ڈائریکٹ اور 2% ریفرل کمیشن یہاں آرڈر کی رقم سے حساب کرکے دکھائے جاتے ہیں۔ یہ اسکرین ڈیٹابیس میں کمیشن لاگ یا والٹ ادائیگی تبدیل نہیں کرتی۔</p>
         </div>`;
         html += summaryHtml + '</div>';
 
         await Swal.fire({ title: 'Network Wallet History', html, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853', confirmButtonText: 'Close', width: '650px' });
     } catch (e) {
-        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load network history.', background: '#0d1c14', color: '#e5b853' });
+        await Swal.fire({ icon: 'error', title: 'Error', text: e.message || 'Could not load network history.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     }
 }
 

@@ -4676,6 +4676,15 @@ async function openNetworkWalletHistory() {
             .limit(30);
         if (ordersError) throw ordersError;
 
+        // 🚨 رینک بونس کی ہسٹری حاصل کریں (جن کا کوئی order_id نہیں ہوتا) 🚨
+        const { data: rankBonuses, error: bonusError } = await sb.from('commission_logs')
+            .select('*, profiles!commission_logs_user_id_fkey(full_name, member_code)')
+            .eq('type', 'rank_bonus')
+            .is('order_id', null)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        if (bonusError) throw bonusError;
+
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
         let totalNetworkSale = 0;
         let totalNetworkCommission = 0;
@@ -4714,7 +4723,7 @@ async function openNetworkWalletHistory() {
                 const referrerId = order.referrer_id || buyer.referred_by || null;
                 const referrer = referrerId ? (referrerProfilesMap[referrerId] || {}) : {};
                 const directCommission = orderTotal * 0.10;
-                const linkCommission = referrerId ? orderTotal * 0.02 : 0;
+                const linkCommission = 0; // 🚨 یہ کمیشن آپ کے سسٹم میں نہیں ہے، اس لیے 0 کر دیا گیا ہے
 
                 const { data: comms, error: commsError } = await sb.from('commission_logs')
                     .select('*').eq('order_id', order.id);
@@ -4761,17 +4770,7 @@ async function openNetworkWalletHistory() {
                     <span style="flex:1;"><b style="color:#e5b853;">Direct Commission (10%)</b><br><small style="color:#999;">Order amount کا 10% — حسابی رقم</small></span>
                     <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(directCommission))}</b>
                 </div>`;
-                const linkHtml = referrerId ? `<div style="border-top:1px dashed #31513e;margin-top:7px;padding-top:7px;">
-                    <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;">
-                        <span style="flex:1;"><b style="color:#e5b853;">Referral Link Commission (2%)</b><br><small style="color:#aaa;">Link Referrer: ${esc(referrerName)} — ID: ${esc(referrerCode)}</small></span>
-                        <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(linkCommission))}</b>
-                    </div>
-                    <div style="font-size:11px;color:#aaa;margin-top:5px;line-height:1.6;">
-                        <b>Shopping Member:</b> ${esc(buyerName)}<br>
-                        <b>Shopping Member ID:</b> ${esc(buyerCode)}<br>
-                        <b>Shopping Amount:</b> ${esc(convertMoney(orderTotal))}
-                    </div>
-                </div>` : `<div style="font-size:11px;color:#888;margin-top:7px;">Referral Link: اس آرڈر کے ساتھ کوئی ریفرر ID منسلک نہیں ہے، اس لیے 2% شامل نہیں کیا گیا۔</div>`;
+                const linkHtml = ''; // 🚨 ریفرل لنک کمیشن ختم کر دیا گیا ہے
 
                 const otherDetailsHtml = rankDetailsHtml ? `<div style="border-top:1px dashed #31513e;margin-top:7px;padding-top:5px;"><small style="color:#e5b853;">Additional Rank Commissions (DB Logs)</small>${rankDetailsHtml}</div>` : '';
                 const orderComm = directCommission + linkCommission + rankCommissionTotal;
@@ -4807,6 +4806,30 @@ async function openNetworkWalletHistory() {
                     </div>
                 </div>`;
             }
+        }
+
+        // رینک بونس کی لسٹ HTML میں دکھائیں
+        if (rankBonuses && rankBonuses.length > 0) {
+            html += '<h3 style="color:#e5b853;margin-top:20px;">Rank Bonus History</h3>';
+            rankBonuses.forEach(b => {
+                const bDate = b.created_at ? new Date(b.created_at).toLocaleString() : '—';
+                const memberName = b.profiles?.full_name || 'Member';
+                const memberCode = b.profiles?.member_code || 'N/A';
+                const bAmount = Number(b.commission_amount || 0);
+                totalNetworkCommission += bAmount;
+
+                html += `
+                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <b style="color:#e5b853;">Rank Achievement Bonus</b>
+                        <b style="color:#f44336;">-${esc(convertMoney(bAmount))}</b>
+                    </div>
+                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
+                        <b>Member:</b> ${esc(memberName)} (ID: ${esc(memberCode)})<br>
+                        <b>Date:</b> ${esc(bDate)}
+                    </div>
+                </div>`;
+            });
         }
 
         const listedOrdersNet = totalNetworkSale - totalNetworkCommission;

@@ -2749,8 +2749,19 @@ async function updateOrderStatus(orderId, newStatus) {
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
     if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
     newStatus = String(newStatus).toLowerCase();
+
+    // Existing emergency lock protection retained.
     if (newStatus === 'confirmed' && await checkSystemLockStatus()) {
         return alert('سسٹم ایمرجنسی لاک ہے۔ نئے آرڈرز کی تصدیق فی الحال بند ہے۔ ریفنڈ یا کینسل کی کارروائی جاری رہ سکتی ہے۔');
+    }
+
+    const { data: currentOrder, error: readError } = await sb.from('orders')
+        .select('status').eq('id', orderId).single();
+
+    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
+
+    if (String(currentOrder.status || '').toLowerCase() === 'confirmed' && newStatus === 'confirmed') {
+        return alert('یہ آرڈر پہلے ہی کنفرم ہے۔ آپ اسے دوبارہ کنفرم نہیں کر سکتے۔');
     }
 
     if (window.Swal) {
@@ -2771,11 +2782,6 @@ async function updateOrderStatus(orderId, newStatus) {
         return;
     }
 
-    // Read previous status so rewards are only added/reversed on a real transition.
-    const { data: currentOrder, error: readError } = await sb.from('orders')
-        .select('buyer_id, unit_price_pkr, status, quantity').eq('id', orderId).single();
-    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
-
     const previousStatus = String(currentOrder.status || '').toLowerCase();
     if (previousStatus === newStatus) {
         if (window.Swal) await window.Swal.fire({ icon: 'info', title: 'No change', text: 'This order already has this status.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
@@ -2789,7 +2795,6 @@ async function updateOrderStatus(orderId, newStatus) {
     let rewardError = null;
     try {
         if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
-            // فنکشن کو کال کریں اور چیک کریں کہ وہ واقعی چلا ہے
             const rewardResult = await processOrderRewards(orderId, false);
             console.log("Reward Function Result:", rewardResult);
         } else if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
@@ -2800,9 +2805,7 @@ async function updateOrderStatus(orderId, newStatus) {
         rewardError = err;
     }
 
-    const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
-        ? '. Coins and eligible commissions were reversed.'
-        : newStatus === 'confirmed' ? ' and Coins/eligible commissions were distributed.' : '.');
+    const successText = 'Order status updated to ' + newStatus;
     if (window.Swal) {
         await window.Swal.fire({
             icon: rewardError ? 'warning' : 'success',

@@ -2732,35 +2732,14 @@ async function adminChangeProof(orderId) {
     alert('Proof updated successfully.'); await loadAdmin(); closeOrderDetailModal();
 }  
 // Server-side atomic order rewards. Requires gm_network_rank_rewards.sql to be run in Supabase.
-// Server-side atomic order rewards.
-// Commission history is intentionally preserved; do not perform client-side balance
-// read/modify/write or delete commission_logs as a fallback.
 async function processOrderRewards(orderId, reverse = false) {
     if (!sb) throw new Error('Database connection is unavailable.');
-    if (!orderId) throw new Error('Order ID is required.');
-    if (!reverse && await checkSystemLockStatus()) {
-        throw new Error('System is LOCKED. New rewards are paused.');
-    }
-
+    if (!reverse && await checkSystemLockStatus()) throw new Error('System is LOCKED. New rewards are paused.');
     const { data, error } = await sb.rpc('gm_process_order_rewards', {
         p_order_id: orderId,
         p_reverse: Boolean(reverse)
     });
-
-    if (error) {
-        console.error('gm_process_order_rewards RPC failed:', error);
-        throw new Error(
-            'Reward adjustment was not confirmed by the database: ' +
-            error.message +
-            '. No manual wallet fallback was run and commission history was left untouched.'
-        );
-    }
-
-    // Some RPCs return a structured success flag. Treat explicit failure as failure.
-    if (data && typeof data === 'object' && data.success === false) {
-        throw new Error(data.message || 'Database reward operation reported failure.');
-    }
-
+    if (error) throw new Error('Secure reward RPC failed: ' + error.message + '. Run gm_network_rank_rewards.sql in Supabase first.');
     return data;
 }
 
@@ -2770,19 +2749,8 @@ async function updateOrderStatus(orderId, newStatus) {
     const allowedStatuses = ['pending', 'confirmed', 'delivered', 'cancelled', 'refunded'];
     if (!allowedStatuses.includes(String(newStatus).toLowerCase())) return alert('Invalid order status.');
     newStatus = String(newStatus).toLowerCase();
-
-    // Existing emergency lock protection retained.
     if (newStatus === 'confirmed' && await checkSystemLockStatus()) {
         return alert('سسٹم ایمرجنسی لاک ہے۔ نئے آرڈرز کی تصدیق فی الحال بند ہے۔ ریفنڈ یا کینسل کی کارروائی جاری رہ سکتی ہے۔');
-    }
-
-    const { data: currentOrder, error: readError } = await sb.from('orders')
-        .select('status').eq('id', orderId).single();
-
-    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
-
-    if (String(currentOrder.status || '').toLowerCase() === 'confirmed' && newStatus === 'confirmed') {
-        return alert('یہ آرڈر پہلے ہی کنفرم ہے۔ آپ اسے دوبارہ کنفرم نہیں کر سکتے۔');
     }
 
     if (window.Swal) {
@@ -2803,6 +2771,11 @@ async function updateOrderStatus(orderId, newStatus) {
         return;
     }
 
+    // Read previous status so rewards are only added/reversed on a real transition.
+    const { data: currentOrder, error: readError } = await sb.from('orders')
+        .select('buyer_id, unit_price_pkr, status, quantity').eq('id', orderId).single();
+    if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
+
     const previousStatus = String(currentOrder.status || '').toLowerCase();
     if (previousStatus === newStatus) {
         if (window.Swal) await window.Swal.fire({ icon: 'info', title: 'No change', text: 'This order already has this status.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
@@ -2816,6 +2789,7 @@ async function updateOrderStatus(orderId, newStatus) {
     let rewardError = null;
     try {
         if (newStatus === 'confirmed' && previousStatus !== 'confirmed') {
+            // فنکشن کو کال کریں اور چیک کریں کہ وہ واقعی چلا ہے
             const rewardResult = await processOrderRewards(orderId, false);
             console.log("Reward Function Result:", rewardResult);
         } else if ((newStatus === 'refunded' || newStatus === 'cancelled') && previousStatus === 'confirmed') {
@@ -2826,7 +2800,9 @@ async function updateOrderStatus(orderId, newStatus) {
         rewardError = err;
     }
 
-    const successText = 'Order status updated to ' + newStatus;
+    const successText = 'Order status updated to ' + newStatus + (previousStatus === 'confirmed' && (newStatus === 'refunded' || newStatus === 'cancelled')
+        ? '. Coins and eligible commissions were reversed.'
+        : newStatus === 'confirmed' ? ' and Coins/eligible commissions were distributed.' : '.');
     if (window.Swal) {
         await window.Swal.fire({
             icon: rewardError ? 'warning' : 'success',
@@ -4691,7 +4667,7 @@ async function openNetworkWalletHistory() {
         if (walletError) throw walletError;
         const currentAdminBalance = Number(walletData?.total_balance || 0);
 
-        // 2. آرڈرز کی ہسٹری حاصل کریں (صرف کنفرمڈ اور ڈیلیورڈ)
+        // 2. آرڈرز کی ہسٹری حاصل کریں
         const { data: orders, error: ordersError } = await sb.from('orders')
             .select('id, buyer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
@@ -4702,8 +4678,7 @@ async function openNetworkWalletHistory() {
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
         let totalNetworkSale = 0;
         let totalNetworkCommission = 0;
-        
-        // پراویئس اور نیو بیلنس کا حساب رکھنے کے لیے
+        // آرڈرز descending ہیں؛ موجودہ بیلنس سے تازہ ترین آرڈر کا حساب الٹا چلائیں
         let runningNetworkBalance = currentAdminBalance;
 
         if (!orders || orders.length === 0) {
@@ -4714,7 +4689,6 @@ async function openNetworkWalletHistory() {
                 totalNetworkSale += orderTotal;
                 const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
 
-                // کمیشن لاگز حاصل کریں
                 const { data: comms, error: commsError } = await sb.from('commission_logs')
                     .select('*').eq('order_id', order.id);
                 if (commsError) throw commsError;
@@ -4762,7 +4736,7 @@ async function openNetworkWalletHistory() {
                 totalNetworkCommission += orderComm;
                 const netEarning = orderTotal - orderComm;
 
-                // ہر آرڈر کا الگ بیلنس ڈسپلے کریں (کوئی فیک کیلکولیشن نہیں)
+                // تازہ ترین آرڈر سے پیچھے جاتے ہوئے ہر آرڈر کا بیلنس دکھائیں
                 const newBal = runningNetworkBalance;
                 const previousBal = newBal - netEarning;
                 runningNetworkBalance = previousBal;

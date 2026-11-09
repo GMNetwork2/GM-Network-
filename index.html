@@ -4662,13 +4662,10 @@ async function openNetworkWalletHistory() {
     Swal.fire({ title: 'Loading Network History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
-        // محفوظ شدہ ایڈمن والٹ بیلنس صرف پڑھا جاتا ہے؛ اس فنکشن میں کوئی ادائیگی نہیں ہوتی۔
-        const { data: walletData, error: walletError } = await sb.from('admin_network_wallet')
-            .select('total_balance').eq('id', 1).single();
+        const { data: walletData, error: walletError } = await sb.from('admin_network_wallet').select('total_balance').eq('id', 1).single();
         if (walletError) throw walletError;
         const currentAdminBalance = Number(walletData?.total_balance || 0);
 
-        // کنفرم اور ڈیلیورڈ آرڈرز، خریدار اور ریفرل لنک کے ریفرر سمیت۔
         const { data: orders, error: ordersError } = await sb.from('orders')
             .select('id, buyer_id, referrer_id, unit_price_pkr, quantity, status, created_at')
             .in('status', ['confirmed', 'delivered'])
@@ -4676,16 +4673,15 @@ async function openNetworkWalletHistory() {
             .limit(30);
         if (ordersError) throw ordersError;
 
-        // 🚨 رینک بونس کی ہسٹری حاصل کریں (جن کا کوئی order_id نہیں ہوتا) 🚨
-        const { data: rankBonuses, error: bonusError } = await sb.from('commission_logs')
-            .select('*, profiles!commission_logs_user_id_fkey(full_name, member_code)')
-            .eq('type', 'rank_bonus')
-            .is('order_id', null)
-            .order('created_at', { ascending: false })
-            .limit(20);
-        if (bonusError) throw bonusError;
-
         let html = '<div style="max-height:65vh;overflow-y:auto;text-align:left;padding-right:5px;">';
+
+        // Header
+        html += `
+        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;border:1px solid var(--gold);">
+            <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
+            <h1 style="margin:10px 0 0;font-size:36px;color:var(--gold);">${esc(convertMoney(currentAdminBalance))}</h1>
+        </div>`;
+
         let totalNetworkSale = 0;
         let totalNetworkCommission = 0;
         let runningNetworkBalance = currentAdminBalance;
@@ -4693,88 +4689,63 @@ async function openNetworkWalletHistory() {
         if (!orders || orders.length === 0) {
             html += '<p style="text-align:center;color:#aaa;">No confirmed orders found.</p>';
         } else {
-            // خریداروں اور ریفررز کی پروفائلز ایک ہی بار حاصل کریں۔
             const buyerIds = [...new Set(orders.map(o => o.buyer_id).filter(Boolean))];
             const buyerProfilesMap = {};
             if (buyerIds.length) {
-                const { data: buyers, error: buyersError } = await sb.from('profiles')
-                    .select('id, full_name, member_code, referred_by').in('id', buyerIds);
-                if (buyersError) throw buyersError;
+                const { data: buyers } = await sb.from('profiles').select('id, full_name, member_code, referred_by').in('id', buyerIds);
                 (buyers || []).forEach(p => { buyerProfilesMap[p.id] = p; });
             }
 
-            const referrerIds = [...new Set(orders.map(o => {
-                const buyer = buyerProfilesMap[o.buyer_id] || {};
-                return o.referrer_id || buyer.referred_by;
-            }).filter(Boolean))];
-            const referrerProfilesMap = {};
-            if (referrerIds.length) {
-                const { data: referrers, error: referrersError } = await sb.from('profiles')
-                    .select('id, full_name, member_code').in('id', referrerIds);
-                if (referrersError) throw referrersError;
-                (referrers || []).forEach(p => { referrerProfilesMap[p.id] = p; });
+            const allUserIds = [...new Set(orders.flatMap(o => [o.buyer_id, o.referrer_id]).filter(Boolean))];
+            const allProfilesMap = {};
+            if (allUserIds.length) {
+                 const { data: allProfiles } = await sb.from('profiles').select('id, full_name, member_code').in('id', allUserIds);
+                 (allProfiles || []).forEach(p => { allProfilesMap[p.id] = p; });
             }
 
             for (const order of orders) {
                 const orderTotal = Number(order.unit_price_pkr || 0) * Number(order.quantity || 1);
                 totalNetworkSale += orderTotal;
                 const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
-                const buyer = buyerProfilesMap[order.buyer_id] || {};
+                const buyer = allProfilesMap[order.buyer_id] || {};
                 const referrerId = order.referrer_id || buyer.referred_by || null;
-                const referrer = referrerId ? (referrerProfilesMap[referrerId] || {}) : {};
-                const directCommission = orderTotal * 0.10;
-                const linkCommission = 0; // 🚨 یہ کمیشن آپ کے سسٹم میں نہیں ہے، اس لیے 0 کر دیا گیا ہے
+                const referrer = referrerId ? (allProfilesMap[referrerId] || {}) : {};
 
-                const { data: comms, error: commsError } = await sb.from('commission_logs')
-                    .select('*').eq('order_id', order.id);
-                if (commsError) throw commsError;
+                const { data: comms } = await sb.from('commission_logs').select('*').eq('order_id', order.id);
 
-                // Direct/Link کی پرانی لاگز کو دوبارہ جمع نہیں کرتے؛ 10% اور 2% اوپر الگ حساب ہوتے ہیں۔
-                const rankComms = (comms || []).filter(c => {
-                    const t = String(c.type || '').trim().toLowerCase();
-                    return !['direct', 'direct referral', 'referral', 'referral_link', 'link'].includes(t);
-                });
-                const rankUserIds = [...new Set(rankComms.map(c => c.user_id).filter(Boolean))];
-                const rankProfilesMap = {};
-                if (rankUserIds.length) {
-                    const { data: rankProfiles, error: rankProfilesError } = await sb.from('profiles')
-                        .select('id, full_name, member_code').in('id', rankUserIds);
-                    if (rankProfilesError) throw rankProfilesError;
-                    (rankProfiles || []).forEach(p => { rankProfilesMap[p.id] = p; });
+                let orderComm = 0;
+                let commsHtml = '';
+                let directHtml = '';
+
+                if (comms && comms.length > 0) {
+                    comms.forEach(c => {
+                        const profile = allProfilesMap[c.user_id] || {};
+                        const commAmount = Number(c.commission_amount || 0);
+                        orderComm += commAmount;
+
+                        const type = String(c.type || '').toLowerCase();
+                        let label = type === 'direct' ? 'Direct Commission (10%)' : (type.charAt(0).toUpperCase() + type.slice(1) + ' Commission (2%)');
+                        if (type === 'crown_diamond') label = 'Crown Diamond Commission (1%)';
+
+                        let memberInfo = `<br><small style="color:#aaa;">Member: ${esc(profile.full_name || 'Unknown')} (ID: ${esc(profile.member_code || 'N/A')})</small>`;
+
+                        if (type === 'direct') {
+                            directHtml = `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:7px;padding-bottom:7px;border-bottom:1px dashed #31513e;">
+                                <span style="flex:1;"><b style="color:#e5b853;">${label}</b>${memberInfo}</span>
+                                <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(commAmount))}</b>
+                            </div>`;
+                        } else {
+                            commsHtml += `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
+                                <span style="flex:1;"><b style="color:#e5b853;">${label}</b>${memberInfo}</span>
+                                <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(commAmount))}</span>
+                            </div>`;
+                        }
+                    });
                 }
 
-                let rankCommissionTotal = 0;
-                const rankDetailsHtml = rankComms.map(c => {
-                    const profile = rankProfilesMap[c.user_id] || {};
-                    const commissionType = String(c.type || '').trim().toLowerCase();
-                    const rankNamesByLevel = { 2: 'Silver', 3: 'Gold', 4: 'Platinum', 5: 'Diamond', 6: 'Crown Diamond' };
-                    const rankNamesByType = {
-                        silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond',
-                        crown: 'Crown Diamond', 'crown diamond': 'Crown Diamond', crown_diamond: 'Crown Diamond'
-                    };
-                    const rankName = rankNamesByType[commissionType] || rankNamesByLevel[Number(c.level_number)] || 'Rank';
-                    const amount = Number(c.commission_amount || 0);
-                    rankCommissionTotal += amount;
-                    return `<div style="font-size:11px;color:#aaa;margin-top:5px;display:flex;justify-content:space-between;gap:8px;">
-                        <span style="flex:1;"><b style="color:#e5b853;">${esc(rankName)}:</b> ${esc(profile.full_name || 'Unknown')} (${esc(profile.member_code || 'N/A')})</span>
-                        <span style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(amount))}</span>
-                    </div>`;
-                }).join('');
-
-                const buyerName = buyer.full_name || 'Unknown Member';
-                const buyerCode = buyer.member_code || String(order.buyer_id || 'N/A').slice(0, 8);
-                const referrerName = referrer.full_name || 'Unknown Referrer';
-                const referrerCode = referrer.member_code || String(referrerId || 'N/A').slice(0, 8);
-
-                const directHtml = `<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-top:7px;">
-                    <span style="flex:1;"><b style="color:#e5b853;">Direct Commission (10%)</b><br><small style="color:#999;">Order amount کا 10% — حسابی رقم</small></span>
-                    <b style="color:#f44336;white-space:nowrap;">-${esc(convertMoney(directCommission))}</b>
-                </div>`;
-                const linkHtml = ''; // 🚨 ریفرل لنک کمیشن ختم کر دیا گیا ہے
-
-                const otherDetailsHtml = rankDetailsHtml ? `<div style="border-top:1px dashed #31513e;margin-top:7px;padding-top:5px;"><small style="color:#e5b853;">Additional Rank Commissions (DB Logs)</small>${rankDetailsHtml}</div>` : '';
-                const orderComm = directCommission + linkCommission + rankCommissionTotal;
+                const otherDetailsHtml = commsHtml ? `<div style="margin-top:5px;"><small style="color:#e5b853;">Additional Rank Commissions (DB Logs)</small>${commsHtml}</div>` : '';
                 totalNetworkCommission += orderComm;
+
                 const netEarning = orderTotal - orderComm;
                 const newBal = runningNetworkBalance;
                 const previousBal = newBal - netEarning;
@@ -4788,11 +4759,12 @@ async function openNetworkWalletHistory() {
                     </div>
                     <div style="font-size:12px;color:#aaa;line-height:1.5;">
                         <b>Date:</b> ${esc(date)}<br><b>Status:</b> ${esc(String(order.status || '').toUpperCase())}<br>
-                        <b>Purchased By:</b> ${esc(buyerName)} (ID: ${esc(buyerCode)})
+                        <b>Purchased By:</b> ${esc(buyer.full_name || 'Unknown')} (ID: ${esc(buyer.member_code || 'N/A')})
                     </div>
                     <div style="border-top:1px dashed #1f3a2c;margin:7px 0;padding-top:7px;">
                         <b style="color:#e5b853;font-size:12px;">Commission Details:</b>
-                        ${directHtml}${linkHtml}${otherDetailsHtml}
+                        ${directHtml}
+                        ${otherDetailsHtml}
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:5px;">
                         <b>Total Calculated Commission:</b><span style="color:#f44336;">-${esc(convertMoney(orderComm))}</span>
@@ -4808,46 +4780,13 @@ async function openNetworkWalletHistory() {
             }
         }
 
-        // رینک بونس کی لسٹ HTML میں دکھائیں
-        if (rankBonuses && rankBonuses.length > 0) {
-            html += '<h3 style="color:#e5b853;margin-top:20px;">Rank Bonus History</h3>';
-            rankBonuses.forEach(b => {
-                const bDate = b.created_at ? new Date(b.created_at).toLocaleString() : '—';
-                const memberName = b.profiles?.full_name || 'Member';
-                const memberCode = b.profiles?.member_code || 'N/A';
-                const bAmount = Number(b.commission_amount || 0);
-                totalNetworkCommission += bAmount;
-
-                html += `
-                <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:10px;background:#0a1f15;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-                        <b style="color:#e5b853;">Rank Achievement Bonus</b>
-                        <b style="color:#f44336;">-${esc(convertMoney(bAmount))}</b>
-                    </div>
-                    <div style="font-size:12px;color:#aaa;line-height:1.5;">
-                        <b>Member:</b> ${esc(memberName)} (ID: ${esc(memberCode)})<br>
-                        <b>Date:</b> ${esc(bDate)}
-                    </div>
-                </div>`;
-            });
-        }
-
         const listedOrdersNet = totalNetworkSale - totalNetworkCommission;
-        const walletHeaderHtml = `
-        <div style="background:var(--g);color:#fff;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px;border:1px solid var(--gold);">
-            <p style="margin:0;font-size:14px;color:#d9e9e1;">Admin Network Wallet (Live Balance)</p>
-            <h1 style="margin:10px 0 0;font-size:36px;color:var(--gold);">${esc(convertMoney(currentAdminBalance))}</h1>
-            <p style="margin:5px 0 0;font-size:12px;color:#aaa;">یہ بیلنس ڈیٹا بیس میں محفوظ ہے۔</p>
-        </div>`;
-        html = walletHeaderHtml + html;
-
         const summaryHtml = `
         <div style="border:1px solid #e5b853;border-radius:10px;padding:15px;margin-top:15px;background:#0d1c14;">
-            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Latest 30 Orders Summary</h4>
+            <h4 style="color:#e5b853;margin:0 0 10px;font-size:14px;text-align:center;">Latest Orders Summary</h4>
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Sales:</span><b style="color:#4CAF50;">+${esc(convertMoney(totalNetworkSale))}</b></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Calculated Commission (10% + eligible 2% + ranks):</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span>Total Commission:</span><b style="color:#f44336;">-${esc(convertMoney(totalNetworkCommission))}</b></div>
             <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px dashed #e5b853;padding-top:7px;margin-top:5px;"><b>Net Earning:</b><b style="color:var(--gold);">${esc(convertMoney(listedOrdersNet))}</b></div>
-            <p style="font-size:10px;color:#aaa;line-height:1.5;margin:10px 0 0;">نوٹ: 10% ڈائریکٹ اور 2% ریفرل کمیشن یہاں آرڈر کی رقم سے حساب کرکے دکھائے جاتے ہیں۔ یہ اسکرین ڈیٹابیس میں کمیشن لاگ یا والٹ ادائیگی تبدیل نہیں کرتی۔</p>
         </div>`;
         html += summaryHtml + '</div>';
 
@@ -4857,9 +4796,6 @@ async function openNetworkWalletHistory() {
     }
 }
 
-// ==========================================
-// MEMBER COMMISSION DETAILS
-// ==========================================
 async function openCommissionDetailsModal() {
     if (!user || !sb) return alert('Please sign in first.');
 

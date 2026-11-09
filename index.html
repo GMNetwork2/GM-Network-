@@ -4132,8 +4132,9 @@ async function openCommissionHistoryModal() {
     Swal.fire({ title: 'Loading History...', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
 
     try {
+        // آرڈرز اور ان کے ساتھ خریدار کا نام (profiles) دونوں لائیں
         const { data: orders, error: ordersError } = await sb.from('orders')
-            .select('id, buyer_id, unit_price_usd, quantity, status, created_at, profiles!orders_buyer_id_fkey(full_name)')
+            .select('id, buyer_id, unit_price_usd, quantity, status, created_at, profiles!buyer_id(full_name)')
             .in('status', ['confirmed', 'delivered'])
             .order('created_at', { ascending: false })
             .limit(20);
@@ -4149,6 +4150,7 @@ async function openCommissionHistoryModal() {
             const orderTotal = Number(order.unit_price_usd || 0) * Number(order.quantity || 1);
             const date = order.created_at ? new Date(order.created_at).toLocaleString() : '—';
             const orderShortId = String(order.id).slice(-6);
+            const buyerName = order.profiles?.full_name || 'Unknown Buyer'; // خریدار کا نام یہاں سے آیا
 
             // کمیشن لاگز حاصل کریں
             const { data: commissions, error: commError } = await sb.from('commission_logs')
@@ -4170,8 +4172,6 @@ async function openCommissionHistoryModal() {
                     const profile = memberProfiles[c.user_id] || {};
                     const memberName = profile.full_name || 'Unknown';
                     const memberCode = profile.member_code || 'N/A';
-                    // Direct referral commission remains Direct; rank commission shows its rank name.
-                    // This changes history labels only; commission rates and calculations remain untouched.
                     const commissionType = String(c.type || '').trim().toLowerCase();
                     const rankNamesByLevel = {
                         2: 'Silver',
@@ -4209,7 +4209,6 @@ async function openCommissionHistoryModal() {
                     </div>`;
                 }).join('');
 
-                // نیچے ٹوٹل دکھانا
                 commissionDetailsHtml += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#fff;padding:8px 0;margin-top:5px;border-top:1px dashed #e5b853;">
                     <b>Total Deducted:</b>
                     <div style="text-align:right;">
@@ -4220,7 +4219,7 @@ async function openCommissionHistoryModal() {
                 commissionDetailsHtml = `<div style="color:#888;font-size:12px;padding:5px;">اس آرڈر کے لیے کوئی کمیشن ریکارڈ نہیں ملا۔</div>`;
             }
 
-            const buyerName = order.profiles?.full_name || 'Unknown Buyer';
+            // یہاں ہم نے خریدار کا نام شامل کر دیا ہے
             html += `
             <div style="border:1px solid #1f3a2c;border-radius:10px;padding:12px;margin-bottom:12px;background:#0a1f15;">
                 <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;">

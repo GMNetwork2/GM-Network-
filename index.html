@@ -81,6 +81,12 @@ textarea#swal-note {
 }
 *{box-sizing:border-box}body{margin:0;font:15px system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);}
 header{background:linear-gradient(130deg,var(--g),var(--g2));color:#fff;padding:20px 16px 28px;border-radius:0 0 24px 24px;border-bottom: 1px solid var(--line);}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.currency-switch-wrap{display:flex;align-items:center;gap:7px;margin-left:auto;}
+.currency-switch-wrap label{margin:0;color:var(--gold);font-size:11px;white-space:nowrap;}
+.currency-switch-wrap select{width:auto;min-width:112px;max-width:145px;padding:8px 28px 8px 9px;border:1px solid var(--gold);border-radius:9px;background:var(--bg);color:var(--gold);font-size:13px;font-weight:700;}
+@media(max-width:420px){.currency-switch-wrap{width:100%;justify-content:flex-end;margin-top:4px;}.currency-switch-wrap select{max-width:160px;}}
+
 .brand{display:flex;gap:12px;align-items:center}.logo{width:48px;height:48px;border-radius:14px;background:var(--gold);color:var(--g);display:grid;place-items:center;font-weight:900;font-size:20px}
 h1{margin:0;font-size:24px;color:var(--gold);}header p{margin:4px 0;color:var(--muted);}main{max-width:760px;margin:-12px auto 30px;padding:0 13px}
 .panel,.stat,.tabs{border:1px solid var(--line);border-radius:15px;padding:14px;background:var(--card-bg);margin-bottom:12px}
@@ -366,7 +372,7 @@ input[type="file"]::file-selector-button:hover {
     <button onclick="location.reload()">Retry</button>
 </div>
 
-<header><div class="brand"><img src="logo.png" alt="GM Network Logo" style="width:48px; height:48px; border-radius:12px; object-fit:cover;"><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div></header>
+<header><div class="brand"><img src="logo.png" alt="GM Network Logo" style="width:48px; height:48px; border-radius:12px; object-fit:cover;"><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div><div class="currency-switch-wrap"><label for="displayCurrencySelect">Display Currency</label><select id="displayCurrencySelect" onchange="setDisplayCurrency(this.value)" aria-label="Choose display currency"><option value="USD">USD ($)</option><option value="USDT">USDT</option><option value="PKR">PKR (Rs)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div></header>
 
 <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Open menu">☰</button>
 <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
@@ -1127,6 +1133,9 @@ async function gmConfirm(message, title = 'تصدیق کریں') {
 // Intercept current and future alert() calls from this app.
 window.alert = function (message) { gmPopup(message); };
 
+// Restore the user's display-only currency preference.
+initializeDisplayCurrency();
+
 
 function status(id, msg, type = '') {
     const el = $(id);
@@ -1140,8 +1149,51 @@ function esc(v) {
     return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// DISPLAY-ONLY currency selector. All stored values and financial calculations remain in USD.
+const DISPLAY_CURRENCY_RATES = {
+    USD: 1,
+    USDT: 1,
+    PKR: 276.54,
+    INR: 94.06,
+    EUR: 0.8924,
+    GBP: 0.7446
+};
+const DISPLAY_CURRENCY_SYMBOLS = {
+    USD: '$', USDT: 'USDT ', PKR: 'Rs ', INR: '₹', EUR: '€', GBP: '£'
+};
+let selectedDisplayCurrency = 'USD';
+
+function setDisplayCurrency(currency) {
+    const allowed = Object.keys(DISPLAY_CURRENCY_RATES);
+    selectedDisplayCurrency = allowed.includes(String(currency || '').toUpperCase())
+        ? String(currency).toUpperCase() : 'USD';
+    try { localStorage.setItem('gm_display_currency', selectedDisplayCurrency); } catch (e) {}
+    const selector = document.getElementById('displayCurrencySelect');
+    if (selector && selector.value !== selectedDisplayCurrency) selector.value = selectedDisplayCurrency;
+    // Refresh visible amounts only; no database or accounting values are updated.
+    if (typeof loadProducts === 'function') loadProducts();
+    if (user && typeof loadProfile === 'function') loadProfile();
+    if (user && typeof loadMyAccountPage === 'function') loadMyAccountPage();
+    if (user && typeof loadWallet === 'function') loadWallet();
+    if (typeof loadAdmin === 'function' && isAdmin) loadAdmin();
+}
+
+function initializeDisplayCurrency() {
+    try {
+        const saved = String(localStorage.getItem('gm_display_currency') || 'USD').toUpperCase();
+        selectedDisplayCurrency = Object.prototype.hasOwnProperty.call(DISPLAY_CURRENCY_RATES, saved) ? saved : 'USD';
+    } catch (e) { selectedDisplayCurrency = 'USD'; }
+    const selector = document.getElementById('displayCurrencySelect');
+    if (selector) selector.value = selectedDisplayCurrency;
+}
+
 function convertMoney(usdAmount) {
-    return '$' + Number(usdAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const amount = Number(usdAmount || 0);
+    const currency = selectedDisplayCurrency || 'USD';
+    const converted = amount * (DISPLAY_CURRENCY_RATES[currency] || 1);
+    const locale = currency === 'INR' ? 'en-IN' : currency === 'PKR' ? 'en-PK' : 'en-US';
+    const formatted = converted.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (DISPLAY_CURRENCY_SYMBOLS[currency] || '$') + formatted;
 }
 
 function tab(id, skipHistory = false) {

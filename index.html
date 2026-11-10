@@ -1274,14 +1274,26 @@ function menuTab(id) {
 }
 
 async function init() {
+    // Supabase script load hone ka intezar karein
+    let retries = 0;
+    while (!window.supabase && retries < 20) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        retries++;
+    }
+
     if (!window.supabase) {
         status('connection', 'Could not load Supabase. Check your internet connection.', 'error');
+        // Agar user phir bhi try kare to ek alert dikhayein
+        setTimeout(() => {
+            if (window.Swal) Swal.fire({icon:'error',title:'Connection Error',text:'Supabase library load nahi ho saki. Apna internet check karein aur page refresh karein.',background:'#0d1c14',color:'#e5b853',confirmButtonColor:'#e5b853'});
+        }, 1000);
         return;
     }
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    await checkSystemLockStatus();
 
     try {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await checkSystemLockStatus();
+
         const { data, error } = await sb.auth.getSession();
         if (error) throw error;
         user = data.session?.user || null;

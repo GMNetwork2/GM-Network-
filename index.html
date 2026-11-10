@@ -342,8 +342,18 @@ input[type="file"]::file-selector-button:hover {
     margin-top: 5px;
 }
 #paymentProofBox button {
-    width: 100%;
-    margin-top: 5px;
+    background: var(--gold) !important;
+    color: var(--g) !important;
+    font-weight: bold !important;
+    border: none !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    margin-top: 5px !important;
+}
+#paymentProofBox button:hover {
+    background: #ffd66e !important;
 }
 
 </style>
@@ -2500,7 +2510,7 @@ async function loadAdmin() {
                     let buyerName = 'Unknown Buyer';
                     const { data: bName } = await sb.rpc('get_order_buyer_name', { p_order_id: order.id });
                     if (bName) buyerName = bName;
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, buyerName + ' • ' + prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg);
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName);
                 };
             }
         });
@@ -2688,8 +2698,8 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null) {
-    $('orderDetailName').textContent = (name || 'Product') + ' • Order …' + String(id).slice(-6);
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null, buyerNameFallback = null) {
+    $('orderDetailName').textContent = (name || 'Unknown Product') + ' • ' + (buyerNameFallback || 'Loading buyer…') + ' • Order …' + String(id).slice(-6);
     const imgContainer = document.getElementById('orderProductImageContainer');
     if (imgContainer) {
         if (productImage) {
@@ -2704,7 +2714,8 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
     if (buyerId) {
         const { data: customerProfile, error: customerProfileError } = await sb.from('profiles').select('full_name,member_code').eq('id', buyerId).maybeSingle();
         if (!customerProfileError && customerProfile) {
-            $('orderDetailName').textContent = (name || 'Product') + ' • ' + (customerProfile.full_name || 'Member') + ' • Order …' + String(id).slice(-6);
+            // پروڈکٹ کا نام، خریدار کا نام اور آرڈر آئی ڈی ایک ساتھ دکھائیں
+            $('orderDetailName').textContent = (name || 'Unknown Product') + ' • ' + (customerProfile.full_name || buyerNameFallback || 'Member') + ' • Order …' + String(id).slice(-6);
             $('orderDetailMemberCode').textContent = customerProfile.member_code || 'Member ID not assigned';
         }
         else $('orderDetailMemberCode').textContent = 'Member profile not found';
@@ -2796,9 +2807,9 @@ async function updateOrderStatus(orderId, newStatus) {
         .eq('id', orderId).single();
     if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
     const previousStatus = String(currentOrder.status || '').toLowerCase();
-    if (newStatus === 'confirmed' && previousStatus === 'pending' && !currentOrder.payment_proof) {
-        const msg = 'Payment Proof is missing. Please verify the member payment first, then confirm this order.';
-        if (window.Swal) await Swal.fire({ icon:'warning', title:'Payment Not Verified', text:msg, background:'#0d1c14', color:'#e5b853' });
+    if (newStatus === 'confirmed' && !currentOrder.payment_proof) {
+        const msg = 'پیمنٹ پروف اپلوڈ نہیں ہوا۔ براہ کرم پہلے پیمنٹ پروف اپلوڈ کریں، پھر آرڈر کنفرم کریں۔';
+        if (window.Swal) await Swal.fire({ icon:'warning', title:'پیمنٹ پروف درکار ہے', text:msg, background:'#0d1c14', color:'#e5b853' });
         else alert(msg);
         return;
     }

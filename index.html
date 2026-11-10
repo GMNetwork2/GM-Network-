@@ -1133,8 +1133,7 @@ async function gmConfirm(message, title = 'تصدیق کریں') {
 // Intercept current and future alert() calls from this app.
 window.alert = function (message) { gmPopup(message); };
 
-// Restore the user's display-only currency preference.
-initializeDisplayCurrency();
+
 
 
 function status(id, msg, type = '') {
@@ -1162,6 +1161,9 @@ const DISPLAY_CURRENCY_SYMBOLS = {
     USD: '$', USDT: 'USDT ', PKR: 'Rs ', INR: '₹', EUR: '€', GBP: '£'
 };
 let selectedDisplayCurrency = 'USD';
+
+// Restore the user's display-only currency preference.
+initializeDisplayCurrency();
 
 function setDisplayCurrency(currency) {
     const allowed = Object.keys(DISPLAY_CURRENCY_RATES);

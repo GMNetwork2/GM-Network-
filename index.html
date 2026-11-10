@@ -1162,9 +1162,6 @@ const DISPLAY_CURRENCY_SYMBOLS = {
 };
 let selectedDisplayCurrency = 'USD';
 
-// Restore the user's display-only currency preference.
-initializeDisplayCurrency();
-
 function setDisplayCurrency(currency) {
     const allowed = Object.keys(DISPLAY_CURRENCY_RATES);
     selectedDisplayCurrency = allowed.includes(String(currency || '').toUpperCase())
@@ -1188,6 +1185,9 @@ function initializeDisplayCurrency() {
     const selector = document.getElementById('displayCurrencySelect');
     if (selector) selector.value = selectedDisplayCurrency;
 }
+
+// Restore the user's display-only currency preference after its constants are initialized.
+initializeDisplayCurrency();
 
 function convertMoney(usdAmount) {
     const amount = Number(usdAmount || 0);

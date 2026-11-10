@@ -1040,7 +1040,7 @@ input[type="file"]::file-selector-button:hover {
         <div style="background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:12px;margin-bottom:20px;"><p style="margin:0;font-size:14px;">Total Amount to Pay:</p><h2 id="payTotalAmount" style="color:var(--g);font-size:28px;margin:5px 0 0;"></h2></div>
         <div class="qr-container" style="padding:15px;background:#fff;border:1px solid var(--line);border-radius:12px;"><img src="qr.png" class="qr-img" alt="QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p style="font-size:13px;margin-top:10px;">Scan to pay MUHAMMAD HAMID</p></div>
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
-        <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
+        <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><button class="secondary" type="button" onclick="document.getElementById('paymentProofPage').classList.add('hidden'); document.getElementById('checkoutPage').classList.remove('hidden');" style="margin-top:10px;width:100%;">Back to Checkout</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>
 </div>  
 <script>
@@ -2145,36 +2145,53 @@ async function submitOrder() {
     if (!user || !currentProduct || !sb) return;
     const name = $('orderName').value.trim(), phone = $('orderPhone').value.trim(), address = $('orderAddress').value.trim();
     if (!name || !phone || !address) return alert('Please fill in all fields.');
-    status('orderStatus', 'Placing order…');
-    
-    const orderPayload = { buyer_id: user.id, buyer_email: user.email || null, product_id: currentProduct.id, quantity: 1, unit_price_usd: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null };
-    let result = await sb.from('orders').insert(orderPayload).select('id').single();
-    if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
-        result = await sb.from('orders').insert({ buyer_id: user.id, product_id: currentProduct.id, quantity: 1, unit_price_usd: currentProduct.price, phone_number: phone, shipping_address: address, status: 'pending', referrer_id: myProfile?.referred_by || null }).select('id').single();
-    }
-    
-    const { data: order, error } = result;
-    if (error) { status('orderStatus', 'Order failed: ' + error.message, 'error'); return; }
-    currentOrderId = order?.id || null;
-    $('orderFormContent').classList.add('hidden'); $('paymentContent').classList.remove('hidden'); $('payAmount').textContent = convertMoney(currentProduct.price);
-    const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId || ''} for ${currentProduct.name} (${convertMoney(currentProduct.price)}). My Name: ${name}, Phone: ${phone}. I will send the payment screenshot.`);
+    window.pendingOrderData = { name, phone, address, product_id: currentProduct.id, product_name: currentProduct.name, price: currentProduct.price };
+    $('orderFormContent').classList.add('hidden');
+    $('paymentContent').classList.remove('hidden');
+    $('payAmount').textContent = convertMoney(currentProduct.price);
+    const msg = encodeURIComponent(`Hi, I want to place an order for ${currentProduct.name} (${convertMoney(currentProduct.price)}). My Name: ${name}, Phone: ${phone}. I will send the payment screenshot.`);
     $('whatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
-    $('orderName').value = ''; $('orderPhone').value = ''; $('orderAddress').value = '';
 }
 
 async function uploadPaymentProof() {
-    if (!currentOrderId) return alert("Order ID not found. Please refresh.");
-    const fileInput = $('paymentScreenshot'), file = fileInput.files[0];
+    if (!user || !sb || !window.pendingOrderData) return alert("Order data missing. Please close and try again.");
+    const file = $('paymentScreenshot')?.files?.[0];
     if (!file) return alert("Please select a screenshot of your payment first.");
-    status('uploadStatus', 'Uploading proof...');
-    const ext = file.name.split('.').pop(), path = `payments/${currentOrderId}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await sb.storage.from('product-images').upload(path, file);
-    if (uploadError) { status('uploadStatus', 'Upload failed: ' + uploadError.message, 'error'); return; }
-    const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(path);
-    const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', currentOrderId);
-    if (updateError) status('uploadStatus', 'Database update failed: ' + updateError.message, 'error');
-    else { status('uploadStatus', '✅ Proof submitted successfully!', 'ok'); setTimeout(() => closeModal(), 3000); }
+    const uploadButton = $('uploadStatus')?.previousElementSibling;
+    status('uploadStatus', 'Uploading proof & placing order...');
+    if (uploadButton) uploadButton.disabled = true;
+    let orderId = null;
+    try {
+        const pData = window.pendingOrderData;
+        const payload = { buyer_id:user.id, buyer_email:user.email || null, product_id:pData.product_id, quantity:1, unit_price_usd:pData.price, phone_number:pData.phone, shipping_address:pData.address, status:'pending', referrer_id:myProfile?.referred_by || null };
+        let result = await sb.from('orders').insert(payload).select('id').single();
+        if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
+            const fallback = { ...payload }; delete fallback.buyer_email;
+            result = await sb.from('orders').insert(fallback).select('id').single();
+        }
+        if (result.error) throw new Error(result.error.message);
+        orderId = result.data.id;
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `payments/${orderId}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert:false, contentType:file.type || 'image/jpeg' });
+        if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
+        const publicUrl = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+        const { error:updateError } = await sb.from('orders').update({ payment_proof:publicUrl }).eq('id', orderId);
+        if (updateError) throw new Error('Database update failed: ' + updateError.message);
+        status('uploadStatus', '✅ Order placed successfully! Admin will verify your payment.', 'ok');
+        $('orderName').value = ''; $('orderPhone').value = ''; $('orderAddress').value = '';
+        $('paymentScreenshot').value = ''; window.pendingOrderData = null;
+        setTimeout(() => closeModal(), 3000);
+    } catch (error) {
+        if (orderId) {
+            const { error:deleteError } = await sb.from('orders').delete().eq('id', orderId);
+            if (deleteError) console.error('Could not remove incomplete order:', deleteError.message);
+        }
+        status('uploadStatus', 'Error: ' + error.message, 'error');
+        if (uploadButton) uploadButton.disabled = false;
+    }
 }
+
 
 // Withdraw Requests Modal (With Search)
 async function openWithdrawRequestsModal() {
@@ -3320,136 +3337,89 @@ async function loadCheckoutWalletBalance() {
 async function submitCheckout() {
     if (!user || !checkoutData || !sb) return alert('Please sign in and select a product first.');
     const locked = await checkSystemLockStatus();
-    // ممبر خود لاک ہے یا نہیں چیک کریں
     try {
-        const { data: myProf, error: profileLockError } = await sb.from('profiles').select('is_locked').eq('id', user.id).maybeSingle();
+        const { data:myProf, error:profileLockError } = await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();
         if (profileLockError) throw profileLockError;
-        if (myProf && myProf.is_locked) {
-            return alert('آپ کا اکاؤنٹ سیکیورٹی وجوہات کی بنا پر لاک ہے۔ براہ کرم ایڈمن سے رابطہ کریں۔');
-        }
-    } catch (e) {
-        console.warn('Member lock check failed:', e);
+        if (myProf && myProf.is_locked) return alert('آپ کا اکاؤنٹ سیکیورٹی وجوہات کی بنا پر لاک ہے۔ براہ کرم ایڈمن سے رابطہ کریں۔');
+    } catch(e) {
+        console.warn('Member lock check failed:',e);
         return alert('آپ کے اکاؤنٹ کا سیکیورٹی اسٹیٹس چیک نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔');
     }
     if (locked) return alert('معذرت، سسٹم فی الحال ایڈمن کی جانب سے لاک ہے۔ آپ ابھی آرڈر نہیں کر سکتے۔');
     if (!systemLockStatusLoaded) return alert('سسٹم کا لاک اسٹیٹس چیک نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔');
-    const name = $('coNameInput').value.trim();
-    const phone = $('coPhoneInput').value.trim();
-    const street = $('coAddressInput').value.trim();
-    const city = $('coCityInput').value.trim();
-    const postal = $('coPostalInput').value.trim();
-    const address = `${street}, ${city} - ${postal}`;
-    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details (Name, Phone, Street, City, Postal Code).');
 
-    const methodInput = document.querySelector('input[name="paymentMethod"]:checked');
-    const paymentMethod = methodInput?.value === 'wallet' ? 'wallet' : 'manual';
+    const name=$('coNameInput').value.trim(), phone=$('coPhoneInput').value.trim();
+    const street=$('coAddressInput').value.trim(), city=$('coCityInput').value.trim(), postal=$('coPostalInput').value.trim();
+    const address=`${street}, ${city} - ${postal}`;
+    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details (Name, Phone, Street, City, Postal Code).');
+    const methodInput=document.querySelector('input[name="paymentMethod"]:checked');
+    const paymentMethod=methodInput?.value==='wallet'?'wallet':'manual';
     if (!deliveryChargeLoaded) {
-        const loaded = await loadDeliveryCharge(false);
+        const loaded=await loadDeliveryCharge(false);
         if (!loaded) return alert('Delivery charges could not be loaded. Please refresh checkout and try again.');
     }
-    const productSubtotal = Number(checkoutData.price || 0) * Number(productQty || 1);
-    const deliveryChargeBase = getDeliveryChargeBase();
-    const orderTotal = productSubtotal + deliveryChargeBase; // USD
-    const orderTotalUsd = orderTotal;
-    let wallet = null;
-    if (paymentMethod === 'wallet') {
-        const { data, error } = await sb.from('wallets').select('id,balance').eq('user_id', user.id).maybeSingle();
-        if (error) return alert('Could not check wallet balance: ' + error.message);
-        wallet = data;
-        if (!wallet || Number(wallet.balance || 0) < orderTotalUsd) {
-            return alert('Insufficient wallet balance. Please add funds or choose manual payment.');
-        }
-    }
+    const productSubtotal=Number(checkoutData.price||0)*Number(productQty||1);
+    const orderTotal=productSubtotal+getDeliveryChargeBase();
 
-    const btn = $('coSubmitBtn');
-    btn.textContent = 'Processing…';
-    btn.disabled = true;
-    try {
-        const orderPayload = {
-            buyer_id: user.id,
-            buyer_email: user.email || null,
-            product_id: checkoutData.id,
-            quantity: productQty,
-            unit_price_usd: checkoutData.price,
-            subtotal_usd: productSubtotal,
-            delivery_charge_usd: Number(deliveryChargeUsd || 0),
-            total_usd: orderTotal,
-            phone_number: phone,
-            shipping_address: address,
-            status: 'pending',
-            referrer_id: myProfile?.referred_by || null,
-            payment_method: paymentMethod
+    if (paymentMethod==='manual') {
+        window.pendingCheckoutData = {
+            product_id:checkoutData.id, quantity:productQty, unit_price_usd:checkoutData.price,
+            subtotal_usd:productSubtotal, delivery_charge_usd:Number(deliveryChargeUsd||0),
+            total_usd:orderTotal, phone_number:phone, shipping_address:address,
+            product_name:checkoutData.name, buyer_name:name
         };
-        let result = await sb.from('orders').insert(orderPayload).select('id').single();
-        
-        if (result.error && /buyer_email|payment_method/i.test(result.error.message || '')) {
-            const fallbackPayload = { ...orderPayload };
-            if (/buyer_email/i.test(result.error.message || '')) delete fallbackPayload.buyer_email;
-            if (/payment_method/i.test(result.error.message || '')) delete fallbackPayload.payment_method;
-            result = await sb.from('orders').insert(fallbackPayload).select('id').single();
-        }
-        
-        if (result.error) throw new Error('Order failed: ' + result.error.message);
-        currentOrderId = result.data.id;
-
-        if (paymentMethod === 'wallet') {
-            if (await checkSystemLockStatus()) throw new Error('System is LOCKED. Wallet checkout has been stopped.');
-            const oldBalance = Number(wallet.balance || 0);
-            const newBalance = oldBalance - orderTotalUsd;
-            const { data: updatedWallet, error: debitError } = await sb.from('wallets')
-                .update({ balance: newBalance }).eq('id', wallet.id).eq('balance', oldBalance).select('balance').maybeSingle();
-            
-            if (debitError || !updatedWallet) {
-                alert('Order was created, but wallet payment could not be completed. Please contact admin with Order ID: ' + currentOrderId);
-                history.pushState({ page: 'payment' }, '', '#payment');
-                $('checkoutPage').classList.add('hidden');
-                $('paymentProofPage').classList.remove('hidden');
-                $('payTotalAmount').textContent = convertMoney(orderTotal);
-                status('proofStatus', 'Wallet debit failed. Do not pay twice; contact admin with Order ID ' + currentOrderId + '.', 'error');
-                return;
-            }
-            
-            const { error: txnError } = await sb.from('wallet_transactions').insert({
-                wallet_id: wallet.id, user_id: user.id, amount: orderTotalUsd,
-                type: 'purchase', status: 'completed', order_id: currentOrderId,
-                balance_before: oldBalance, balance_after: newBalance
-            });
-            if (txnError) console.error('Wallet transaction log failed:', txnError.message);
-            
-            const { error: confirmError } = await sb.from('orders').update({ status: 'confirmed' }).eq('id', currentOrderId);
-            let rewardError = null;
-            if (!confirmError) {
-                try { await processOrderRewards(currentOrderId, false); }
-                catch (err) { rewardError = err; console.error('Wallet order reward processing failed:', err); }
-            } else console.error('Could not mark wallet-paid order confirmed:', confirmError.message);
-            
-            alert(confirmError
-                ? 'Wallet was charged, but order status could not be updated. Please contact admin with Order ID: ' + currentOrderId
-                : rewardError
-                    ? 'Order is confirmed and wallet payment is complete, but Coins/Commission could not be distributed: ' + (rewardError.message || rewardError) + '. Please contact Admin with Order ID: ' + currentOrderId
-                    : 'Order placed successfully. Coins and referral commission have been distributed.');
-            
-            $('checkoutPage').classList.add('hidden');
-            $('productViewPage').classList.add('hidden');
-            document.body.style.overflow = '';
-            checkoutData = null;
-            await loadMyWallet();
-            tab('my-wallet');
-        } else {
-            history.pushState({ page: 'payment' }, '', '#payment');
-            $('checkoutPage').classList.add('hidden');
-            $('paymentProofPage').classList.remove('hidden');
-            $('payTotalAmount').textContent = convertMoney(orderTotal);
-            const msg = encodeURIComponent(`Hi, I placed order ${currentOrderId} for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. I will send the screenshot.`);
-            $('payWhatsappBtn').href = `https://wa.me/92${MY_EASYPAISA.replace(/^0/, '')}?text=${msg}`;
-        }
-    } catch (e) {
-        alert('Error: ' + e.message);
-    } finally {
-        btn.textContent = 'Confirm Order';
-        btn.disabled = false;
+        history.pushState({page:'payment'},'','#payment');
+        $('checkoutPage').classList.add('hidden');
+        $('paymentProofPage').classList.remove('hidden');
+        $('payTotalAmount').textContent=convertMoney(orderTotal);
+        const msg=encodeURIComponent(`Hi, I want to place an order for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. Total: ${convertMoney(orderTotal)}. I will send the payment screenshot.`);
+        $('payWhatsappBtn').href=`https://wa.me/92${MY_EASYPAISA.replace(/^0/,'')}?text=${msg}`;
+        return;
     }
+
+    const {data:wallet,error:walletError}=await sb.from('wallets').select('id,balance').eq('user_id',user.id).maybeSingle();
+    if (walletError) return alert('Could not check wallet balance: '+walletError.message);
+    if (!wallet || Number(wallet.balance||0)<orderTotal) return alert('Insufficient wallet balance. Please add funds or choose manual payment.');
+    const btn=$('coSubmitBtn'); btn.textContent='Processing…'; btn.disabled=true;
+    try {
+        const payload={
+            buyer_id:user.id,buyer_email:user.email||null,product_id:checkoutData.id,
+            quantity:productQty,unit_price_usd:checkoutData.price,subtotal_usd:productSubtotal,
+            delivery_charge_usd:Number(deliveryChargeUsd||0),total_usd:orderTotal,
+            phone_number:phone,shipping_address:address,status:'pending',
+            referrer_id:myProfile?.referred_by||null,payment_method:'wallet'
+        };
+        let result=await sb.from('orders').insert(payload).select('id').single();
+        if (result.error && /buyer_email|payment_method/i.test(result.error.message||'')) {
+            const fallback={...payload};
+            if (/buyer_email/i.test(result.error.message||'')) delete fallback.buyer_email;
+            if (/payment_method/i.test(result.error.message||'')) delete fallback.payment_method;
+            result=await sb.from('orders').insert(fallback).select('id').single();
+        }
+        if (result.error) throw new Error('Order failed: '+result.error.message);
+        const orderId=result.data.id;
+        if (await checkSystemLockStatus()) throw new Error('System is LOCKED. Wallet checkout has been stopped.');
+        const oldBalance=Number(wallet.balance||0), newBalance=oldBalance-orderTotal;
+        const {data:updatedWallet,error:debitError}=await sb.from('wallets').update({balance:newBalance}).eq('id',wallet.id).eq('balance',oldBalance).select('balance').maybeSingle();
+        if (debitError || !updatedWallet) throw new Error('Wallet payment failed. Contact admin with Order ID: '+orderId);
+        const {error:txnError}=await sb.from('wallet_transactions').insert({
+            wallet_id:wallet.id,user_id:user.id,amount:orderTotal,type:'purchase',status:'completed',
+            order_id:orderId,balance_before:oldBalance,balance_after:newBalance
+        });
+        if (txnError) console.error('Wallet transaction log failed:',txnError.message);
+        const {error:confirmError}=await sb.from('orders').update({status:'confirmed'}).eq('id',orderId);
+        if (confirmError) throw new Error('Wallet charged but order confirmation failed. Contact admin with Order ID: '+orderId);
+        if (typeof processOrderRewards==='function') {
+            try { await processOrderRewards(orderId,false); } catch(e) { console.error('Wallet rewards failed:',e); }
+        }
+        alert('Order placed successfully via Wallet.');
+        $('checkoutPage').classList.add('hidden'); $('productViewPage').classList.add('hidden');
+        document.body.style.overflow=''; checkoutData=null;
+        await loadMyWallet(); tab('my-wallet');
+    } catch(e) { alert('Error: '+e.message); }
+    finally { btn.textContent='Confirm & Place Order'; btn.disabled=false; }
 }
+
 
 async function loadMyWallet() {
     if (!user || !sb) return;
@@ -3543,40 +3513,56 @@ async function requestWalletDeposit() {
 }
 
 async function submitPaymentProof() {
-    if (!currentOrderId) return alert('Order ID not found.');
-    const fileInput = $('paymentProofInput');
-    const file = fileInput.files?.[0];
+    if (!user || !sb || !window.pendingCheckoutData) return alert('Order data missing. Please restart checkout.');
+    const file=$('paymentProofInput').files?.[0];
     if (!file) return alert('Please select a payment screenshot first.');
-    if (!sb) return status('proofStatus', 'Backend is not connected.', 'error');
-    status('proofStatus', 'Uploading screenshot…');
-    $('proofSubmitBtn').disabled = true;
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-    const path = `payments/${currentOrderId}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
-    if (uploadError) {
-        status('proofStatus', 'Upload failed: ' + uploadError.message, 'error');
-        $('proofSubmitBtn').disabled = false;
-        return;
+    $('proofStatus').classList.remove('hidden');
+    status('proofStatus','Uploading screenshot & placing order…');
+    $('proofSubmitBtn').disabled=true;
+    let orderId=null;
+    try {
+        const p=window.pendingCheckoutData;
+        const payload={
+            buyer_id:user.id,buyer_email:user.email||null,product_id:p.product_id,
+            quantity:p.quantity,unit_price_usd:p.unit_price_usd,subtotal_usd:p.subtotal_usd,
+            delivery_charge_usd:p.delivery_charge_usd,total_usd:p.total_usd,
+            phone_number:p.phone_number,shipping_address:p.shipping_address,status:'pending',
+            referrer_id:myProfile?.referred_by||null,payment_method:'manual'
+        };
+        let result=await sb.from('orders').insert(payload).select('id').single();
+        if (result.error && /buyer_email|payment_method|schema cache|column/i.test(result.error.message||'')) {
+            const fallback={...payload};
+            if (/buyer_email|schema cache|column/i.test(result.error.message||'')) delete fallback.buyer_email;
+            if (/payment_method|schema cache|column/i.test(result.error.message||'')) delete fallback.payment_method;
+            result=await sb.from('orders').insert(fallback).select('id').single();
+        }
+        if (result.error) throw new Error('Order creation failed: '+result.error.message);
+        orderId=result.data.id;
+        const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+        const path=`payments/${orderId}-${Date.now()}.${ext}`;
+        const {error:uploadError}=await sb.storage.from('product-images').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});
+        if (uploadError) throw new Error('Upload failed: '+uploadError.message);
+        const publicUrl=sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+        if (!publicUrl) throw new Error('Could not generate payment proof URL.');
+        const {error:updateError}=await sb.from('orders').update({payment_proof:publicUrl}).eq('id',orderId);
+        if (updateError) throw new Error('Database update failed: '+updateError.message);
+        status('proofStatus','✅ Payment proof submitted successfully! Your order is now Pending for Admin review.','ok');
+        setTimeout(()=>{
+            $('paymentProofPage').classList.add('hidden'); document.body.style.overflow='';
+            $('paymentProofInput').value=''; $('proofStatus').classList.add('hidden');
+            $('proofSubmitBtn').disabled=false; checkoutData=null; window.pendingCheckoutData=null;
+            tab('home'); if (isAdmin) loadAdmin();
+        },3000);
+    } catch(error) {
+        if (orderId) {
+            const {error:deleteError}=await sb.from('orders').delete().eq('id',orderId);
+            if (deleteError) console.error('Could not remove incomplete order:',deleteError.message);
+        }
+        status('proofStatus','Error: '+error.message,'error');
+        $('proofSubmitBtn').disabled=false;
     }
-    const publicUrl = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
-    const { error: updateError } = await sb.from('orders').update({ payment_proof: publicUrl }).eq('id', currentOrderId);
-    if (updateError) {
-        status('proofStatus', 'Database update failed: ' + updateError.message, 'error');
-        $('proofSubmitBtn').disabled = false;
-        return;
-    }
-    status('proofStatus', 'Payment proof submitted successfully! Your order is under review.', 'ok');
-    setTimeout(() => {
-        $('paymentProofPage').classList.add('hidden');
-        document.body.style.overflow = '';
-        $('paymentProofInput').value = '';
-        $('proofStatus').classList.add('hidden');
-        $('proofSubmitBtn').disabled = false;
-        checkoutData = null;
-        tab('home');
-        if (isAdmin) loadAdmin();
-    }, 3000);
 }
+
 
 let bannerSlideTimer = null;
 function startBannerAutoSlide() {

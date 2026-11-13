@@ -4786,9 +4786,46 @@ async function openCommissionDetailsModal() {
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>
-    window.addEventListener('offline', () => { document.getElementById('offlineOverlay').style.display = 'flex'; });
-    window.addEventListener('online', () => { document.getElementById('offlineOverlay').style.display = 'none'; });
-    if (!navigator.onLine) { document.getElementById('offlineOverlay').style.display = 'flex'; }
+    // ==========================================
+    // SMART OFFLINE HANDLING (No White Page)
+    // ==========================================
+    function showOfflineScreen() {
+        const overlay = document.getElementById('offlineOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            // ویب ویو کے سفید پیج کو چھپانے کے لیے اسے سب سے اوپر لائیں
+            overlay.style.zIndex = '9999999';
+            document.body.style.overflow = 'hidden'; // پیچھے سکرول روکیں
+        }
+    }
+
+    function hideOfflineScreen() {
+        const overlay = document.getElementById('offlineOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+            document.body.style.overflow = ''; // سکرول بحال کریں
+        }
+    }
+
+    // جب نیٹ ورک جائے تو آف لائن اسکرین دکھائیں
+    window.addEventListener('offline', showOfflineScreen);
+
+    // جب نیٹ ورک واپس آئے تو آف لائن اسکرین چھپائیں
+    window.addEventListener('online', () => {
+        hideOfflineScreen();
+    });
+
+    // جب ایپ پہلی بار کھلے اور نیٹ نہ ہو
+    if (!navigator.onLine) {
+        showOfflineScreen();
+    }
+
+    // ویب ویو کے اندرونی ایرر کو پکڑنے کے لیے تاکہ سفید پیج نہ آئے
+    window.addEventListener('error', function(e) {
+        if (!navigator.onLine) {
+            showOfflineScreen();
+        }
+    });
 </script>
 </body>
 </html>

@@ -369,7 +369,7 @@ input[type="file"]::file-selector-button:hover {
     <div class="icon">📶</div>
     <h2>No Internet Connection</h2>
     <p>Please check your internet connection and try again to access GM Network.</p>
-    <button onclick="location.reload()">Retry</button>
+    <button id="offlineRetryButton" onclick="retryConnection()">Retry</button>
 </div>
 
 <header><div class="brand"><img src="logo.png" alt="GM Network Logo" style="width:48px; height:48px; border-radius:12px; object-fit:cover;"><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div><div class="currency-switch-wrap"><label for="displayCurrencySelect">Display Currency</label><select id="displayCurrencySelect" onchange="setDisplayCurrency(this.value)" aria-label="Choose display currency"><option value="USD">USD ($)</option><option value="USDT">USDT</option><option value="PKR">PKR (Rs)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div></header>
@@ -4810,10 +4810,48 @@ document.addEventListener('DOMContentLoaded', init);
     // جب نیٹ ورک جائے تو آف لائن اسکرین دکھائیں
     window.addEventListener('offline', showOfflineScreen);
 
-    // جب نیٹ ورک واپس آئے تو آف لائن اسکرین چھپائیں
-    window.addEventListener('online', () => {
-        hideOfflineScreen();
-    });
+    // Retry: پہلے حقیقی ویب کنکشن چیک کریں؛ ناکامی پر اسی اسکرین پر رہیں
+    async function retryConnection() {
+        const button = document.getElementById('offlineRetryButton');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Checking...';
+        }
+
+        try {
+            // صرف نیٹ ورک سگنل نہیں، اصل ویب سائٹ تک رسائی بھی چیک کریں
+            if (!navigator.onLine) throw new Error('Device is offline');
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            let response;
+            try {
+                response = await fetch(window.location.href, {
+                    method: 'HEAD',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+            } finally {
+                clearTimeout(timeoutId);
+            }
+
+            if (!response || !response.ok) throw new Error('Website is not reachable');
+
+            // کنکشن کامیاب ہو تو ہی ویب سائٹ دوبارہ لوڈ کریں
+            location.reload();
+        } catch (error) {
+            // انٹرنیٹ بند/کمزور ہو تو سفید WebView صفحہ کھولنے کے بجائے
+            // موجودہ Offline Screen کو برقرار رکھیں
+            showOfflineScreen();
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Retry';
+            }
+        }
+    }
+
+    // نیٹ ورک واپس آنے پر بھی پہلے اصل کنکشن کی تصدیق کریں
+    window.addEventListener('online', retryConnection);
 
     // جب ایپ پہلی بار کھلے اور نیٹ نہ ہو
     if (!navigator.onLine) {

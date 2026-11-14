@@ -143,6 +143,32 @@ body { overflow-x: hidden; }
 .featured-title { color: var(--gold); font-size: 22px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
 .featured-title span { font-size: 14px; color: var(--muted); cursor: pointer; }
 .featured-title span:hover { color: var(--gold); }
+
+/* ===== GM NETWORK PREMIUM PRODUCT SLIDERS ===== */
+.premium-slider-section{margin:24px 0 30px;padding:16px 12px;background:linear-gradient(135deg,#0d1c14,#10291d);border:1px solid var(--gold);border-radius:16px;overflow:hidden}
+.premium-slider-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.premium-slider-heading h2{margin:0;font-size:18px;color:var(--gold)}
+.premium-slider-heading span{font-size:11px;color:var(--muted)}
+.premium-product-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:2px 2px 12px;scrollbar-width:none}
+.premium-product-track::-webkit-scrollbar{display:none}
+.premium-product-card{flex:0 0 148px;max-width:148px;min-width:0;background:#07130d;border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;scroll-snap-align:start;overflow:hidden}
+.premium-product-card img{width:100%;height:125px;object-fit:contain;background:#0a1f15;border-radius:8px;display:block}
+.premium-product-card strong{display:block;color:var(--ink);font-size:12px;line-height:1.3;margin-top:8px;min-height:31px;overflow:hidden}
+.premium-product-card .premium-price{display:block;color:var(--gold);font-size:13px;font-weight:800;margin-top:5px}
+.premium-product-card:active{transform:scale(.98)}
+/* ===== FULL-SCREEN PRODUCT IMAGE LIGHTBOX ===== */
+.image-lightbox{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center;padding:64px 14px 112px}
+.image-lightbox.hidden{display:none!important}
+.image-lightbox #lightboxImage{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;touch-action:pan-y;user-select:none}
+.close-lightbox{position:absolute;top:14px;right:16px;width:42px;height:42px;border:1px solid var(--gold);border-radius:50%;background:#0d1c14;color:var(--gold);font-size:28px;line-height:1;z-index:3}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:52px;border:1px solid var(--gold);border-radius:10px;background:rgba(13,28,20,.85);color:var(--gold);font-size:34px;z-index:3}
+.lightbox-prev{left:10px}.lightbox-next{right:10px}
+.lightbox-counter{position:absolute;bottom:82px;left:0;right:0;text-align:center;color:#fff;font-size:13px}
+.lightbox-thumbs{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:8px 12px;scrollbar-width:thin}
+.lightbox-thumbs img{width:54px;height:54px;flex:0 0 54px;object-fit:cover;border:2px solid transparent;border-radius:7px;opacity:.65;cursor:pointer}
+.lightbox-thumbs img.active{border-color:var(--gold);opacity:1}
+@media(min-width:700px){.premium-product-card{flex-basis:170px;max-width:170px}.premium-product-card img{height:145px}}
+
 /* Why Choose Us Grid */
 .why-us-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 25px 0; }
 .why-us-card { background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; text-align: center; }
@@ -425,6 +451,11 @@ input[type="file"]::file-selector-button:hover {
         <div class="product-grid" id="featuredProductList"><p class="muted">Loading...</p></div>
     </div>
 
+    <section class="premium-slider-section" aria-label="Premium products">
+        <div class="premium-slider-heading"><h2>💎 Premium Collection</h2><span>Selected products</span></div>
+        <div id="homePremiumSlider" class="premium-product-track"><span class="muted">Loading premium products…</span></div>
+    </section>
+
     <!-- Brand Story Section -->
     <div class="brand-story">
         <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop" alt="GM Network product craftsmanship">
@@ -538,6 +569,11 @@ input[type="file"]::file-selector-button:hover {
         <div class="vip-link-card" onclick="tab('my-wallet')"><span class="icon">💰</span><h4>My Wallet</h4></div>
         <div class="vip-link-card" onclick="tab('my-account')"><span class="icon">🆔</span><h4>My Account</h4></div>
     </div>
+
+    <section class="premium-slider-section" aria-label="Premium products">
+        <div class="premium-slider-heading"><h2>💎 Premium Products</h2><span>Explore top picks</span></div>
+        <div id="dashboardPremiumSlider" class="premium-product-track"><span class="muted">Loading premium products…</span></div>
+    </section>
 
     <div class="stats">
         <div class="stat"><small>Coins (Self)</small><strong id="nm_self">—</strong></div>
@@ -720,15 +756,13 @@ input[type="file"]::file-selector-button:hover {
         <label>Description</label><textarea id="newDescription" rows="2"></textarea>
         <label>Starting Rating</label><input id="newBaseRating" type="number" step="0.1" min="0" max="5" value="4.5">
         <label>Reviews Count</label><input id="newBaseReviewsCount" type="number" min="0" value="10">
-        <label>Product images (up to 4)</label><input id="newImageFiles" type="file" accept="image/*" multiple>
+        <label>Product images (select multiple)</label><input id="newImageFiles" type="file" accept="image/*" multiple>
         <label>Sales commission (%)</label><input id="newRate" type="number" min="0" max="50" value="5">
         <button class="primary" onclick="addOnlineProduct()">Save Product</button>
         <div id="adminStatus" class="status">Admin action status will appear here.</div>
         <h3 style="margin-top:20px;">Manage Banners</h3>
-        <input type="file" id="bannerImg1" accept="image/*">
-        <input type="file" id="bannerImg2" accept="image/*">
-        <input type="file" id="bannerImg3" accept="image/*">
-        <input type="file" id="bannerImg4" accept="image/*">
+        <label for="bannerImagesInput">Select multiple banner images</label>
+        <input type="file" id="bannerImagesInput" accept="image/*" multiple>
         <button class="primary" onclick="saveBanners()">Save Banners</button>
         <div id="bannerStatus" class="status hidden"></div>
         <h3 style="margin-top:20px;">All Products List</h3>
@@ -834,8 +868,8 @@ input[type="file"]::file-selector-button:hover {
 
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
-<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (up to 4, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
-<div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs"></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button type="button" class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
 <div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
 
 <!-- Product View Page (Full Screen) -->
@@ -2025,6 +2059,41 @@ async function loadProducts() {
         newArrivalsEl.innerHTML = totalProducts.slice(startIndex, startIndex + 4).map(card => card.outerHTML).join('') || '<p class="muted">No new arrivals available yet.</p>';
     }
     if ($('np')) $('np').textContent = String(window.allProductsData.length);
+    loadPremiumSliders();
+}
+
+let premiumSliderTimer = null;
+function loadPremiumSliders() {
+    const home = $('homePremiumSlider');
+    const dashboard = $('dashboardPremiumSlider');
+    if (!home && !dashboard) return;
+    const products = Array.isArray(window.allProductsData) ? window.allProductsData : [];
+    const activeProducts = products.filter(p => p && p.active !== false);
+    let selected = activeProducts.filter(p => Number(p.price_usd || 0) >= 50);
+    if (!selected.length) selected = activeProducts.slice(0, 6);
+    selected = selected.slice(0, 12);
+    const html = selected.map(p => {
+        const index = products.findIndex(item => String(item.id) === String(p.id));
+        const image = (Array.isArray(p.images) && p.images.find(Boolean)) || p.image_url || 'https://placehold.co/300x300?text=GM';
+        return `<div class="premium-product-card" role="button" tabindex="0" onclick="openProductView(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openProductView(${index});}"><img src="${esc(image)}" alt="${esc(p.name || 'Premium product')}" loading="lazy"><strong>${esc(p.name || 'Premium Product')}</strong><span class="premium-price">${convertMoney(Number(p.price_usd || 0))}</span></div>`;
+    }).join('') || '<span class="muted">No active products available yet.</span>';
+    [home, dashboard].filter(Boolean).forEach(el => { el.innerHTML = html; });
+    if (premiumSliderTimer) clearInterval(premiumSliderTimer);
+    premiumSliderTimer = null;
+    const sliders = [home, dashboard].filter(Boolean);
+    if (sliders.length && selected.length > 1) {
+        premiumSliderTimer = setInterval(() => {
+            sliders.forEach(slider => {
+                if (!slider.isConnected || document.hidden || slider.closest('.view')?.classList.contains('hidden')) return;
+                const card = slider.querySelector('.premium-product-card');
+                if (!card) return;
+                const step = card.getBoundingClientRect().width + 12;
+                const maxScroll = slider.scrollWidth - slider.clientWidth;
+                const next = slider.scrollLeft + step;
+                slider.scrollTo({ left: next >= maxScroll - 4 ? 0 : next, behavior: 'smooth' });
+            });
+        }, 3200);
+    }
 }
 
 async function loadMyTeam() {
@@ -2131,12 +2200,56 @@ async function viewFullTeam(userId, name) {
 }
 
 let lightboxImages = [], lightboxIndex = 0, lightboxTouchStart = null;
-function renderLightbox() { if (!lightboxImages.length) return; $('lightboxImage').src = lightboxImages[lightboxIndex]; $('lightboxCounter').textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length; $('lightboxThumbs').querySelectorAll('img').forEach((el, i) => { el.classList.toggle('active', i === lightboxIndex); if (i === lightboxIndex) el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }); }
-function moveLightbox(delta) { if (!lightboxImages.length) return; lightboxIndex = (lightboxIndex + delta + lightboxImages.length) % lightboxImages.length; renderLightbox(); }
-function openImageLightbox(src, allImages) { if (!src) return; lightboxImages = Array.isArray(allImages) && allImages.length ? allImages : [src]; lightboxIndex = Math.max(0, lightboxImages.indexOf(src)); const thumbs = $('lightboxThumbs'); thumbs.innerHTML = ''; lightboxImages.forEach((img, i) => { const t = document.createElement('img'); t.src = img; t.alt = 'Image ' + (i + 1); t.onclick = () => { lightboxIndex = i; renderLightbox(); }; thumbs.appendChild(t); }); $('imageLightbox').classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderLightbox(); }
+function renderLightbox() {
+    if (!lightboxImages.length) return;
+    const image = $('lightboxImage'), counter = $('lightboxCounter'), thumbs = $('lightboxThumbs');
+    if (image) image.src = lightboxImages[lightboxIndex];
+    if (counter) counter.textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length;
+    if (thumbs) thumbs.querySelectorAll('img').forEach((el, i) => {
+        el.classList.toggle('active', i === lightboxIndex);
+        if (i === lightboxIndex) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+}
+function moveLightbox(delta) {
+    if (!lightboxImages.length) return;
+    lightboxIndex = (lightboxIndex + delta + lightboxImages.length) % lightboxImages.length;
+    renderLightbox();
+}
+function openImageLightbox(src, allImages) {
+    if (!src) return;
+    lightboxImages = Array.isArray(allImages) && allImages.length ? allImages.filter(Boolean) : [src];
+    if (!lightboxImages.length) lightboxImages = [src];
+    const foundIndex = lightboxImages.indexOf(src);
+    lightboxIndex = foundIndex >= 0 ? foundIndex : 0;
+    const thumbs = $('lightboxThumbs');
+    if (thumbs) {
+        thumbs.innerHTML = '';
+        lightboxImages.forEach((img, i) => {
+            const thumb = document.createElement('img');
+            thumb.src = img; thumb.alt = 'Product image ' + (i + 1); thumb.loading = 'lazy';
+            thumb.onclick = () => { lightboxIndex = i; renderLightbox(); };
+            thumbs.appendChild(thumb);
+        });
+    }
+    $('imageLightbox')?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    renderLightbox();
+}
 $('lightboxImage')?.addEventListener('touchstart', e => { lightboxTouchStart = e.changedTouches[0]?.clientX ?? null; }, { passive: true });
-$('lightboxImage')?.addEventListener('touchend', e => { if (lightboxTouchStart === null) return; const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchStart) - lightboxTouchStart; if (Math.abs(dx) > 45) moveLightbox(dx < 0 ? 1 : -1); lightboxTouchStart = null; }, { passive: true });
-function closeImageLightbox() { $('imageLightbox').classList.add('hidden'); $('lightboxImage').src = ''; $('lightboxThumbs').innerHTML = ''; document.body.style.overflow = ''; }
+$('lightboxImage')?.addEventListener('touchend', e => {
+    if (lightboxTouchStart === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchStart) - lightboxTouchStart;
+    if (Math.abs(dx) > 45) moveLightbox(dx < 0 ? 1 : -1);
+    lightboxTouchStart = null;
+}, { passive: true });
+function closeImageLightbox() {
+    $('imageLightbox')?.classList.add('hidden');
+    if ($('lightboxImage')) $('lightboxImage').src = '';
+    if ($('lightboxThumbs')) $('lightboxThumbs').innerHTML = '';
+    lightboxImages = []; lightboxIndex = 0;
+    document.body.style.overflow = '';
+}
+
 document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(1); if (e.key === 'ArrowLeft' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(-1); if (e.key === 'Escape') { closeImageLightbox(); $('orderModal')?.classList.add('hidden'); $('withdrawModal')?.classList.add('hidden'); closeOrderDetailModal(); $('teamViewerModal')?.classList.add('hidden'); } });
 
 function openOrder(id, name, price) { if (!user) return alert('Please sign in first to place an order.'); if (!myProfile) return alert('Your profile is not ready.'); currentProduct = { id, name, price: Number(price) || 0 }; $('orderProductName').textContent = 'Product: ' + name + ' — ' + convertMoney(price); $('orderFormContent').classList.remove('hidden'); $('paymentContent').classList.add('hidden'); $('orderModal').classList.remove('hidden'); $('orderStatus').classList.add('hidden'); }
@@ -2979,7 +3092,7 @@ async function markAsDelivered(orderId) {
 }
 
 async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_usd || 0).toFixed(2); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
-async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < Math.min(4, files.length); i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
+async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < files.length; i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); } }
 
@@ -2991,7 +3104,7 @@ async function loadBanners() {
         console.warn('Could not load banners:', error.message);
         return;
     }
-    const images = Array.isArray(data?.images) ? data.images.filter(Boolean).slice(-4) : [];
+    const images = Array.isArray(data?.images) ? data.images.filter(Boolean) : [];
     if (images.length) {
         el.innerHTML = images.map((img, i) => `<img src="${esc(img)}" alt="Banner ${i + 1}" loading="lazy">`).join('');
     } else {
@@ -3003,49 +3116,33 @@ async function loadBanners() {
 async function saveBanners() {
     if (!isAdmin) return alert('Admin access required.');
     if (!sb) return status('bannerStatus', 'Backend is not connected.', 'error');
-    status('bannerStatus', 'Saving banners…');
-
-    const files = [
-        $('bannerImg1')?.files?.[0],
-        $('bannerImg2')?.files?.[0],
-        $('bannerImg3')?.files?.[0],
-        $('bannerImg4')?.files?.[0]
-    ].filter(Boolean).slice(0, 4);
-
-    if (files.length === 0) return status('bannerStatus', 'Please select at least one image to upload.', 'error');
-
+    const input = $('bannerImagesInput');
+    const files = Array.from(input?.files || []);
+    if (!files.length) return status('bannerStatus', 'Please select one or more banner images.', 'error');
+    status('bannerStatus', `Uploading ${files.length} banner image(s)…`);
     const imageUrls = [];
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
         const path = `banners/banner-${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
-        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, {
-            upsert: false,
-            contentType: file.type || 'image/jpeg'
-        });
+        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
         if (uploadError) return status('bannerStatus', 'Upload failed: ' + uploadError.message, 'error');
         const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
         if (url) imageUrls.push(url);
     }
-
-    const { data: existing, error: readError } = await sb.from('products')
-        .select('id, images').eq('name', 'WEBSITE_BANNERS').maybeSingle();
+    const { data: existing, error: readError } = await sb.from('products').select('id, images').eq('name', 'WEBSITE_BANNERS').maybeSingle();
     if (readError) return status('bannerStatus', 'Could not check existing banners: ' + readError.message, 'error');
-
-    const updatedImages = [...(existing?.images || []), ...imageUrls].slice(-4);
+    const existingImages = Array.isArray(existing?.images) ? existing.images.filter(Boolean) : [];
+    const updatedImages = [...existingImages, ...imageUrls];
     if (existing) {
         const { error } = await sb.from('products').update({ images: updatedImages, image_url: updatedImages[0] || null }).eq('id', existing.id);
         if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
     } else {
-        const { error } = await sb.from('products').insert({
-            name: 'WEBSITE_BANNERS', price_usd: 0, commission_percent: 0,
-            active: false, images: updatedImages, image_url: updatedImages[0] || null
-        });
+        const { error } = await sb.from('products').insert({ name: 'WEBSITE_BANNERS', price_usd: 0, commission_percent: 0, active: false, images: updatedImages, image_url: updatedImages[0] || null });
         if (error) return status('bannerStatus', 'Save failed: ' + error.message, 'error');
     }
-
-    ['bannerImg1', 'bannerImg2', 'bannerImg3', 'bannerImg4'].forEach(id => { const input = $(id); if (input) input.value = ''; });
-    status('bannerStatus', 'Banners saved successfully!', 'ok');
+    if (input) input.value = '';
+    status('bannerStatus', `${imageUrls.length} banner image(s) saved successfully.`, 'ok');
     await loadBanners();
 }
 
@@ -3067,7 +3164,7 @@ async function addOnlineProduct() {
     status('adminStatus', 'Saving product…');
     const images = [];
     if (files && files.length > 0) {
-        for (let i = 0; i < Math.min(4, files.length); i++) {
+        for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
             const path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;

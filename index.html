@@ -2053,15 +2053,18 @@ async function loadProducts() {
 
     renderProductCards(window.allProductsData, el);
 
+    // Home sections are controlled independently by Admin product selections.
     const featuredEl = $('featuredProductList');
     if (featuredEl) {
-        featuredEl.innerHTML = Array.from(el.children).slice(0, 4).map(card => card.outerHTML).join('') || '<p class="muted">No featured products available yet.</p>';
+        const featuredProducts = window.allProductsData.filter(product => product.show_in_featured === true).slice(0, 8);
+        renderProductCards(featuredProducts, featuredEl);
+        if (!featuredProducts.length) featuredEl.innerHTML = '<p class="muted">No Featured Products selected yet. Please select products from Admin Panel.</p>';
     }
     const newArrivalsEl = $('newArrivalsList');
     if (newArrivalsEl) {
-        const totalProducts = Array.from(el.children);
-        const startIndex = totalProducts.length > 4 ? 4 : 0;
-        newArrivalsEl.innerHTML = totalProducts.slice(startIndex, startIndex + 4).map(card => card.outerHTML).join('') || '<p class="muted">No new arrivals available yet.</p>';
+        const newArrivalProducts = window.allProductsData.filter(product => product.show_in_new_arrivals === true).slice(0, 8);
+        renderProductCards(newArrivalProducts, newArrivalsEl);
+        if (!newArrivalProducts.length) newArrivalsEl.innerHTML = '<p class="muted">No New Arrivals selected yet. Please select products from Admin Panel.</p>';
     }
     if ($('np')) $('np').textContent = String(window.allProductsData.length);
     loadPremiumSliders();
@@ -2824,6 +2827,8 @@ async function loadAdmin() {
                         <button class="secondary small-btn" data-edit="${esc(x.id)}">Edit</button>
                         <button class="secondary small-btn" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark Sold Out' : 'Mark Active'}</button>
                         <button class="secondary small-btn" data-premium="${esc(x.id)}" style="color:${x.show_in_premium ? '#4CAF50' : '#888'}">${x.show_in_premium ? '★ Remove from Premium' : '☆ Show in Premium'}</button>
+                        <button class="secondary small-btn" data-featured="${esc(x.id)}" style="color:${x.show_in_featured ? '#4CAF50' : '#888'}">${x.show_in_featured ? '★ Remove from Featured' : '☆ Show in Featured'}</button>
+                        <button class="secondary small-btn" data-arrival="${esc(x.id)}" style="color:${x.show_in_new_arrivals ? '#4CAF50' : '#888'}">${x.show_in_new_arrivals ? '★ Remove from New Arrivals' : '☆ Show in New Arrivals'}</button>
                         <button class="secondary small-btn" data-delete="${esc(x.id)}" style="color:#f44336;">Delete</button>
                     </div>
                 </div>`;
@@ -2836,6 +2841,8 @@ async function loadAdmin() {
             });
             $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
             $('adminManageProducts').querySelectorAll('[data-premium]').forEach(btn => btn.onclick = () => togglePremiumProduct(btn.dataset.premium));
+            $('adminManageProducts').querySelectorAll('[data-featured]').forEach(btn => btn.onclick = () => toggleHomeSectionProduct(btn.dataset.featured, 'show_in_featured', 'Featured Products'));
+            $('adminManageProducts').querySelectorAll('[data-arrival]').forEach(btn => btn.onclick = () => toggleHomeSectionProduct(btn.dataset.arrival, 'show_in_new_arrivals', 'New Arrivals'));
             filterAdminProducts(window.adminProductFilter || 'All');
             updateAdminProductSelectionUI();
         }
@@ -4221,6 +4228,25 @@ async function togglePremiumProduct(productId) {
 
     await Promise.all([loadProducts(), loadAdmin()]);
     gmPopup(newValue ? 'Product added to Premium Collection.' : 'Product removed from Premium Collection.', 'Premium Collection', 'success');
+}
+
+async function toggleHomeSectionProduct(productId, column, sectionLabel) {
+    if (!isAdmin || !sb) return gmPopup('Admin access required.', 'Permission denied', 'error');
+    const allowedColumns = ['show_in_featured', 'show_in_new_arrivals'];
+    if (!allowedColumns.includes(column)) return gmPopup('Invalid home section setting.', 'Error', 'error');
+
+    const { data: product, error: readError } = await sb.from('products')
+        .select(`id, ${column}`).eq('id', productId).single();
+    if (readError) {
+        return gmPopup(`Could not read ${sectionLabel} setting. Run the new SQL setup first. ` + readError.message, sectionLabel, 'error');
+    }
+
+    const newValue = product[column] !== true;
+    const { error } = await sb.from('products').update({ [column]: newValue }).eq('id', productId);
+    if (error) return gmPopup(`Could not update ${sectionLabel}: ` + error.message, sectionLabel, 'error');
+
+    await Promise.all([loadProducts(), loadAdmin()]);
+    gmPopup(newValue ? `Product added to ${sectionLabel}.` : `Product removed from ${sectionLabel}.`, sectionLabel, 'success');
 }
 
 function filterAdminProducts(category) {

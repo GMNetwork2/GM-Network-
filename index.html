@@ -149,10 +149,10 @@ body { overflow-x: hidden; }
 .premium-slider-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
 .premium-slider-heading h2{margin:0;font-size:18px;color:var(--gold)}
 .premium-slider-heading span{font-size:11px;color:var(--muted)}
-.premium-product-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:2px 2px 12px;scrollbar-width:none}
+.premium-product-track{display:flex;gap:15px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-snap-stop:always;scroll-behavior:smooth;padding:2px 2px 12px;scrollbar-width:none;overscroll-behavior-x:contain}
 .premium-product-track::-webkit-scrollbar{display:none}
-.premium-product-card{flex:0 0 148px;max-width:148px;min-width:0;background:#07130d;border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;scroll-snap-align:start;overflow:hidden}
-.premium-product-card img{width:100%;height:125px;object-fit:contain;background:#0a1f15;border-radius:8px;display:block}
+.premium-product-card{flex:0 0 100%;width:100%;max-width:100%;min-width:0;box-sizing:border-box;background:#07130d;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.premium-product-card img{width:100%;height:200px;object-fit:contain;background:#0a1f15;border-radius:8px;display:block}
 .premium-product-card strong{display:block;color:var(--ink);font-size:12px;line-height:1.3;margin-top:8px;min-height:31px;overflow:hidden}
 .premium-product-card .premium-price{display:block;color:var(--gold);font-size:13px;font-weight:800;margin-top:5px}
 .premium-product-card .old-price{display:block;color:var(--muted,#8b948e);font-size:11px;text-decoration:line-through;font-weight:500;margin-top:4px}
@@ -168,7 +168,7 @@ body { overflow-x: hidden; }
 .lightbox-thumbs{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:8px 12px;scrollbar-width:thin}
 .lightbox-thumbs img{width:54px;height:54px;flex:0 0 54px;object-fit:cover;border:2px solid transparent;border-radius:7px;opacity:.65;cursor:pointer}
 .lightbox-thumbs img.active{border-color:var(--gold);opacity:1}
-@media(min-width:700px){.premium-product-card{flex-basis:170px;max-width:170px}.premium-product-card img{height:145px}}
+@media(min-width:700px){.premium-product-card{flex-basis:100%;max-width:100%}.premium-product-card img{height:260px}}
 
 /* Why Choose Us Grid */
 .why-us-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 25px 0; }
@@ -2072,21 +2072,39 @@ function loadPremiumSliders() {
     const home = $('homePremiumSlider');
     const dashboard = $('dashboardPremiumSlider');
     if (!home && !dashboard) return;
+
     const products = Array.isArray(window.allProductsData) ? window.allProductsData : [];
-    const activeProducts = products.filter(p => p && p.active !== false);
-    let selected = activeProducts.filter(p => Number(p.price_usd || 0) >= 50);
-    if (!selected.length) selected = activeProducts.slice(0, 6);
-    selected = selected.slice(0, 12);
+    const isRealActiveProduct = p => {
+        if (!p || p.active === false || String(p.name || '').toUpperCase() === 'WEBSITE_BANNERS') return false;
+        const name = String(p.name || '').toLowerCase();
+        const imageUrls = [p.image_url, ...(Array.isArray(p.images) ? p.images : [])]
+            .filter(Boolean).map(url => String(url).toLowerCase());
+        return !name.includes('demo') && !imageUrls.some(url => url.includes('unsplash.com'));
+    };
+
+    // Admin-selected products take priority. If none are selected, show eligible
+    // real products (priced $50+) so the slider is not unexpectedly empty.
+    let selected = products.filter(p => isRealActiveProduct(p) && p.show_in_premium === true);
+    if (selected.length === 0) {
+        selected = products.filter(p => isRealActiveProduct(p) && Number(p.price_usd || 0) >= 50);
+    }
+    selected = selected.slice(0, 10);
+
     const html = selected.map(p => {
         const index = products.findIndex(item => String(item.id) === String(p.id));
-        const image = (Array.isArray(p.images) && p.images.find(Boolean)) || p.image_url || 'https://placehold.co/300x300?text=GM';
+        const image = (Array.isArray(p.images) && p.images.find(Boolean)) || p.image_url || 'https://placehold.co/600x400?text=GM+Network';
         const price = Math.max(0, Number(p.price_usd || 0));
         const discount = Math.min(90, Math.max(0, Number(p.discount_percent || 0)));
         const salePrice = price * (1 - discount / 100);
         const oldPriceHtml = discount > 0 ? `<span class="old-price">${convertMoney(price)}</span>` : '';
         return `<div class="premium-product-card" role="button" tabindex="0" onclick="openProductView(${index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openProductView(${index});}"><img src="${esc(image)}" alt="${esc(p.name || 'Premium product')}" loading="lazy"><strong>${esc(p.name || 'Premium Product')}</strong>${oldPriceHtml}<span class="premium-price">${convertMoney(salePrice)}</span></div>`;
-    }).join('') || '<span class="muted">No active products available yet.</span>';
-    [home, dashboard].filter(Boolean).forEach(el => { el.innerHTML = html; });
+    }).join('') || '<span class="muted" style="padding:20px;display:block;text-align:center;">No premium products selected or eligible yet.</span>';
+
+    [home, dashboard].filter(Boolean).forEach(el => {
+        el.innerHTML = html;
+        el.scrollLeft = 0;
+    });
+
     if (premiumSliderTimer) clearInterval(premiumSliderTimer);
     premiumSliderTimer = null;
     const sliders = [home, dashboard].filter(Boolean);
@@ -2096,10 +2114,10 @@ function loadPremiumSliders() {
                 if (!slider.isConnected || document.hidden || slider.closest('.view')?.classList.contains('hidden')) return;
                 const card = slider.querySelector('.premium-product-card');
                 if (!card) return;
-                const step = card.getBoundingClientRect().width + 12;
+                const step = card.getBoundingClientRect().width + 15;
                 const maxScroll = slider.scrollWidth - slider.clientWidth;
                 const next = slider.scrollLeft + step;
-                slider.scrollTo({ left: next >= maxScroll - 4 ? 0 : next, behavior: 'smooth' });
+                slider.scrollTo({ left: next >= maxScroll - 5 ? 0 : next, behavior: 'smooth' });
             });
         }, 3000);
     }
@@ -2805,6 +2823,7 @@ async function loadAdmin() {
                     <div class="row-actions" style="display:flex; flex-direction:column; gap:5px;">
                         <button class="secondary small-btn" data-edit="${esc(x.id)}">Edit</button>
                         <button class="secondary small-btn" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark Sold Out' : 'Mark Active'}</button>
+                        <button class="secondary small-btn" data-premium="${esc(x.id)}" style="color:${x.show_in_premium ? '#4CAF50' : '#888'}">${x.show_in_premium ? '★ Remove from Premium' : '☆ Show in Premium'}</button>
                         <button class="secondary small-btn" data-delete="${esc(x.id)}" style="color:#f44336;">Delete</button>
                     </div>
                 </div>`;
@@ -2816,6 +2835,7 @@ async function loadAdmin() {
                 btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
             });
             $('adminManageProducts').querySelectorAll('[data-delete]').forEach(btn => btn.onclick = () => deleteProduct(btn.dataset.delete));
+            $('adminManageProducts').querySelectorAll('[data-premium]').forEach(btn => btn.onclick = () => togglePremiumProduct(btn.dataset.premium));
             filterAdminProducts(window.adminProductFilter || 'All');
             updateAdminProductSelectionUI();
         }
@@ -4186,6 +4206,21 @@ async function deleteSelectedAdminProducts() {
         else gmPopup('Delete failed: ' + (error.message || String(error)));
         if (btn) { btn.disabled = false; btn.textContent = 'Delete Selected'; }
     }
+}
+
+async function togglePremiumProduct(productId) {
+    if (!isAdmin || !sb) return gmPopup('Admin access required.', 'Permission denied', 'error');
+    const { data: product, error: readError } = await sb.from('products')
+        .select('id, show_in_premium').eq('id', productId).single();
+    if (readError) {
+        return gmPopup('Could not read Premium setting. If the show_in_premium column is missing, run the SQL setup first. ' + readError.message, 'Premium setting', 'error');
+    }
+    const newValue = product.show_in_premium !== true;
+    const { error } = await sb.from('products').update({ show_in_premium: newValue }).eq('id', productId);
+    if (error) return gmPopup('Could not update Premium setting: ' + error.message, 'Premium setting', 'error');
+
+    await Promise.all([loadProducts(), loadAdmin()]);
+    gmPopup(newValue ? 'Product added to Premium Collection.' : 'Product removed from Premium Collection.', 'Premium Collection', 'success');
 }
 
 function filterAdminProducts(category) {

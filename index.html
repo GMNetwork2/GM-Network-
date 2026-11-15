@@ -2053,11 +2053,13 @@ function renderProductCards(productsToRender, container) {
     container.innerHTML = productsToRender.map((p) => {
         const originalIndex = window.allProductsData.findIndex(prod => prod.id === p.id);
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-        const baseRating = Number(p.base_rating || 5.0);
-        const baseReviews = Number(p.base_reviews_count || 0);
+        const baseRating = Number(p.base_rating ?? 0);
+        const baseReviews = Number(p.base_reviews_count ?? 0);
         const approved = ratingsMap[p.id] || { total: 0, count: 0 };
-        const finalRating = approved.count > 0 ? ((baseRating * baseReviews) + approved.total) / (baseReviews + approved.count) : baseRating;
         const finalReviewsCount = baseReviews + approved.count;
+        const finalRating = finalReviewsCount > 0
+            ? ((baseRating * baseReviews) + approved.total) / finalReviewsCount
+            : 0;
         let priceHtml = '';
         if (p.discount_percent && Number(p.discount_percent) > 0) {
             const originalPrice = Number(p.price_usd);
@@ -2069,15 +2071,19 @@ function renderProductCards(productsToRender, container) {
         } else {
             priceHtml = `<div class="price">${convertMoney(p.price_usd)}</div>`;
         }
-        const fullStars = Math.floor(finalRating);
-        const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
-        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-        let starsHtml = '<div class="stars-container">';
-        starsHtml += '<span style="color:#f0bd55; font-size:14px;">';
-        for (let i = 0; i < fullStars; i++) starsHtml += '★';
-        if (hasHalfStar) starsHtml += '⯨';
-        for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
-        starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
+        let starsHtml = '';
+        if (finalReviewsCount > 0) {
+            const fullStars = Math.floor(finalRating);
+            const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+            starsHtml = '<div class="stars-container"><span style="color:#f0bd55; font-size:14px;">';
+            for (let i = 0; i < fullStars; i++) starsHtml += '★';
+            if (hasHalfStar) starsHtml += '⯨';
+            for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+            starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)}) · ${finalReviewsCount} reviews</span></div>`;
+        } else {
+            starsHtml = '<div class="stars-container" style="font-size:12px;color:var(--muted);">No ratings yet</div>';
+        }
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
@@ -3297,18 +3303,19 @@ function openProductView(index) {
     history.pushState({ page: 'product' }, '', '#product');
 
     const imgs = Array.isArray(p.images) && p.images.length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
-    const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
+    const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 0) || 0));
     const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
-    const ratingPercent = Math.max(0, Math.min(100, (baseRating / 5) * 100));
-    const fullStars = Math.floor(baseRating);
-    const hasHalfStar = (baseRating - fullStars) >= 0.25 && (baseRating - fullStars) < 0.75;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    let starsHtml = '<div class="stars-container" style="font-size:18px;">';
-    starsHtml += '<span style="color:#f0bd55; font-size:20px;">';
-    for (let i = 0; i < fullStars; i++) starsHtml += '★';
-    if (hasHalfStar) starsHtml += '⯨';
-    for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
-    starsHtml += `</span><span style="color:var(--muted); margin-left:5px; font-size:14px;">(${baseRating.toFixed(1)})</span></div>`;
+    let starsHtml = '<div class="stars-container" style="font-size:14px;color:var(--muted);">No ratings yet</div>';
+    if (baseReviews > 0) {
+        const fullStars = Math.floor(baseRating);
+        const hasHalfStar = (baseRating - fullStars) >= 0.25 && (baseRating - fullStars) < 0.75;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        starsHtml = '<div class="stars-container" style="font-size:18px;"><span style="color:#f0bd55; font-size:20px;">';
+        for (let i = 0; i < fullStars; i++) starsHtml += '★';
+        if (hasHalfStar) starsHtml += '⯨';
+        for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+        starsHtml += `</span><span style="color:var(--muted); margin-left:5px; font-size:14px;">(${baseRating.toFixed(1)})</span></div>`;
+    }
 
     const slider = $('pvImageSlider'); const dotsContainer = $('pvSliderDots');
     slider.innerHTML = ''; dotsContainer.innerHTML = '';
@@ -3458,9 +3465,22 @@ async function loadApprovedReviews(productId) {
     // Avoid showing results for a product that has since been changed or closed.
     if (!checkoutData || checkoutData.id !== productId || $('productViewPage').classList.contains('hidden')) return;
     if (error || !data || data.length === 0) {
+        const pvpStars = $('pvpStars');
+        const pvpReviews = $('pvpReviews');
+        if (pvpStars) pvpStars.innerHTML = '<span style="color:var(--muted);font-size:13px;">No ratings yet</span>';
+        if (pvpReviews) pvpReviews.textContent = '0 Reviews';
         reviewMsg.textContent = error ? 'Unable to load reviews: ' + error.message : 'There are no reviews yet. Be the first to review!';
         return;
     }
+
+    const validRatings = data.map(r => Math.max(0, Math.min(5, Number(r.rating) || 0))).filter(r => r > 0);
+    const averageRating = validRatings.length ? validRatings.reduce((sum, rating) => sum + rating, 0) / validRatings.length : 0;
+    const fullAggregateStars = Math.floor(averageRating);
+    const halfAggregateStar = (averageRating - fullAggregateStars) >= 0.25 && (averageRating - fullAggregateStars) < 0.75;
+    const emptyAggregateStars = 5 - fullAggregateStars - (halfAggregateStar ? 1 : 0);
+    const aggregateStars = '★'.repeat(fullAggregateStars) + (halfAggregateStar ? '⯨' : '') + '☆'.repeat(emptyAggregateStars);
+    if ($('pvpStars')) $('pvpStars').innerHTML = `<span style="color:#f0bd55;font-size:20px;">${aggregateStars}</span><span style="color:var(--muted);margin-left:5px;font-size:14px;">(${averageRating.toFixed(1)})</span>`;
+    if ($('pvpReviews')) $('pvpReviews').textContent = `${validRatings.length} Reviews`;
 
     let html = '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">';
     data.forEach(r => {
@@ -4185,10 +4205,10 @@ async function insertDemoByCategory(category) {
         const existingByName = new Map((existing || []).map(row => [row.name, row.id]));
         for (let index = 0; index < catalog.names.length; index++) {
             const name = catalog.names[index];
-            const photoIds = catalog.photos;
-            const images = [0, 1, 2, 3].map(offset =>
-                `https://images.unsplash.com/${photoIds[(index + offset) % photoIds.length]}?auto=format&fit=crop&w=700&q=85`
-            );
+            const photoId = catalog.photos[index];
+            const images = [
+                `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=700&q=85`
+            ];
             const productData = {
                 name,
                 price_usd: Number(catalog.prices[index]),

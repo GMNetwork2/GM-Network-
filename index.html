@@ -4116,45 +4116,85 @@ if (!history.state || !history.state.page) {
     history.replaceState({ page: 'home' }, '', window.location.pathname + window.location.search + window.location.hash);
 }
 
-// --- Category-wise demo product insert (catalog-only; existing financial systems untouched) ---
+// --- Category-wise catalog insert/update (catalog-only; existing financial systems untouched) ---
 async function insertDemoByCategory(category) {
     if (!isAdmin || !sb) return alert('Admin access required.');
 
-    // Demo-only display catalog. All entries are SOLD OUT and excluded from
-    // Premium / Featured / New Arrivals. No commission, coin, referral or order
-    // logic is called by this function.
     const demoCatalog = {
-        Watches: { names: ['GM Royal Gold Watch','GM Classic Silver Watch','GM Sport Chronograph','GM Minimal Black Watch','GM Rose Gold Ladies Watch','GM Heritage Leather Watch','GM Urban Digital Watch','GM Executive Steel Watch'], prices: [150,80,120,60,110,95,40,50], search: 'wristwatch luxury watch' },
-        Wallets: { names: ['GM Classic Bifold Wallet','GM Brown Leather Wallet','GM Black Slim Wallet','GM RFID Card Holder','GM Ladies Zip Wallet','GM Travel Passport Wallet','GM Carbon Style Wallet','GM Vintage Fold Wallet'], prices: [30,25,35,15,28,40,45,32], search: 'leather wallet purse' },
-        Accessories: { names: ['GM Aviator Sunglasses','GM Silver Chain','GM Leather Belt','GM Wireless Earbuds','GM Urban Baseball Cap','GM Silk Style Scarf','GM Classic Gloves','GM Metal Key Organizer'], prices: [60,35,20,70,15,25,30,10], search: 'fashion accessories sunglasses' },
-        Premium: { names: ['GM Diamond Style Ring','GM Gold Bracelet','GM Pearl Earrings','GM Emerald Pendant','GM Ruby Stud Earrings','GM Sapphire Ring','GM Platinum Style Chain','GM Crystal Cufflinks'], prices: [200,120,145,150,190,180,250,220], search: 'luxury jewelry ring necklace' },
-        Perfumes: { names: ['GM Royal Oud Perfume','GM Aqua Fresh Perfume','GM Rose Essence Perfume','GM Midnight Musk Perfume','GM Citrus Splash Perfume','GM Vanilla Bloom Perfume','GM Ocean Breeze Perfume','GM Golden Amber Perfume'], prices: [45,60,35,50,30,40,55,65], search: 'perfume fragrance bottle' },
-        Attars: { names: ['GM Arabian Oud Attar','GM Musk Essence Attar','GM Rose Bloom Attar','GM Sandalwood Attar','GM Jasmine Attar','GM Amber Essence Attar','GM Pure Oud Attar','GM White Musk Attar'], prices: [25,20,18,30,22,28,35,25], search: 'attar perfume oil bottle' },
-        Bags: { names: ['GM Classic Handbag','GM Premium Tote Bag','GM Everyday Shoulder Bag','GM Travel Duffel Bag','GM Ladies Crossbody Bag','GM Office Laptop Bag','GM Evening Clutch Bag','GM Casual Backpack'], prices: [85,140,65,110,75,95,55,80], search: 'handbag backpack leather bag' },
-        Shoes: { names: ['GM Classic Sneakers','GM Formal Oxford Shoes','GM Running Sports Shoes','GM Ladies Fashion Heels','GM Casual Slip-On Shoes','GM Premium Loafers','GM Outdoor Hiking Shoes','GM Everyday Walking Shoes'], prices: [90,125,75,85,45,115,130,60], search: 'shoes sneakers footwear' },
-        Jewelry: { names: ['GM Gold Pendant Necklace','GM Pearl Bracelet','GM Crystal Drop Earrings','GM Silver Charm Bracelet','GM Classic Stud Earrings','GM Rose Gold Ring','GM Layered Chain Necklace','GM Luxury Bangle Set'], prices: [130,70,65,55,160,95,80,115], search: 'jewelry necklace earrings bracelet' },
-        Electronics: { names: ['GM Wireless Earbuds Pro','GM Bluetooth Speaker','GM Portable Power Bank','GM Fitness Smart Band','GM Wireless Headphones','GM HD Webcam','GM Fast USB-C Charger','GM Portable LED Lamp'], prices: [70,85,40,65,95,55,25,35], search: 'consumer electronics gadgets' }
+        Watches: {
+            names: ['GM Royal Gold Watch','GM Classic Silver Watch','GM Sport Chronograph','GM Minimal Black Watch','GM Rose Gold Ladies Watch','GM Heritage Leather Watch','GM Urban Digital Watch','GM Executive Steel Watch'],
+            prices: [150,80,120,60,110,95,40,50],
+            photos: [
+                'photo-1523170335258-f5ed11844a49','photo-1524592094714-0f0654e20314','photo-1546868871-7041f2a55e12','photo-1522312346375-d1a52e2b99b3',
+                'photo-1526045431048-f857369baa09','photo-1614164185128-e4ec99c436d7','photo-1434056886845-dac89ffe9b56','photo-1508685096489-7aacd43bd3b1'
+            ]
+        },
+        Wallets: {
+            names: ['GM Classic Bifold Wallet','GM Brown Leather Wallet','GM Black Slim Wallet','GM RFID Card Holder','GM Ladies Zip Wallet','GM Travel Passport Wallet','GM Carbon Style Wallet','GM Vintage Fold Wallet'],
+            prices: [30,25,35,15,28,40,45,32],
+            photos: ['photo-1627123424574-724758594e93','photo-1601592996763-f05c9c80a7f3','photo-1620106904027-f67300b70f99','photo-1584916201218-f4242ceb4809','photo-1601592996763-f05c9c80a7f3','photo-1627123424574-724758594e93','photo-1620106904027-f67300b70f99','photo-1584916201218-f4242ceb4809']
+        },
+        Accessories: {
+            names: ['GM Aviator Sunglasses','GM Silver Chain','GM Leather Belt','GM Wireless Earbuds','GM Urban Baseball Cap','GM Silk Style Scarf','GM Classic Gloves','GM Metal Key Organizer'],
+            prices: [60,35,20,70,15,25,30,10],
+            photos: ['photo-1511499767150-a48a237f0083','photo-1599643478514-4a4204b4d5f8','photo-1553062407-98eeb64c6a62','photo-1590658268037-6bf12165a8df','photo-1588850561407-ed78c282e89b','photo-1601924928376-3b6b3f8c99f3','photo-1545594861-3c14a2e4d539','photo-1582552563948-3f5b3f039855']
+        },
+        Premium: {
+            names: ['GM Diamond Style Ring','GM Gold Bracelet','GM Pearl Earrings','GM Emerald Pendant','GM Ruby Stud Earrings','GM Sapphire Ring','GM Platinum Style Chain','GM Crystal Cufflinks'],
+            prices: [200,120,145,150,190,180,250,220],
+            photos: ['photo-1605100804763-247f67b254be','photo-1611591437281-460bfbe1220a','photo-1535632066927-ab7c9ab60908','photo-1599643477874-48b3f8cba37b','photo-1535632066927-ab7c9ab60908','photo-1605100804763-247f67b254be','photo-1599643478514-4a4204b4d5f8','photo-1611591437281-460bfbe1220a']
+        },
+        Perfumes: {
+            names: ['GM Royal Oud Perfume','GM Aqua Fresh Perfume','GM Rose Essence Perfume','GM Midnight Musk Perfume','GM Citrus Splash Perfume','GM Vanilla Bloom Perfume','GM Ocean Breeze Perfume','GM Golden Amber Perfume'],
+            prices: [45,60,35,50,30,40,55,65],
+            photos: ['photo-1594035910387-fea47794261f','photo-1592914610354-fd354ea45e48','photo-1588405748880-12d1d2a59f75','photo-1594035910387-fea47794261f','photo-1592914610354-fd354ea45e48','photo-1588405748880-12d1d2a59f75','photo-1594035910387-fea47794261f','photo-1592914610354-fd354ea45e48']
+        },
+        Attars: {
+            names: ['GM Arabian Oud Attar','GM Musk Essence Attar','GM Rose Bloom Attar','GM Sandalwood Attar','GM Jasmine Attar','GM Amber Essence Attar','GM Pure Oud Attar','GM White Musk Attar'],
+            prices: [25,20,18,30,22,28,35,25],
+            photos: ['photo-1592914610354-fd354ea45e48','photo-1594035910387-fea47794261f','photo-1588405748880-12d1d2a59f75','photo-1592914610354-fd354ea45e48','photo-1594035910387-fea47794261f','photo-1588405748880-12d1d2a59f75','photo-1592914610354-fd354ea45e48','photo-1594035910387-fea47794261f']
+        },
+        Bags: {
+            names: ['GM Classic Handbag','GM Premium Tote Bag','GM Everyday Shoulder Bag','GM Travel Duffel Bag','GM Ladies Crossbody Bag','GM Office Laptop Bag','GM Evening Clutch Bag','GM Casual Backpack'],
+            prices: [85,140,65,110,75,95,55,80],
+            photos: ['photo-1548036328-c9fa89d128fa','photo-1553062407-98eeb64c6a62','photo-1584916201218-f4242ceb4809','photo-1590874103328-eac38a683ce7','photo-1565026057447-bc90a3dceb87','photo-1553062407-98eeb64c6a62','photo-1548036328-c9fa89d128fa','photo-1590874103328-eac38a683ce7']
+        },
+        Shoes: {
+            names: ['GM Classic Sneakers','GM Formal Oxford Shoes','GM Running Sports Shoes','GM Ladies Fashion Heels','GM Casual Slip-On Shoes','GM Premium Loafers','GM Outdoor Hiking Shoes','GM Everyday Walking Shoes'],
+            prices: [90,125,75,85,45,115,130,60],
+            photos: ['photo-1542291026-7eec264c27ff','photo-1600185365483-26d7a4cc7519','photo-1542291026-7eec264c27ff','photo-1600185365483-26d7a4cc7519','photo-1600185365483-26d7a4cc7519','photo-1542291026-7eec264c27ff','photo-1600185365483-26d7a4cc7519','photo-1600185365483-26d7a4cc7519']
+        },
+        Jewelry: {
+            names: ['GM Gold Pendant Necklace','GM Pearl Bracelet','GM Crystal Drop Earrings','GM Silver Charm Bracelet','GM Classic Stud Earrings','GM Rose Gold Ring','GM Layered Chain Necklace','GM Luxury Bangle Set'],
+            prices: [130,70,65,55,160,95,80,115],
+            photos: ['photo-1599643478514-4a4204b4d5f8','photo-1611591437281-460bfbe1220a','photo-1535632066927-ab7c9ab60908','photo-1599643477874-48b3f8cba37b','photo-1535632066927-ab7c9ab60908','photo-1605100804763-247f67b254be','photo-1599643478514-4a4204b4d5f8','photo-1611591437281-460bfbe1220a']
+        },
+        Electronics: {
+            names: ['GM Wireless Earbuds Pro','GM Bluetooth Speaker','GM Portable Power Bank','GM Fitness Smart Band','GM Wireless Headphones','GM HD Webcam','GM Fast USB-C Charger','GM Portable LED Lamp'],
+            prices: [70,85,40,65,95,55,25,35],
+            photos: ['photo-1590658268037-6bf12165a8df','photo-1608043152269-423dbba4e7e1','photo-1605236453806-6ff36851218e','photo-1546868871-7041f2a55e12','photo-1505740420928-5e560c06d30e','photo-1505740420928-5e560c06d30e','photo-1605236453806-6ff36851218e','photo-1608043152269-423dbba4e7e1']
+        }
     };
 
     const catalog = demoCatalog[category];
     if (!catalog) return alert('Unknown product category.');
-    Swal.fire({ title: `Adding ${category} demo products...`, text: 'All products will be marked SOLD OUT.', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: `Updating ${category} products...`, text: 'Products will remain marked SOLD OUT.', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
     try {
-        const categoryIndex = Object.keys(demoCatalog).indexOf(category);
-        const rows = catalog.names.map((name, index) => {
-            // Four separate image URLs per product. The unique lock value avoids
-            // reusing the same gallery URLs across the 80 demo products.
-            const lockBase = 41000 + (categoryIndex * 1000) + (index * 10);
-            const imageQuery = encodeURIComponent(name.toLowerCase() + ' ' + catalog.search);
-            const images = [0, 1, 2, 3].map(angle =>
-                `https://loremflickr.com/700/700/${imageQuery}?lock=${lockBase + angle}`
+        const { data: existing, error: lookupError } = await sb.from('products').select('id,name').in('name', catalog.names);
+        if (lookupError) throw lookupError;
+        const existingByName = new Map((existing || []).map(row => [row.name, row.id]));
+        for (let index = 0; index < catalog.names.length; index++) {
+            const name = catalog.names[index];
+            const photoIds = catalog.photos;
+            const images = [0, 1, 2, 3].map(offset =>
+                `https://images.unsplash.com/${photoIds[(index + offset) % photoIds.length]}?auto=format&fit=crop&w=700&q=85`
             );
-            return {
+            const productData = {
                 name,
                 price_usd: Number(catalog.prices[index]),
                 commission_percent: 10,
                 discount_percent: 0,
-                description: `${name} is a GM Network sample catalog item for display purposes only. This is a demo listing, not a confirmed physical product. All demo listings are SOLD OUT.`,
+                description: `Discover ${name} at GM Network. A stylish addition to your collection, selected for quality and everyday appeal.`,
                 image_url: images[0],
                 images,
                 active: false,
@@ -4164,12 +4204,15 @@ async function insertDemoByCategory(category) {
                 base_rating: 0,
                 base_reviews_count: 0
             };
-        });
-        const { error } = await sb.from('products').insert(rows);
-        if (error) throw error;
+            const existingId = existingByName.get(name);
+            const result = existingId
+                ? await sb.from('products').update(productData).eq('id', existingId)
+                : await sb.from('products').insert(productData);
+            if (result.error) throw result.error;
+        }
         await loadProducts();
         await loadAdmin();
-        await Swal.fire({ icon: 'success', title: 'Demo products added', text: `8 ${category} demo products added. All are SOLD OUT and excluded from promotional sections.`, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        await Swal.fire({ icon: 'success', title: 'Products Updated', text: `${category}: 8 products updated with images and marked SOLD OUT.`, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     } catch (e) {
         await Swal.fire({ icon: 'error', title: 'Error', text: e.message || String(e), background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     }

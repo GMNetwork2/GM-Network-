@@ -301,6 +301,23 @@ body { overflow-x: hidden; }
 #productViewPage > div:nth-child(3) > div:nth-child(7) h4 { color: var(--gold) !important; }
 #productViewPage > div:nth-child(4) { background: var(--card-bg) !important; border-top: 1px solid var(--line) !important; }
 #productViewPage > div:nth-child(4) button:nth-child(1) { background: var(--card-bg) !important; color: var(--gold) !important; border: 2px solid var(--gold) !important; }
+/* Product detail page: dark theme, review form and VIP highlight cards */
+#productViewPage .pv-slider-container { background:var(--card-bg) !important; }
+#productViewPage #pvpStars { color:var(--gold) !important; }
+#productViewPage #pvpPrice { color:var(--gold) !important; }
+#productViewPage #reviewFormBox { background:var(--card-bg) !important; border:1px solid var(--line) !important; color:var(--ink) !important; }
+#productViewPage #reviewFormBox h4,
+#productViewPage #reviewFormBox label { color:var(--gold) !important; }
+#productViewPage #reviewFormBox input,
+#productViewPage #reviewFormBox textarea { background:#07130d !important; color:var(--ink) !important; border:1px solid var(--line) !important; }
+#productViewPage #reviewFormBox input::placeholder,
+#productViewPage #reviewFormBox textarea::placeholder { color:var(--muted) !important; }
+#productViewPage > div:nth-child(3) > div[style*="grid-template-columns"] > div,
+#productViewPage > div:nth-child(3) > div[style*="justify-content:space-around"] > div { background:var(--card-bg) !important; border-color:var(--line) !important; }
+#productViewPage > div:nth-child(3) > div[style*="grid-template-columns"] > div div,
+#productViewPage > div:nth-child(3) > div[style*="justify-content:space-around"] > div div { color:var(--gold) !important; }
+#productViewPage > div:nth-child(3) > div[style*="background:#E8F5E9"] { background:#0a1f15 !important; border-color:#25D366 !important; }
+#productViewPage > div:nth-child(3) > div[style*="background:#E8F5E9"] span { color:#25D366 !important; }
 #checkoutPage { background: var(--bg) !important; color: var(--ink) !important; }
 #checkoutPage > div:nth-child(1) { background: var(--card-bg) !important; border-bottom: 1px solid var(--line) !important; }
 #checkoutPage > div:nth-child(1) h2 { color: var(--gold) !important; }
@@ -2034,7 +2051,7 @@ function renderProductCards(productsToRender, container) {
                 <div class="reviews">${esc(finalReviewsCount)} Reviews</div>
                 ${priceHtml}
             </div>
-            <button class="primary buy-btn" type="button" style="pointer-events:none; ${!p.active ? 'background:#222; color:#555;' : ''};">${p.active ? 'View Details' : 'SOLD OUT'}</button>
+            <button class="primary buy-btn" type="button" style="pointer-events:none; ${p.active ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active ? 'View Details' : 'SOLD OUT'}</button>
         </div>`;
     }).join('') || '<p class="muted">No products found in this category.</p>';
 }
@@ -4138,6 +4155,9 @@ async function insertDemoByCategory(category) {
                 image_url: images[0],
                 images,
                 active: index === 0,
+                show_in_premium: false,
+                show_in_featured: false,
+                show_in_new_arrivals: false,
                 base_rating: Number((4.5 + (Math.random() * 0.5)).toFixed(1)),
                 base_reviews_count: Math.floor(Math.random() * 100) + 10
             };

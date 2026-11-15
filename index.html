@@ -2053,13 +2053,17 @@ function renderProductCards(productsToRender, container) {
     container.innerHTML = productsToRender.map((p) => {
         const originalIndex = window.allProductsData.findIndex(prod => prod.id === p.id);
         const imgs = Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']);
-        const baseRating = Number(p.base_rating ?? 0);
-        const baseReviews = Number(p.base_reviews_count ?? 0);
+        // Keep the original demo-rating fallback so zero/NULL DB values never hide stars.
+        const storedRating = Number(p.base_rating || 0);
+        const baseRating = storedRating > 0 ? Math.min(5, storedRating) : 5.0;
+        const storedReviews = Number(p.base_reviews_count || 0);
+        const demoReviewFallbacks = [40, 45, 48, 50, 60, 80, 90, 100];
+        const baseReviews = storedReviews > 0 ? storedReviews : demoReviewFallbacks[Math.max(0, originalIndex) % demoReviewFallbacks.length];
         const approved = ratingsMap[p.id] || { total: 0, count: 0 };
         const finalReviewsCount = baseReviews + approved.count;
-        const finalRating = finalReviewsCount > 0
-            ? ((baseRating * baseReviews) + approved.total) / finalReviewsCount
-            : 0;
+        const finalRating = approved.count > 0
+            ? ((baseRating * baseReviews) + approved.total) / Math.max(1, finalReviewsCount)
+            : baseRating;
         let priceHtml = '';
         if (p.discount_percent && Number(p.discount_percent) > 0) {
             const originalPrice = Number(p.price_usd);
@@ -2071,19 +2075,14 @@ function renderProductCards(productsToRender, container) {
         } else {
             priceHtml = `<div class="price">${convertMoney(p.price_usd)}</div>`;
         }
-        let starsHtml = '';
-        if (finalReviewsCount > 0) {
-            const fullStars = Math.floor(finalRating);
-            const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
-            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-            starsHtml = '<div class="stars-container"><span style="color:#f0bd55; font-size:14px;">';
-            for (let i = 0; i < fullStars; i++) starsHtml += '★';
-            if (hasHalfStar) starsHtml += '⯨';
-            for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
-            starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)}) · ${finalReviewsCount} reviews</span></div>`;
-        } else {
-            starsHtml = '<div class="stars-container" style="font-size:12px;color:var(--muted);">No ratings yet</div>';
-        }
+        const fullStars = Math.floor(finalRating);
+        const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
+        const emptyStars = Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0));
+        let starsHtml = '<div class="stars-container"><span style="color:#f0bd55; font-size:14px;">';
+        for (let i = 0; i < fullStars; i++) starsHtml += '★';
+        if (hasHalfStar) starsHtml += '⯨';
+        for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
+        starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
             <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
@@ -3303,8 +3302,10 @@ function openProductView(index) {
     history.pushState({ page: 'product' }, '', '#product');
 
     const imgs = Array.isArray(p.images) && p.images.length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600?text=GM']);
-    const baseRating = Math.max(0, Math.min(5, Number(p.base_rating ?? 5) || 0));
-    const baseReviews = Math.max(0, Number(p.base_reviews_count ?? 0) || 0);
+    const storedBaseRating = Number(p.base_rating || 0);
+    const baseRating = Math.max(0, Math.min(5, storedBaseRating > 0 ? storedBaseRating : 5.0));
+    const storedDetailReviews = Math.max(0, Number(p.base_reviews_count || 0) || 0);
+    const baseReviews = storedDetailReviews > 0 ? storedDetailReviews : [40, 45, 48, 50, 60, 80, 90, 100][Math.max(0, Number(index) || 0) % 8];
     const ratingPercent = Math.max(0, Math.min(100, (baseRating / 5) * 100));
     const fullStars = Math.floor(baseRating);
     const hasHalfStar = (baseRating - fullStars) >= 0.25 && (baseRating - fullStars) < 0.75;
@@ -4184,17 +4185,34 @@ async function insertDemoByCategory(category) {
 
     const catalog = demoCatalog[category];
     if (!catalog) return alert('Unknown product category.');
-    Swal.fire({ title: `Updating ${category} products...`, text: 'Products will remain marked SOLD OUT.', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
+
+    // Previous catalog names are matched by position so existing customer reviews
+    // can be re-linked to the corresponding GM-branded product without deleting data.
+    const legacyNamesByCategory = {
+        Watches: ['Luxury Gold Watch','Classic Silver Watch','Smart Watch Pro','Leather Strap Watch','Rose Gold Ladies Watch','Chronograph Watch','Sporty Digital Watch','Minimalist Watch'],
+        Wallets: ['Classic Leather Wallet','Brown Bifold Wallet','Black RFID Wallet','Slim Card Holder','Ladies Zipper Wallet','Travel Passport Holder','Carbon Fiber Wallet','Vintage Leather Wallet'],
+        Accessories: ['Designer Sunglasses','Silver Chain Necklace','Premium Leather Belt','Wireless Earbuds Pro','Baseball Cap','Silk Scarf','Leather Gloves','Keychain Organizer'],
+        Premium: ['Diamond Ring Ladies','Gold Plated Bracelet','Pearl Earrings','Emerald Pendant','Ruby Studs','Sapphire Ring','Platinum Chain','Diamond Cufflinks'],
+        Perfumes: ['Royal Oud Perfume','Aqua Fresh Perfume','Rose Essence Perfume','Midnight Musk Perfume','Citrus Splash Perfume','Vanilla Bloom Perfume','Ocean Breeze Perfume','Golden Amber Perfume'],
+        Attars: ['Arabian Attar Premium','Musk Al Haramain','Rose Attar','Sandalwood Attar','Jasmine Attar','Amber Attar','Oud Attar','White Musk Attar'],
+        Bags: ['Classic Handbag','Premium Leather Tote','Everyday Shoulder Bag','Travel Duffel Bag','Ladies Crossbody Bag','Office Laptop Bag','Mini Evening Clutch','Casual Backpack'],
+        Shoes: ['Classic Leather Sneakers','Formal Oxford Shoes','Running Sports Shoes','Ladies Fashion Heels','Casual Slip-On Shoes','Premium Loafers','Outdoor Hiking Shoes','Everyday Walking Shoes'],
+        Jewelry: ['Gold Pendant Necklace','Elegant Pearl Bracelet','Crystal Drop Earrings','Silver Charm Bracelet','Classic Diamond Studs','Rose Gold Ring','Layered Chain Necklace','Luxury Bangle Set'],
+        Electronics: ['Wireless Earbuds Pro','Smart Bluetooth Speaker','Portable Power Bank','Fitness Smart Band','Wireless Headphones','HD Webcam','Fast USB-C Charger','Portable LED Lamp']
+    };
+
+    Swal.fire({ title: `Updating ${category} products...`, text: 'Preserving reviews and setting four gallery images per product.', allowOutsideClick: false, background: '#0d1c14', color: '#e5b853', didOpen: () => Swal.showLoading() });
     try {
-        const { data: existing, error: lookupError } = await sb.from('products').select('id,name').in('name', catalog.names);
+        const namesToFind = [...catalog.names, ...(legacyNamesByCategory[category] || [])];
+        const { data: existing, error: lookupError } = await sb.from('products').select('id,name').in('name', namesToFind);
         if (lookupError) throw lookupError;
         const existingByName = new Map((existing || []).map(row => [row.name, row.id]));
+        let reviewMoveWarnings = 0;
         for (let index = 0; index < catalog.names.length; index++) {
             const name = catalog.names[index];
-            const photoId = catalog.photos[index];
-            const images = [
-                `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=700&q=85`
-            ];
+            // Four category-matched gallery photos, rotated so products do not all start on the same photo.
+            const galleryIds = Array.from({ length: 4 }, (_, offset) => catalog.photos[(index + offset) % catalog.photos.length]);
+            const images = galleryIds.map(photoId => `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=700&q=85`);
             const productData = {
                 name,
                 price_usd: Number(catalog.prices[index]),
@@ -4211,14 +4229,29 @@ async function insertDemoByCategory(category) {
                 base_reviews_count: [40, 45, 48, 50, 60, 80, 90, 100][index]
             };
             const existingId = existingByName.get(name);
-            const result = existingId
-                ? await sb.from('products').update(productData).eq('id', existingId)
-                : await sb.from('products').insert(productData);
-            if (result.error) throw result.error;
+            let productId = existingId;
+            if (existingId) {
+                const result = await sb.from('products').update(productData).eq('id', existingId);
+                if (result.error) throw result.error;
+            } else {
+                const result = await sb.from('products').insert(productData).select('id').single();
+                if (result.error) throw result.error;
+                productId = result.data && result.data.id;
+                if (productId) existingByName.set(name, productId);
+            }
+
+            const legacyName = (legacyNamesByCategory[category] || [])[index];
+            const legacyId = legacyName ? existingByName.get(legacyName) : null;
+            if (productId && legacyId && String(productId) !== String(legacyId)) {
+                // Move all review rows (approved and pending) so review text and star aggregates stay attached.
+                const moved = await sb.from('product_reviews').update({ product_id: productId }).eq('product_id', legacyId);
+                if (moved.error) reviewMoveWarnings++;
+            }
         }
         await loadProducts();
         await loadAdmin();
-        await Swal.fire({ icon: 'success', title: 'Products Updated', text: `${category}: 8 products updated with images and marked SOLD OUT.`, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        const extraNote = reviewMoveWarnings ? ` Some old reviews could not be re-linked due to database permissions (${reviewMoveWarnings}).` : ' Existing review records were preserved and linked where legacy products were found.';
+        await Swal.fire({ icon: 'success', title: 'Products Updated', text: `${category}: four gallery images, ratings, and review counts updated; products remain SOLD OUT.${extraNote}`, background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     } catch (e) {
         await Swal.fire({ icon: 'error', title: 'Error', text: e.message || String(e), background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
     }

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#123c32">
+<meta name="theme-color" content="#050a08">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>GM Network</title>
+<title>GM Network | Shop · Earn · Grow Together</title>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 /* ===== SWEETALERT RESPONSIVE FIX (No more cut-off screens) ===== */
@@ -441,6 +441,75 @@ input[type="file"]::file-selector-button:hover {
     border: 1px solid var(--line) !important;
 }
 
+
+/* ===== STOREFRONT POLISH & CATEGORY / PLACEMENT CONTROLS ===== */
+.shop-hero{min-height:clamp(300px,48vw,470px);border-radius:22px;margin:8px 0 28px;box-shadow:0 18px 45px rgba(0,0,0,.32)}
+.shop-hero img{object-fit:cover;opacity:.72;filter:saturate(.82)}
+.shop-hero-content{background:linear-gradient(90deg,rgba(3,10,7,.88),rgba(3,10,7,.34));align-items:flex-start;text-align:left;padding:clamp(28px,6vw,64px);max-width:100%}
+.shop-hero h1{font-family:Georgia,serif;font-size:clamp(34px,6vw,58px);letter-spacing:.02em;max-width:650px}
+.shop-hero p{font-size:clamp(14px,2vw,18px);max-width:440px;line-height:1.7}
+.category-card{position:relative;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#10271b,#07120c);box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.category-card .cat-icon{font-size:34px;color:var(--gold)}
+.category-card h3{letter-spacing:.04em}
+.featured-title{font-family:Georgia,serif;border-bottom:1px solid var(--line);padding-bottom:10px}
+.product-grid{gap:12px}
+.product-card{box-shadow:0 8px 22px rgba(0,0,0,.16);transition:transform .2s,border-color .2s}
+.product-card:active{transform:scale(.985)}
+.product-card .main-img{background:linear-gradient(145deg,#10271b,#050a08)}
+.product-info h3{min-height:32px}
+.brand-story{box-shadow:0 14px 30px rgba(0,0,0,.2)}
+.brand-story img{height:clamp(190px,42vw,330px);object-fit:cover}
+.home-section-kicker{color:var(--gold);font-size:10px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:6px}
+.home-section-intro{color:var(--muted);font-size:13px;line-height:1.7;margin:-5px 0 14px}
+.placement-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#07130d;margin:8px 0 12px}
+.placement-options label{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;color:var(--ink);font-weight:600}
+.placement-options input{width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto}
+.category-select{border-color:var(--gold)!important}
+.product-admin-meta{font-size:11px;color:var(--muted);margin-top:3px}
+@media(min-width:700px){.category-grid{grid-template-columns:repeat(3,1fr)}.product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.product-card .main-img{height:220px}}
+@media(max-width:420px){.shop-hero-content{align-items:center;text-align:center}.shop-hero p{margin-left:auto;margin-right:auto}.placement-options{grid-template-columns:1fr}}
+
+
+/* ===== MASTER BLUEPRINT: PREMIUM STORE FRONT ===== */
+.announcement-bar{background:linear-gradient(90deg,#07170f,#173d29,#07170f);color:#f4d889;text-align:center;padding:8px 12px;font-size:11px;letter-spacing:.08em;border-bottom:1px solid rgba(229,184,83,.5)}
+.announcement-bar strong{color:#fff2c7}.announcement-bar .ann-dot{display:inline-block;width:5px;height:5px;background:var(--gold);border-radius:50%;margin:0 9px 2px}
+header{position:relative;z-index:20;border-radius:0 0 18px 18px;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.shop-hero{min-height:300px;margin:14px 0 18px;border:1px solid rgba(229,184,83,.55);box-shadow:0 16px 38px rgba(0,0,0,.28);background:#07140d}
+.shop-hero img{opacity:.72;object-fit:cover;object-position:center 48%;filter:saturate(.82)}
+.shop-hero-content{background:linear-gradient(90deg,rgba(3,10,6,.92),rgba(3,10,6,.55) 60%,rgba(3,10,6,.18));align-items:flex-start;text-align:left;padding:32px 24px}
+.shop-hero h1{font-family:Georgia,serif;font-size:clamp(30px,7vw,48px);line-height:1.08;max-width:520px;letter-spacing:.01em}
+.shop-hero p{max-width:390px;font-size:14px;line-height:1.7;color:#f1ead8;margin:8px 0 18px}
+.hero-kicker{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;margin-bottom:9px}
+.hero-btn{background:linear-gradient(135deg,#f7d77f,#d9a83d);color:#102116;border:1px solid #ffe7a5;border-radius:999px;padding:12px 23px;font-weight:850;box-shadow:0 7px 22px rgba(229,184,83,.18)}
+.home-search{display:flex;gap:8px;margin:14px 0 22px;padding:9px;border:1px solid rgba(229,184,83,.38);border-radius:13px;background:#0b1b12}.home-search input{min-width:0;margin:0;background:#050a08;border-color:#294a37}.home-search button{flex:0 0 auto;width:auto;margin:0;padding:0 15px}.home-section{margin:27px 0}.home-section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:13px}.home-section-head h2{margin:0;font-family:Georgia,serif;font-size:clamp(19px,4.6vw,25px)}.home-section-head p{margin:5px 0 0;color:var(--muted);font-size:11px}.home-link{border:1px solid rgba(229,184,83,.55);color:var(--gold);background:transparent;border-radius:999px;padding:7px 11px;font-size:11px;white-space:nowrap}
+.home-promo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.home-promo-card{position:relative;min-height:145px;border:1px solid rgba(229,184,83,.42);border-radius:14px;overflow:hidden;background:#10271b;display:flex;align-items:end;text-decoration:none;color:#fff}.home-promo-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.72;transition:transform .35s}.home-promo-card:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.88),rgba(0,0,0,.02) 85%)}.home-promo-card span{position:relative;z-index:1;padding:12px;font-family:Georgia,serif;font-size:16px;font-weight:700;text-shadow:0 2px 6px #000}.home-promo-card small{display:block;color:#f3d98e;font:700 9px system-ui;letter-spacing:.13em;text-transform:uppercase;margin-bottom:4px}
+.category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.category-card{position:relative;min-height:104px;padding:14px 9px;background:linear-gradient(145deg,#10291c,#08140d);border-color:rgba(229,184,83,.32);box-shadow:inset 0 1px rgba(255,255,255,.025)}.category-card .cat-icon{font-size:29px;margin-bottom:5px}.category-card h3{font-size:13px}.category-card:active{transform:scale(.98)}
+#bannerSlider{margin:15px 0 25px;border:1px solid rgba(229,184,83,.42);box-shadow:0 10px 25px rgba(0,0,0,.25)}
+#bannerSlider > img,#bannerSlider > .banner-placeholder{aspect-ratio:16/6;max-height:210px;object-fit:contain}
+.brand-story{border-color:rgba(229,184,83,.45);box-shadow:0 14px 30px rgba(0,0,0,.22)}.brand-story img{height:220px;object-fit:cover}.brand-story-content{background:linear-gradient(145deg,#10291c,#07130c)}
+.why-us-grid{gap:9px}.why-us-card{background:linear-gradient(145deg,#10271b,#08140d);border-color:rgba(229,184,83,.25);padding:15px 10px}.why-us-card p{font-size:11px;line-height:1.55}
+.blueprint-benefit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.blueprint-benefit{border:1px solid rgba(229,184,83,.3);border-radius:13px;padding:15px 12px;background:linear-gradient(145deg,#10291c,#08140d)}.blueprint-benefit b{display:block;color:var(--gold);font-size:13px;margin:6px 0 4px}.blueprint-benefit p{font-size:11px;line-height:1.55;color:var(--muted);margin:0}.blueprint-benefit .benefit-icon{font-size:22px}
+.how-steps{display:grid;gap:9px}.how-step{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:12px;background:#0b1b12}.how-step .step-no{width:32px;height:32px;flex:0 0 32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#f4d47c,#c99735);color:#102116;font-weight:900}.how-step b{display:block;color:#f2d889;font-size:13px}.how-step small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.reward-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:16px 8px;border:1px solid rgba(229,184,83,.5);border-radius:14px;background:linear-gradient(120deg,#07140d,#173b27,#07140d);text-align:center}.reward-strip div{min-width:0}.reward-strip strong{display:block;color:var(--gold);font:700 11px Georgia,serif}.reward-strip small{display:block;color:#c5c9c2;font-size:9px;margin-top:4px}
+.home-faq details{border:1px solid var(--line);border-radius:11px;background:#0b1b12;padding:12px;margin:8px 0}.home-faq summary{color:var(--gold);font-size:12px;font-weight:700;cursor:pointer}.home-faq details p{font-size:11px;line-height:1.65;color:var(--muted);margin:9px 0 0}
+.insta-grid img{height:155px;object-fit:cover;filter:saturate(.8);border-color:rgba(229,184,83,.3)}
+.newsletter-banner{background:radial-gradient(circle at 50% 0%,#1b4930,#0b1b12 70%);box-shadow:0 14px 32px rgba(0,0,0,.22)}
+.site-footer{background:linear-gradient(180deg,#0b1d13,#030805);border-top:1px solid rgba(229,184,83,.45);border-radius:18px 18px 0 0;margin:30px -13px 0;padding:25px 18px 18px}.site-footer .f-tag{color:#b6b6a8}.site-footer h4{color:var(--gold)}.site-footer a{color:#d2d2c9}
+@media(min-width:620px){main{max-width:980px}.category-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.home-promo-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.home-promo-card{min-height:175px}.blueprint-benefit-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.how-steps{grid-template-columns:repeat(4,minmax(0,1fr))}.shop-hero{min-height:360px}.shop-hero-content{padding:48px}.shop-hero p{font-size:16px}.reward-strip{padding:20px}}
+@media(max-width:360px){.shop-hero{min-height:260px}.shop-hero-content{padding:25px 16px}.shop-hero h1{font-size:28px}.home-section-head{align-items:start}.home-link{padding:6px 8px;font-size:10px}}
+
+
+/* GM Network complete storefront modules */
+#cartItemsList .cart-line,#wishlistItems .wish-line{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+#cartItemsList img,#wishlistItems img{width:76px;height:76px;object-fit:cover;border-radius:10px;background:#fff}
+.gm-qty{display:flex;align-items:center;gap:7px;margin-top:7px}.gm-qty button{width:30px;height:30px;border:1px solid var(--gold);border-radius:8px;background:var(--g2);color:var(--gold);font-weight:800}
+.home-promo-grid>button{min-width:0;padding:10px 3px;line-height:1.5}.gm-icon-btn{border:1px solid var(--line);background:var(--g2);color:var(--gold);padding:7px 10px;border-radius:8px;cursor:pointer}
+.gm-notice{padding:13px;border:1px solid var(--line);border-radius:12px;margin:9px 0;background:linear-gradient(120deg,#10291c,#08140d)}
+.gm-status{display:inline-block;padding:4px 8px;border-radius:20px;background:#183b29;color:#e5b853;font-size:11px;text-transform:capitalize}
+.gm-bottom-nav{position:fixed;z-index:300;bottom:0;left:0;right:0;display:flex;justify-content:space-around;gap:2px;padding:7px 4px calc(7px + env(safe-area-inset-bottom));background:rgba(5,10,8,.97);border-top:1px solid var(--gold);backdrop-filter:blur(10px)}
+.gm-bottom-nav button{flex:1;border:0;background:transparent;color:var(--muted);font-size:10px;padding:5px 2px}.gm-bottom-nav button b{display:block;font-size:18px;color:var(--gold);margin-bottom:2px}
+body{padding-bottom:62px}#policies details{border-bottom:1px solid var(--line);padding:13px 2px}#policies summary{color:var(--gold);font-weight:700;cursor:pointer}
+@media(min-width:800px){.gm-bottom-nav{display:none}body{padding-bottom:0}#cartItemsList .cart-line,#wishlistItems .wish-line{grid-template-columns:90px minmax(0,1fr) auto}#cartItemsList img,#wishlistItems img{width:90px;height:90px}}
 </style>
 </head>
 <body>
@@ -451,6 +520,7 @@ input[type="file"]::file-selector-button:hover {
     <button id="offlineRetryButton" onclick="retryConnection()">Retry</button>
 </div>
 
+<div class="announcement-bar"><strong>GM NETWORK</strong><span class="ann-dot"></span> SHOP SMART <span class="ann-dot"></span> EARN TOGETHER <span class="ann-dot"></span> GROW TOGETHER</div>
 <header><div class="brand"><img src="logo.png" alt="GM Network Logo" style="width:48px; height:48px; border-radius:12px; object-fit:cover;"><div><h1>GM Network</h1><p>Referral &amp; Product Sales</p></div></div><div class="currency-switch-wrap"><label for="displayCurrencySelect">Display Currency</label><select id="displayCurrencySelect" onchange="setDisplayCurrency(this.value)" aria-label="Choose display currency"><option value="USD">USD ($)</option><option value="USDT">USDT</option><option value="PKR">PKR (Rs)</option><option value="INR">INR (₹)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div></header>
 
 <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Open menu">☰</button>
@@ -468,8 +538,18 @@ input[type="file"]::file-selector-button:hover {
         <button data-menu="my-account" onclick="menuTab('my-account')">🆔 My Account</button>
         <button data-menu="my-wallet" onclick="menuTab('my-wallet')">💰 My Wallet</button>
         <button data-menu="products" onclick="menuTab('products')">🛍️ Products</button>
-        <button data-menu="team" onclick="menuTab('team')">👥 My Team</button>
+        <button data-menu="categories" onclick="menuTab('categories')">▦ Categories</button>
+        <button data-menu="offers" onclick="menuTab('offers')">🏷️ Offers & Discounts</button>
+        <button data-menu="cart" onclick="menuTab('cart')">🛒 Shopping Cart <span id="menuCartCount" class="pill">0</span></button>
+        <button data-menu="wishlist" onclick="menuTab('wishlist')">♡ Wishlist</button>
+        <button data-menu="orders" onclick="menuTab('orders')">📦 Order Tracking</button>
+        <button data-menu="reviews" onclick="menuTab('reviews')">⭐ Customer Reviews</button>
+        <button data-menu="notifications" onclick="menuTab('notifications')">🔔 Notifications</button>
+        <button data-menu="team" onclick="menuTab('team')">👥 My Team & Rewards</button>
+        <button data-menu="policies" onclick="menuTab('policies')">📜 Policies</button>
+        <button data-menu="contact" onclick="menuTab('contact')">☎️ Contact Us</button>
         <button data-menu="about" onclick="menuTab('about')">ℹ️ About</button>
+        <button data-menu="reports" class="admin-only" onclick="menuTab('reports')">📊 Reports & Analytics</button>
         <button data-menu="admin" id="adminMenuBtn" class="admin-only" onclick="menuTab('admin')">⚙️ Admin Panel</button>
     </nav>
 </aside>  
@@ -479,13 +559,18 @@ input[type="file"]::file-selector-button:hover {
 <section id="home" class="view">
     <!-- VIP Hero Banner -->
     <div class="shop-hero">
-        <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=1000&auto=format&fit=crop" alt="Luxury">
+        <img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=85&w=1600&auto=format&fit=crop" alt="Premium accessories collection" fetchpriority="high">
         <div class="shop-hero-content">
-            <h1>Timeless Luxury</h1>
-            <p>Crafted for You. Discover our premium collection.</p>
-            <button class="hero-btn" onclick="tab('products')">Shop Now</button>
+            <div class="hero-kicker">GM NETWORK · PREMIUM COLLECTION</div>
+            <h1>Dream Big.<br>Shop Smart.<br>Earn More.</h1>
+            <p>Discover perfumes, watches, wallets and selected everyday essentials — all in one member-friendly shopping experience.</p>
+            <button class="hero-btn" onclick="tab('products')">Explore Collection&nbsp; →</button>
         </div>
     </div>
+    <div class="home-promo-grid" style="margin:12px 0 18px;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px"><button class="secondary" onclick="tab('offers')">🏷️<br><small>Offers</small></button><button class="secondary" onclick="tab('team')">🏆<br><small>Rewards</small></button><button class="secondary" onclick="tab('contact')">💬<br><small>Support</small></button><button class="secondary" onclick="tab('categories')">▦<br><small>Categories</small></button></div>
+    <!-- Admin-managed promotional banners are shown on the storefront as well as the product page. -->
+    <div class="home-section" style="margin-top:0"><div id="bannerSlider" aria-label="GM Network promotions"><div class="banner-placeholder">Promotional banners<br>Upload from Admin Panel</div></div></div>
+    <div class="home-search"><input id="homeProductSearch" type="search" placeholder="Search perfumes, watches, wallets…" aria-label="Search products" onkeydown="if(event.key==='Enter')searchFromHome()"><button class="primary" type="button" onclick="searchFromHome()">Search</button></div>
 
     <!-- Shop by Category -->
     <h2 class="section-title">Shop by Category</h2>
@@ -496,7 +581,22 @@ input[type="file"]::file-selector-button:hover {
     <a href="#" class="category-card" onclick="openCategory('Premium'); return false;"><span class="cat-icon">💎</span><h3>Premium</h3></a>
     <a href="#" class="category-card" onclick="openCategory('Perfumes'); return false;"><span class="cat-icon">🧴</span><h3>Perfumes</h3></a>
     <a href="#" class="category-card" onclick="openCategory('Attars'); return false;"><span class="cat-icon">🌸</span><h3>Attars</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Bags'); return false;"><span class="cat-icon">👜</span><h3>Bags</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Shoes'); return false;"><span class="cat-icon">👟</span><h3>Shoes</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Jewelry'); return false;"><span class="cat-icon">💍</span><h3>Jewelry</h3></a>
+    <a href="#" class="category-card" onclick="openCategory('Electronics'); return false;"><span class="cat-icon">🎧</span><h3>Electronics</h3></a>
 </div>
+
+    <!-- Visual category collections -->
+    <section class="home-section">
+      <div class="home-section-head"><div><h2>Explore Our Collections</h2><p>Discover a style for every moment.</p></div><button class="home-link" onclick="tab('products')">Shop all</button></div>
+      <div class="home-promo-grid">
+        <a href="#" class="home-promo-card" onclick="openCategory('Perfumes');return false;"><img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?q=85&w=700&auto=format&fit=crop" alt="Perfume collection" loading="lazy"><span><small>Signature scents</small>Perfumes</span></a>
+        <a href="#" class="home-promo-card" onclick="openCategory('Watches');return false;"><img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=85&w=700&auto=format&fit=crop" alt="Watches collection" loading="lazy"><span><small>Timeless detail</small>Watches</span></a>
+        <a href="#" class="home-promo-card" onclick="openCategory('Wallets');return false;"><img src="https://images.unsplash.com/photo-1627123424574-724758594e93?q=85&w=700&auto=format&fit=crop" alt="Wallet collection" loading="lazy"><span><small>Everyday essentials</small>Wallets</span></a>
+        <a href="#" class="home-promo-card" onclick="openCategory('Accessories');return false;"><img src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=85&w=700&auto=format&fit=crop" alt="Accessories collection" loading="lazy"><span><small>Finishing touches</small>Accessories</span></a>
+      </div>
+    </section>
 
     <!-- Featured Products -->
     <div class="featured-section">
@@ -514,7 +614,7 @@ input[type="file"]::file-selector-button:hover {
         <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop" alt="GM Network product craftsmanship">
         <div class="brand-story-content">
             <h2>The Art of Elegance</h2>
-            <p>At GM Network, we believe that true luxury lies in the details. Each product in our collection is carefully curated to ensure it meets the highest standards of quality and craftsmanship. We bring you not just products, but a statement of class and sophistication.</p>
+            <p>GM Network brings together a growing selection of perfumes, attars, watches, wallets and everyday accessories. Explore product photos, descriptions and prices, then place your order through our member-friendly shopping experience.</p>
             <button class="hero-btn" onclick="tab('about')" style="padding: 10px 20px; font-size: 14px;">Discover Our Story</button>
         </div>
     </div>
@@ -539,21 +639,64 @@ input[type="file"]::file-selector-button:hover {
     <!-- VIP Newsletter Banner -->
     <div class="newsletter-banner">
         <h3>Join the VIP Club</h3>
-        <p>Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+        <p>Want updates about new collections and offers? Contact our team and ask to join the updates list.</p>
         <div class="newsletter-form">
             <input type="email" placeholder="Enter your email address" id="newsletterEmail" autocomplete="email">
-            <button type="button" onclick="gmPopup('Newsletter signup is not connected yet. Please contact GM Network support to subscribe.', 'VIP Club', 'info')">Subscribe</button>
+            <button type="button" onclick="window.open('https://wa.me/923082276093?text='+encodeURIComponent('Please add me to GM Network updates. My email: '+document.getElementById('newsletterEmail').value),'_blank','noopener')">Join via WhatsApp</button>
         </div>
     </div>
 
     <!-- Why Choose Us -->
     <h2 class="section-title">Why Choose GM Network?</h2>
     <div class="why-us-grid">
-        <div class="why-us-card"><div class="icon-box">💎</div><h4>Premium Quality</h4><p>100% authentic products</p></div>
-        <div class="why-us-card"><div class="icon-box">🚚</div><h4>Fast Delivery</h4><p>Nationwide shipping</p></div>
-        <div class="why-us-card"><div class="icon-box">🛡️</div><h4>Secure Payment</h4><p>Safe transactions</p></div>
-        <div class="why-us-card"><div class="icon-box">💬</div><h4>24/7 Support</h4><p>Always here to help</p></div>
+        <div class="why-us-card"><div class="icon-box">💎</div><h4>Curated Selection</h4><p>Explore products across multiple categories</p></div>
+        <div class="why-us-card"><div class="icon-box">🚚</div><h4>Delivery Options</h4><p>Delivery details shown during checkout</p></div>
+        <div class="why-us-card"><div class="icon-box">🛡️</div><h4>Order Tracking</h4><p>Follow order status in your account</p></div>
+        <div class="why-us-card"><div class="icon-box">💬</div><h4>Customer Support</h4><p>Contact the GM Network support team</p></div>
     </div>
+
+    <!-- Shopping and membership benefits -->
+    <section class="home-section">
+      <div class="home-section-head"><div><h2>A Better Way to Shop</h2><p>Useful features in one connected platform.</p></div></div>
+      <div class="blueprint-benefit-grid">
+        <div class="blueprint-benefit"><div class="benefit-icon">🛍️</div><b>Shop Online</b><p>Browse product details and place orders from your phone.</p></div>
+        <div class="blueprint-benefit"><div class="benefit-icon">📦</div><b>Order Updates</b><p>Follow your order status from your member account.</p></div>
+        <div class="blueprint-benefit"><div class="benefit-icon">🪙</div><b>Purchase Coins</b><p>Eligible purchases add coins according to the platform rules.</p></div>
+        <div class="blueprint-benefit"><div class="benefit-icon">🤝</div><b>Referral Network</b><p>After your first successful purchase, your referral feature becomes available.</p></div>
+      </div>
+    </section>
+
+    <section class="home-section">
+      <div class="home-section-head"><div><h2>How GM Network Works</h2><p>Start shopping, then grow your network.</p></div></div>
+      <div class="how-steps">
+        <div class="how-step"><span class="step-no">1</span><div><b>Create your account</b><small>Join with a valid referral code.</small></div></div>
+        <div class="how-step"><span class="step-no">2</span><div><b>Explore and shop</b><small>Choose products and submit your order.</small></div></div>
+        <div class="how-step"><span class="step-no">3</span><div><b>Complete purchase</b><small>Your order is processed through the existing payment flow.</small></div></div>
+        <div class="how-step"><span class="step-no">4</span><div><b>Unlock referrals</b><small>Your referral code activates after a successful purchase.</small></div></div>
+      </div>
+    </section>
+
+    <div class="reward-strip" aria-label="GM Network platform features">
+      <div><strong>SHOP</strong><small>Online Products</small></div><div><strong>EARN</strong><small>Coins & Commissions</small></div><div><strong>GROW</strong><small>Referral Network</small></div>
+    </div>
+
+    <!-- Best Sellers: products selected by the Admin -->
+    <div class="featured-section">
+        <h2 class="featured-title">Best Sellers <span onclick="tab('products')">View All →</span></h2>
+        <p class="home-section-intro">Popular picks selected by the GM Network team.</p>
+        <div class="product-grid" id="bestSellersList"><p class="muted">Loading...</p></div>
+    </div>
+
+    <!-- Real discounted products only; no invented sale pricing or countdown. -->
+    <section class="home-section featured-section">
+      <div class="home-section-head"><div><h2>Special Offers</h2><p>Products with an active discount set by the Admin.</p></div><button class="home-link" onclick="tab('products')">View all</button></div>
+      <div class="product-grid" id="homeOffersList"><p class="muted">Loading offers…</p></div>
+    </section>
+
+    <section class="home-section featured-section">
+      <div class="home-section-head"><div><h2>Top Rated</h2><p>Highly rated products in the current catalog.</p></div><button class="home-link" onclick="tab('products')">View all</button></div>
+      <div class="product-grid" id="homeTopRatedList"><p class="muted">Loading…</p></div>
+    </section>
 
     <!-- New Arrivals -->
     <div class="featured-section">
@@ -563,8 +706,8 @@ input[type="file"]::file-selector-button:hover {
 
     <!-- Instagram Feed Section -->
     <div class="insta-section">
-        <h2 class="section-title" style="justify-content: center;">Follow Us on Instagram</h2>
-        <p class="muted" style="font-size: 13px;">@gmnetwork_official</p>
+        <h2 class="section-title" style="justify-content: center;">The GM Network Edit</h2>
+        <p class="muted" style="font-size: 13px;">A closer look at the collections</p>
         <div class="insta-grid">
             <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=500&auto=format&fit=crop" alt="Instagram Post 1">
             <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=500&auto=format&fit=crop" alt="Instagram Post 2">
@@ -572,6 +715,30 @@ input[type="file"]::file-selector-button:hover {
             <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=500&auto=format&fit=crop" alt="Instagram Post 4">
         </div>
     </div>
+
+    <!-- Customer reviews: only real Admin-approved reviews are displayed. -->
+    <section class="home-section">
+      <div class="home-section-head"><div><h2>Customer Reviews</h2><p>Feedback approved by the GM Network team.</p></div></div>
+      <div id="homeCustomerReviews" class="testimonial-section"><p class="muted">Approved customer reviews will appear here.</p></div>
+    </section>
+
+    <!-- VIP Member Preview -->
+    <section class="home-section">
+      <div class="home-section-head"><div><h2>Your VIP Member Space</h2><p>Shopping and member tools connected in one account.</p></div></div>
+      <div class="home-promo-grid">
+        <a href="#" class="home-promo-card" onclick="tab('dashboard');return false;"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=85&w=700&auto=format&fit=crop" alt="Member dashboard preview" loading="lazy"><span><small>Personal overview</small>VIP Dashboard</span></a>
+        <a href="#" class="home-promo-card" onclick="tab('my-wallet');return false;"><img src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=85&w=700&auto=format&fit=crop" alt="Wallet preview" loading="lazy"><span><small>Account activity</small>Wallet & History</span></a>
+      </div>
+    </section>
+
+    <!-- Storefront FAQ -->
+    <section class="home-section home-faq">
+      <div class="home-section-head"><div><h2>Frequently Asked Questions</h2><p>Quick answers about shopping with GM Network.</p></div><button class="home-link" onclick="tab('about')">More info</button></div>
+      <details><summary>How do I place an order?</summary><p>Open Products, select an item, review its details, and follow the checkout and payment instructions shown in your account.</p></details>
+      <details><summary>When does my referral code become active?</summary><p>Your referral code is kept inactive until your first successful purchase, in line with the existing GM Network referral rules.</p></details>
+      <details><summary>Where can I check my order status?</summary><p>Sign in and open your account or order history to review the latest status available for your order.</p></details>
+      <details><summary>How can I contact support?</summary><p>Use the WhatsApp support link in the footer if you need help with an order or account question.</p></details>
+    </section>
 
     <!-- VIP Dashboard Promo -->
     <div class="cta-band" style="background: linear-gradient(135deg, #0d1c14, #113626); border: 1px solid var(--gold);">
@@ -585,9 +752,9 @@ input[type="file"]::file-selector-button:hover {
         <p class="f-tag">Your Trusted Partner for Premium Products</p>
         <div class="f-cols">
             <div><h4>Quick Links</h4><ul><li><a href="#" onclick="tab('about');return false;">About Us</a></li><li><a href="#" onclick="tab('products');return false;">Products</a></li><li><a href="#" onclick="tab('account');return false;">Sign In</a></li></ul></div>
-            <div><h4>Customer Service</h4><ul><li><a href="#" onclick="tab('my-account');return false;">Track Order</a></li><li><a href="https://wa.me/923082276093" target="_blank" rel="noopener">Contact Support</a></li></ul></div>
+            <div><h4>Customer Service</h4><ul><li><a href="#" onclick="tab('orders');return false;">Track Order</a></li><li><a href="#" onclick="tab('cart');return false;">Shopping Cart</a></li><li><a href="#" onclick="tab('policies');return false;">Policies</a></li><li><a href="https://wa.me/923082276093" target="_blank" rel="noopener">Contact Support</a></li></ul></div>
         </div>
-        <div class="f-copy"><p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p></div>
+        <div class="feature-grid" style="margin:18px 0"><div class="feature-card"><span class="ico">💎</span><h4>Premium Design</h4></div><div class="feature-card"><span class="ico">🛡️</span><h4>Advanced Security</h4></div><div class="feature-card"><span class="ico">🎁</span><h4>Multiple Rewards</h4></div><div class="feature-card"><span class="ico">📊</span><h4>Real-Time Reports</h4></div><div class="feature-card"><span class="ico">🌐</span><h4>Global Access</h4></div><div class="feature-card"><span class="ico">🎧</span><h4>Customer Support</h4></div></div><p class="f-tag">More Than a Website… A Complete Earning Platform!</p><div class="f-copy"><p style="margin:0;">© 2026 GM Network. All Rights Reserved.</p></div>
     </footer>
 </section>
 
@@ -765,12 +932,8 @@ input[type="file"]::file-selector-button:hover {
 </section>  
 <section id="products" class="view hidden">
     <div class="panel">
-        <div class="banner-slider" id="bannerSlider">
-            <div class="banner-placeholder">Banner 1<br>(Upload via Admin)</div>
-            <div class="banner-placeholder">Banner 2<br>(Upload via Admin)</div>
-            <div class="banner-placeholder">Banner 3<br>(Upload via Admin)</div>
-            <div class="banner-placeholder">Banner 4<br>(Upload via Admin)</div>
-        </div>
+        <label for="productSearchInput" class="muted" style="margin:0 0 6px">Search the collection</label>
+        <input id="productSearchInput" type="search" placeholder="Search by product name or category…" oninput="searchProductsByText(this.value)" style="margin-bottom:14px">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
     <h2 style="font-size:20px; margin:0;" id="productPageTitle">Premium Products</h2>
     <button class="secondary" onclick="loadProducts()" style="padding:5px 10px; font-size:12px;">Show All</button>
@@ -779,7 +942,7 @@ input[type="file"]::file-selector-button:hover {
     </div>
 </section>
 
-<section id="team" class="view hidden"><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
+<section id="team" class="view hidden"><div class="panel"><h2>🏆 Team & Rewards</h2><div class="stats"><div class="stat"><small>Direct Members</small><strong id="gmTeamMembers">—</strong></div><div class="stat"><small>Total Commission</small><strong id="gmTeamCommission">—</strong></div><div class="stat"><small>My Coins</small><strong id="gmTeamCoins">—</strong></div><div class="stat"><small>My Rank</small><strong id="gmTeamRank">—</strong></div></div></div><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
 
 <section id="admin" class="view hidden">
     <!-- Admin Menu Buttons -->
@@ -808,6 +971,20 @@ input[type="file"]::file-selector-button:hover {
             <button class="primary" onclick="insertDemoByCategory('Electronics')" style="background:#455A64; margin:0; font-size:12px;">🎧 Electronics (8)</button>
         </div>
         <label>Product name</label><input id="newProduct" placeholder="Product name">
+        <label>Product category</label>
+        <select id="newProductCategory" class="category-select">
+            <option value="">Select category</option>
+            <option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option>
+            <option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option>
+            <option>Jewelry</option><option>Electronics</option><option>Other</option>
+        </select>
+        <label>Show this product in (select any number)</label>
+        <div class="placement-options">
+            <label><input type="checkbox" id="newShowFeatured"> Featured Products</label>
+            <label><input type="checkbox" id="newShowArrivals"> New Arrivals</label>
+            <label><input type="checkbox" id="newShowPremium"> Premium Collection</label>
+            <label><input type="checkbox" id="newShowBestSellers"> Best Sellers</label>
+        </div>
         <label>Price (USD)</label><input id="newPrice" type="number" min="1" placeholder="20">
         <label>Discount % (0 for no discount)</label><input id="newDiscount" type="number" min="0" max="90" value="0">
         <label>Description</label><textarea id="newDescription" rows="2"></textarea>
@@ -901,6 +1078,7 @@ input[type="file"]::file-selector-button:hover {
         <button class="primary" type="button" onclick="openNetworkWalletHistory()" style="background:#2196F3;color:white;margin-top:8px;">🌐 View Network Wallet History</button>
     </div>
 
+    <div class="panel"><h2>📈 Reports & Analytics</h2><p class="muted">Total sales, order counts and current order statuses.</p><button class="primary" onclick="loadGMAdminReports()">View Reports</button><div id="gmAdminReportsInline"></div></div>
     <!-- Orders Section -->
     <div id="adminSection-orders" class="hidden panel">
         <button class="secondary" type="button" onclick="openAdminSection('')" style="margin-bottom:10px;">← Admin Menu</button>
@@ -909,7 +1087,20 @@ input[type="file"]::file-selector-button:hover {
         <div id="adminOrders" class="muted">No orders yet.</div>
     </div>
 </section>
+<section id="categories" class="view hidden"><div class="panel"><h2>▦ Shop by Categories</h2><p class="muted">اپنی پسند کی کیٹیگری منتخب کریں۔</p><div class="category-grid"><a href="#" class="category-card" onclick="openCategory('Perfumes');return false;"><span class="cat-icon">🧴</span><h3>Perfumes</h3></a><a href="#" class="category-card" onclick="openCategory('Attars');return false;"><span class="cat-icon">🌸</span><h3>Attars</h3></a><a href="#" class="category-card" onclick="openCategory('Watches');return false;"><span class="cat-icon">⌚</span><h3>Watches</h3></a><a href="#" class="category-card" onclick="openCategory('Wallets');return false;"><span class="cat-icon">👛</span><h3>Wallets</h3></a><a href="#" class="category-card" onclick="openCategory('Accessories');return false;"><span class="cat-icon">🕶️</span><h3>Accessories</h3></a><a href="#" class="category-card" onclick="openCategory('Bags');return false;"><span class="cat-icon">👜</span><h3>Bags</h3></a><a href="#" class="category-card" onclick="openCategory('Shoes');return false;"><span class="cat-icon">👟</span><h3>Shoes</h3></a><a href="#" class="category-card" onclick="openCategory('Jewelry');return false;"><span class="cat-icon">💍</span><h3>Jewelry</h3></a><a href="#" class="category-card" onclick="openCategory('Electronics');return false;"><span class="cat-icon">🎧</span><h3>Electronics</h3></a><a href="#" class="category-card" onclick="openCategory('Premium');return false;"><span class="cat-icon">💎</span><h3>Premium</h3></a></div></div></section>
+<section id="offers" class="view hidden"><div class="panel"><div class="shop-hero" style="min-height:170px;margin-bottom:15px"><div class="shop-hero-content"><div class="hero-kicker">GM NETWORK · SPECIAL OFFERS</div><h1>Special Offers</h1><p>منتخب discounted مصنوعات اور موجودہ قیمتیں دیکھیں۔</p></div></div><div id="offersPageList" class="product-grid"><p class="muted">Loading offers…</p></div><p class="muted" style="font-size:11px">صرف فعال مصنوعات جن پر ایڈمن نے discount مقرر کیا ہے یہاں دکھائی جاتی ہیں۔ آفر کی آخری تاریخ صرف تب دکھائی جا سکتی ہے جب اس کی تاریخ ڈیٹا میں موجود ہو۔</p></div></section>
+<section id="cart" class="view hidden"><div class="panel"><div class="home-section-head"><div><h2>🛒 Shopping Cart</h2><p class="muted">اپنی منتخب کردہ مصنوعات اور مقدار چیک کریں۔</p></div><button class="secondary" onclick="tab('products')">Continue Shopping</button></div><div id="cartItemsList"></div><div id="cartTotals" class="hidden" style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px"><div class="item"><span>Subtotal</span><b id="cartSubtotal">$0.00</b></div><div class="item"><span>Delivery</span><b>Checkout پر دکھائی جائے گی</b></div><p class="muted" style="font-size:12px">حتمی ڈیلیوری چارج شہر اور موجودہ ایڈمن سیٹنگ کے مطابق چیک آؤٹ پر شامل ہوگا۔</p><button class="primary" onclick="checkoutCart()">Proceed to Checkout →</button></div></div></section>
+<section id="wishlist" class="view hidden"><div class="panel"><h2>♡ My Wishlist</h2><p class="muted">پسندیدہ مصنوعات یہاں محفوظ رہیں گی۔</p><div id="wishlistItems"></div></div></section>
+<section id="orders" class="view hidden"><div class="panel"><h2>📦 Order Tracking</h2><p class="muted">اپنے آرڈرز اور ان کی تازہ صورتحال دیکھیں۔</p><div id="memberOrdersList">سائن اِن کریں تاکہ آرڈرز دیکھ سکیں۔</div><div style="border-top:1px solid var(--line);margin-top:15px;padding-top:15px"><h3 style="color:var(--gold);font-size:15px">Track an Order</h3><label>Order ID</label><input id="trackOrderId" placeholder="Paste your complete Order ID"><button class="primary" onclick="trackOrderById()">Track Order</button><div id="trackOrderResult"></div></div></div></section>
+<section id="reviews" class="view hidden"><div class="panel"><h2>⭐ Customer Reviews</h2><p class="muted">صرف ایڈمن کی منظور شدہ پروڈکٹ ریویوز یہاں دکھائے جاتے ہیں۔</p><div id="gmReviewSummary" class="stats" style="margin:14px 0"><div class="stat"><small>Overall Rating</small><strong>—</strong></div><div class="stat"><small>Approved Reviews</small><strong>—</strong></div></div><div id="gmReviewDistribution" style="margin:14px 0"></div><div id="gmAllReviewsList">ریویوز لوڈ ہو رہے ہیں…</div><button class="secondary" onclick="loadGMCustomerReviews()">Refresh Reviews</button></div></section>
+
+<section id="notifications" class="view hidden"><div class="panel"><h2>🔔 Notifications</h2><p class="muted">آرڈر اسٹیٹس اور دستیاب کمیشن سرگرمی کی اپڈیٹس۔</p><button class="secondary" onclick="loadGMNotifications()">Refresh</button><div id="gmNotificationsList" style="margin-top:12px">Loading…</div></div></section>
+<section id="policies" class="view hidden"><div class="panel"><h2>📜 GM Network Policies</h2><details open><summary>Shipping Policy</summary><p class="muted">ڈیلیوری چارجز اور متوقع وقت چیک آؤٹ پر دستیاب معلومات اور آپ کے شہر کے مطابق دکھائے جائیں گے۔ درست فون نمبر اور مکمل پتہ فراہم کرنا خریدار کی ذمہ داری ہے۔ کورئیر یا غیر متوقع حالات کی وجہ سے وقت تبدیل ہو سکتا ہے۔</p></details><details><summary>Return & Refund Policy</summary><p class="muted">غلط، خراب یا نامکمل پروڈکٹ موصول ہونے پر آرڈر نمبر اور واضح تصاویر کے ساتھ سپورٹ سے رابطہ کریں۔ واپسی یا ریفنڈ کی منظوری پروڈکٹ کی حالت، ثبوت اور ایڈمن کی جانچ کے بعد ہوگی۔ استعمال شدہ یا نقصان پہنچائی گئی اشیاء کی واپسی قبول ہونا لازمی نہیں۔</p></details><details><summary>Privacy Policy</summary><p class="muted">اکاؤنٹ، رابطہ، ڈیلیوری، آرڈر اور ادائیگی کی معلومات آرڈر پراسیسنگ، اکاؤنٹ سیکیورٹی اور ممبر سروس کے لیے استعمال ہوتی ہیں۔ پاس ورڈ کسی کے ساتھ شیئر نہ کریں۔ ادائیگی کے ثبوت صرف آرڈر کی تصدیق کے لیے جمع کریں۔</p></details><details><summary>Terms & Conditions</summary><p class="muted">اکاؤنٹ کا استعمال کرتے ہوئے ممبر موجودہ پلیٹ فارم قواعد، آرڈر کی شرائط اور کمیشن کی اہلیت سے اتفاق کرتا ہے۔ کمیشن اور ریوارڈ صرف سسٹم میں اہل اور تصدیق شدہ سرگرمی کے مطابق ہوتے ہیں؛ کسی آمدنی کی ضمانت نہیں۔ دھوکہ دہی یا پالیسی کی خلاف ورزی پر اکاؤنٹ کی جانچ یا پابندی ہو سکتی ہے۔</p></details><p class="muted" style="font-size:11px;margin-top:15px">یہ عمومی پلیٹ فارم پالیسی متن ہے۔ کاروبار کے حتمی قانونی، کورئیر اور ریفنڈ قواعد ایڈمن کی منظور شدہ پالیسی کے مطابق اپڈیٹ کیے جانے چاہئیں۔</p></div></section>
+<section id="contact" class="view hidden"><div class="panel"><h2>☎️ Contact GM Network</h2><p class="muted">ہماری سپورٹ ٹیم سے رابطہ کریں۔</p><div class="gm-notice"><b>WhatsApp Support</b><p class="muted">Mon – Sat · 9 AM – 9 PM</p><a class="hero-btn" style="display:block;text-align:center;text-decoration:none" href="https://wa.me/923082276093" target="_blank" rel="noopener">Send a WhatsApp Message</a></div><div class="gm-notice"><b>Email</b><p><a href="mailto:info@gmnetwork.pk" style="color:var(--gold)">info@gmnetwork.pk</a></p></div><div class="gm-notice"><b>Location</b><p class="muted">Karachi, Pakistan</p></div></div></section>
+<section id="reports" class="view hidden"><div class="panel"><h2>📊 Reports & Analytics</h2><p class="muted">ایڈمن کے لیے آرڈرز اور فروخت کا خلاصہ۔</p><button class="primary" onclick="loadGMAdminReports()">Refresh Reports</button><div id="gmAdminReportsContent" style="margin-top:14px">Load report to view totals.</div></div></section>
+
 <footer>GM Network • v12.0</footer></main>
+<nav class="gm-bottom-nav" aria-label="Quick navigation"><button onclick="tab('home')"><b>⌂</b>Home</button><button onclick="tab('products')"><b>▦</b>Shop</button><button onclick="tab('team')"><b>♙</b>Team</button><button onclick="tab('my-wallet')"><b>▣</b>Wallet</button><button onclick="tab('cart')"><b>🛒</b>Cart <span id="bottomCartCount">0</span></button></nav>
 
 <!-- WhatsApp Floating Button -->
 <a href="https://wa.me/923082276093" target="_blank" class="whatsapp-float">💬</a>
@@ -925,7 +1116,7 @@ input[type="file"]::file-selector-button:hover {
 
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
-<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button type="button" class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
 <div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
 
@@ -940,7 +1131,7 @@ input[type="file"]::file-selector-button:hover {
     <div style="padding:20px;padding-bottom:100px;">
         <h1 id="pvpName" style="margin:0 0 5px;font-size:24px;font-weight:800;"></h1>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;"><div id="pvpStars" style="color:#000;font-size:16px;font-weight:bold;"></div><div id="pvpReviews" style="color:var(--muted);font-size:14px;"></div></div>
-        <h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:10px 0 20px;font-weight:800;"></h2>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 8px"><h2 id="pvpPrice" style="color:#cc0000;font-size:28px;margin:0;font-weight:800;"></h2><span id="pvpOldPrice" class="old-price hidden"></span><span id="pvpDiscountBadge" class="pill hidden"></span></div><div id="pvpStockStatus" class="gm-status" style="margin-bottom:16px">Checking availability…</div>
         <div class="qty-selector">
             <button type="button" onclick="updateQty(-1)" aria-label="Decrease quantity">−</button>
             <span id="pvpQtyDisplay">1</span>
@@ -950,11 +1141,11 @@ input[type="file"]::file-selector-button:hover {
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
             <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
                 <div style="font-size:24px; margin-bottom:5px;">✨</div>
-                <div style="font-size:11px; font-weight:bold; color:var(--g);">100% Original</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--g);">Product Details</div>
             </div>
             <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
                 <div style="font-size:24px; margin-bottom:5px;">🎁</div>
-                <div style="font-size:11px; font-weight:bold; color:var(--g);">Premium Packaging</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--g);">Member Benefits</div>
             </div>
             <div style="background:#f9fbf9; border:1px solid var(--line); border-radius:12px; padding:15px 5px; text-align:center;">
                 <div style="font-size:24px; margin-bottom:5px;">🛡️</div>
@@ -978,10 +1169,9 @@ input[type="file"]::file-selector-button:hover {
                 <span>📋 Specifications &amp; Details</span><span>+</span>
             </div>
             <div class="hidden" style="padding:15px;font-size:14px;color:var(--muted);line-height:1.8;background:#fff;border-top:1px solid var(--line);">
-                • 100% Original &amp; Premium Quality Material<br>
-                • Perfect for Daily Use<br>
-                • Comes with Original GM Network Packaging<br>
-                • High Durability &amp; Elegant Design
+                • Review the product description and uploaded photos before ordering<br>
+                • Product-specific material, size and included accessories are shown where supplied by the seller<br>
+                • Contact support if you need clarification before purchase
             </div>
         </div>
 
@@ -991,15 +1181,15 @@ input[type="file"]::file-selector-button:hover {
                 <span>🚚 Shipping &amp; Returns</span><span>+</span>
             </div>
             <div class="hidden" style="padding:15px;font-size:14px;color:var(--muted);line-height:1.8;background:#fff;border-top:1px solid var(--line);">
-                • Delivery Time: 2-4 Working Days<br>
-                • Shipping Charges: Free Nationwide Delivery<br>
-                • Return Policy: 7 Days Check &amp; Return (if damaged or defective)
+                • Delivery estimate: Confirmed during order processing<br>
+                • Shipping charges: Shown in checkout before payment<br>
+                • Returns: Damaged or incorrect items are reviewed under the Return &amp; Refund Policy
             </div>
         </div>
         
-        <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;padding:15px;background:#E8F5E9;border-radius:10px;border:1px dashed #25D366;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:var(--muted);margin-top:20px;margin-bottom:20px;padding:15px;background:#10291c;border-radius:10px;border:1px dashed var(--gold);">
             <span style="font-size:24px;">🚚</span>
-            <span style="font-weight:bold;color:#128C7E;">Free shipping. Dispatched within 24 hours.</span>
+            <span style="font-weight:bold;color:var(--gold);">Delivery charges are shown clearly before you place an order.</span>
         </div>
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <h3 style="font-size:18px;margin-bottom:10px;font-weight:bold;">You May Also Like</h3>
@@ -1020,16 +1210,16 @@ input[type="file"]::file-selector-button:hover {
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
         <div style="display:flex;justify-content:space-around;text-align:center;padding:15px 0;margin-bottom:20px;gap:8px;">
             <div><div style="font-size:30px;margin-bottom:5px;">🚚</div><div style="font-size:12px;font-weight:bold;">Fast Delivery</div></div>
-            <div><div style="font-size:30px;margin-bottom:5px;">🔄</div><div style="font-size:12px;font-weight:bold;">7 Days Return</div></div>
+            <div><div style="font-size:30px;margin-bottom:5px;">🔄</div><div style="font-size:12px;font-weight:bold;">Return Policy</div></div>
             <div><div style="font-size:30px;margin-bottom:5px;">🛡️</div><div style="font-size:12px;font-weight:bold;">Secure Payment</div></div>
         </div>
         <div style="background:var(--bg);padding:20px;border-radius:15px;margin-bottom:20px;">
             <h3 style="font-size:16px;margin-top:0;color:var(--g);">Why Choose GM Network?</h3>
             <ul style="padding-left:20px;font-size:13px;color:var(--muted);line-height:1.8;">
-                <li>100% Original Products Guaranteed.</li>
-                <li>Cash on Delivery available (Coming Soon).</li>
+                <li>Product details and images are provided on each listing.</li>
+                <li>Available payment methods are shown at checkout.</li>
                 <li>Earn coins on every purchase.</li>
-                <li>24/7 Customer Support via WhatsApp.</li>
+                <li>WhatsApp support during published support hours.</li>
             </ul>
         </div>
         <div style="background:#E8F5E9;border:1px solid #C8E6C9;padding:20px;border-radius:15px;display:flex;align-items:center;gap:15px;margin-bottom:20px;">
@@ -1055,8 +1245,8 @@ input[type="file"]::file-selector-button:hover {
                 <div style="background:#222;border-radius:10px;padding:15px;text-align:center;border:1px solid #333;"><div style="font-size:28px;margin-bottom:5px;">🤝</div><div style="font-size:12px;font-weight:bold;">Trusted Service</div></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;color:#aaa;margin-bottom:30px;">
-                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Quick Links</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li><a href="#" onclick="tab('about');return false;" style="color:#aaa;text-decoration:none;">About Us</a></li><li>Contact Us</li><li>Privacy Policy</li><li>Terms &amp; Conditions</li></ul></div>
-                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Customer Service</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li>Help Center</li><li>Track Order</li><li>Returns &amp; Refunds</li><li>FAQs</li></ul></div>
+                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Quick Links</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li><a href="#" onclick="tab('about');return false;" style="color:#aaa;text-decoration:none;">About Us</a></li><li><a href="#" onclick="tab('contact');return false;" style="color:#aaa">Contact Us</a></li><li><a href="#" onclick="tab('policies');return false;" style="color:#aaa">Privacy Policy</a></li><li><a href="#" onclick="tab('policies');return false;" style="color:#aaa">Terms &amp; Conditions</a></li></ul></div>
+                <div><h4 style="color:#fff;margin-bottom:12px;font-size:14px;">Customer Service</h4><ul style="list-style:none;padding:0;margin:0;line-height:2;"><li><a href="#" onclick="tab('contact');return false;" style="color:#aaa">Help Center</a></li><li><a href="#" onclick="tab('orders');return false;" style="color:#aaa">Track Order</a></li><li><a href="#" onclick="tab('policies');return false;" style="color:#aaa">Returns &amp; Refunds</a></li><li><a href="#" onclick="tab('about');return false;" style="color:#aaa">FAQs</a></li></ul></div>
             </div>
             <div style="display:flex;gap:15px;justify-content:center;margin-bottom:20px;">
                 <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:#fff;width:40px;height:40px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">f</a>
@@ -1071,7 +1261,7 @@ input[type="file"]::file-selector-button:hover {
         </footer>
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 15px;background:#fff;border-top:1px solid var(--line);z-index:10;display:flex;gap:10px;">
-        <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button>
+        <button type="button" onclick="addToCartFromView()" style="flex:1;background:#fff;color:var(--g);border:2px solid var(--g);border-radius:10px;padding:12px;font-size:16px;font-weight:bold;cursor:pointer;">Add to Cart</button><button type="button" onclick="toggleCurrentWishlist()" class="gm-icon-btn" aria-label="Add to wishlist">♡</button>
         <button class="primary" type="button" onclick="openCheckoutPage()" style="flex:1;margin:0;padding:12px;font-size:16px;font-weight:bold;">Buy Now</button>
     </div>
 </div>
@@ -1665,6 +1855,28 @@ async function loadProfile() {
     // 🌟 نیا سسٹم: کوائنز کا بالکل درست حساب (Total - Downline)
     const totalPoints = Number(profile.points || 0);
 
+    // Keep the VIP dashboard banner and progress connected to the same existing rank ladder.
+    const vipRanks = [
+        { name: 'Bronze 🥉', min: 0, next: 3000 },
+        { name: 'Silver 🥈', min: 3000, next: 12000 },
+        { name: 'Gold 🥇', min: 12000, next: 50000 },
+        { name: 'Platinum 💎', min: 50000, next: 200000 },
+        { name: 'Diamond 👑', min: 200000, next: 1000000 },
+        { name: 'Crown Diamond 💠', min: 1000000, next: 1000000 }
+    ];
+    const vipRank = [...vipRanks].reverse().find(r => totalPoints >= r.min) || vipRanks[0];
+    const vipNext = vipRanks.find(r => r.min > totalPoints);
+    const vipNameEl = $('vipMemberName'), vipLevelEl = $('vipMemberLevel'), vipTextEl = $('vipProgressText');
+    const vipFillEl = document.querySelector('.vip-progress-fill');
+    if (vipNameEl) vipNameEl.textContent = `Welcome, ${profile.full_name || 'VIP Member'}!`;
+    if (vipLevelEl) vipLevelEl.textContent = vipRank.name;
+    if (vipTextEl) vipTextEl.textContent = vipNext ? `${totalPoints.toLocaleString()} / ${vipNext.min.toLocaleString()} Coins · Next: ${vipNext.name}` : 'Maximum Rank Achieved';
+    if (vipFillEl) {
+        const span = Math.max(1, vipRank.next - vipRank.min);
+        const progress = vipNext ? Math.max(0, Math.min(100, ((totalPoints - vipRank.min) / span) * 100)) : 100;
+        vipFillEl.style.width = `${progress}%`;
+    }
+
     if($('accCoins')) $('accCoins').textContent = totalPoints.toLocaleString();
     if($('nm')) $('nm').textContent = totalPoints.toLocaleString(); // My Coins (Total)
 
@@ -2013,38 +2225,30 @@ function openCategory(categoryName) {
     filterProductsByCategory(categoryName);
 }
 
+function productMatchesCategory(product, categoryName) {
+    const savedCategory = String(product.category || '').trim().toLowerCase();
+    if (savedCategory) return savedCategory === String(categoryName || '').trim().toLowerCase();
+    const name = String(product.name || '').toLowerCase();
+    if (categoryName === 'Watches') return name.includes('watch');
+    if (categoryName === 'Wallets') return name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
+    if (categoryName === 'Accessories') return ['sunglasses','necklace','belt','earbuds','cap','scarf','gloves','keychain','earrings','bracelet'].some(w => name.includes(w));
+    if (categoryName === 'Premium') return ['ring','pendant','studs','cufflinks','platinum chain','diamond'].some(w => name.includes(w));
+    if (categoryName === 'Perfumes') return !name.includes('attar') && !name.includes('musk al haramain') && ['perfume','aqua','essence','musk','splash','bloom','breeze','amber'].some(w => name.includes(w));
+    if (categoryName === 'Attars') return name.includes('attar') || name.includes('musk al haramain');
+    if (categoryName === 'Bags') return ['bag','handbag','tote','backpack','clutch','duffel'].some(w => name.includes(w));
+    if (categoryName === 'Shoes') return ['shoe','sneaker','oxford','running','heels','slip-on','loafers'].some(w => name.includes(w));
+    if (categoryName === 'Jewelry') return ['necklace','bracelet','earring','studs','ring','bangle','pendant','jewelry'].some(w => name.includes(w));
+    if (categoryName === 'Electronics') return ['earbuds','speaker','power bank','smart band','headphones','webcam','charger','lamp'].some(w => name.includes(w));
+    if (categoryName === 'Other') return true;
+    return false;
+}
+
 function filterProductsByCategory(categoryName) {
     const titleEl = $('productPageTitle');
     if (titleEl) titleEl.textContent = categoryName + ' Collection';
-
     const el = $('productList');
     if (!window.allProductsData) return;
-
-    const filtered = window.allProductsData.filter(p => {
-        const name = (p.name || '').toLowerCase();
-        if (categoryName === 'Watches') return name.includes('watch');
-        if (categoryName === 'Wallets') return name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
-        if (categoryName === 'Accessories') {
-            return name.includes('sunglasses') || name.includes('necklace') || name.includes('belt') ||
-                   name.includes('earbuds') || name.includes('cap') || name.includes('scarf') ||
-                   name.includes('gloves') || name.includes('keychain') || name.includes('earrings') || name.includes('bracelet');
-        }
-        if (categoryName === 'Premium') {
-            return name.includes('ring') || name.includes('pendant') || name.includes('studs') ||
-                   name.includes('cufflinks') || name.includes('platinum chain') || name.includes('diamond');
-        }
-        if (categoryName === 'Perfumes') {
-            // Attars containing words such as "musk" or "amber" must not appear here.
-            return !name.includes('attar') && !name.includes('musk al haramain') &&
-                   (name.includes('perfume') || name.includes('aqua') || name.includes('essence') ||
-                    name.includes('musk') || name.includes('splash') || name.includes('bloom') ||
-                    name.includes('breeze') || name.includes('amber'));
-        }
-        if (categoryName === 'Attars') return name.includes('attar') || name.includes('musk al haramain');
-        return true;
-    });
-
-    renderProductCards(filtered, el);
+    renderProductCards(window.allProductsData.filter(p => productMatchesCategory(p, categoryName)), el);
 }
 
 function renderProductCards(productsToRender, container) {
@@ -2091,9 +2295,47 @@ function renderProductCards(productsToRender, container) {
                 <div class="reviews">${esc(finalReviewsCount)} Reviews</div>
                 ${priceHtml}
             </div>
-            <button class="primary buy-btn" type="button" style="pointer-events:none; ${p.active ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active ? 'View Details' : 'SOLD OUT'}</button>
+            <div style="display:flex;gap:7px;margin-top:8px;">
+                <button class="primary buy-btn" type="button" style="flex:1;pointer-events:none;${p.active ? 'background:var(--g2);color:var(--gold);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active ? 'View Details' : 'SOLD OUT'}</button>
+                <button class="primary buy-btn" type="button" ${p.active ? '' : 'disabled'} onclick="event.stopPropagation();addProductToCartById('${esc(p.id)}')" style="flex:1;${p.active ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">Add to Cart</button>
+            </div>
         </div>`;
     }).join('') || '<p class="muted">No products found in this category.</p>';
+}
+
+async function loadHomeCustomerReviews() {
+    const el = $('homeCustomerReviews');
+    if (!el || !sb) return;
+    const { data, error } = await sb.from('product_reviews')
+        .select('user_name, rating, comment, created_at, products(name)')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+    if (error) { el.innerHTML = '<p class="muted">Customer reviews are temporarily unavailable.</p>'; return; }
+    if (!data || !data.length) { el.innerHTML = '<p class="muted">No approved reviews yet. Customer feedback will appear here after Admin approval.</p>'; return; }
+    el.innerHTML = data.map(r => {
+        const rating = Math.max(0, Math.min(5, Math.round(Number(r.rating) || 0)));
+        const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+        const productName = r.products?.name ? esc(r.products.name) : 'GM Network Product';
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB') : '';
+        return `<div class="testimonial-card"><div style="color:var(--gold);letter-spacing:2px;font-size:15px">${stars}</div><p>${esc(r.comment || '')}</p><div class="testimonial-user"><div class="avatar">✦</div><div class="user-info"><b>${esc(r.user_name || 'Member')}</b><span>${productName}${date ? ' · ' + date : ''}</span></div></div></div>`;
+    }).join('');
+}
+
+function searchProductsByText(value) {
+    const query = String(value || '').trim().toLowerCase();
+    const titleEl = $('productPageTitle');
+    if (titleEl) titleEl.textContent = query ? 'Search Results' : 'Premium Products';
+    const products = Array.isArray(window.allProductsData) ? window.allProductsData : [];
+    const matches = query ? products.filter(p => [p.name, p.category, p.description].some(v => String(v || '').toLowerCase().includes(query))) : products;
+    renderProductCards(matches, $('productList'));
+}
+
+function searchFromHome() {
+    const q = String($('homeProductSearch')?.value || '').trim();
+    tab('products');
+    if ($('productSearchInput')) $('productSearchInput').value = q;
+    searchProductsByText(q);
 }
 
 async function loadProducts() {
@@ -2107,6 +2349,7 @@ async function loadProducts() {
 
     const productIds = window.allProductsData.map(p => p.id);
     window.currentRatingsMap = await fetchProductRatings(productIds);
+    await loadHomeCustomerReviews();
 
     renderProductCards(window.allProductsData, el);
 
@@ -2123,8 +2366,34 @@ async function loadProducts() {
         renderProductCards(newArrivalProducts, newArrivalsEl);
         if (!newArrivalProducts.length) newArrivalsEl.innerHTML = '<p class="muted">No New Arrivals selected yet. Please select products from Admin Panel.</p>';
     }
+    const bestSellersEl = $('bestSellersList');
+    if (bestSellersEl) {
+        const bestSellers = window.allProductsData.filter(product => product.active !== false && product.show_in_best_sellers === true).slice(0, 8);
+        renderProductCards(bestSellers, bestSellersEl);
+        if (!bestSellers.length) bestSellersEl.innerHTML = '<p class="muted">No Best Sellers selected yet. Admin can choose products in Manage Products.</p>';
+    }
+    const offersEl = $('homeOffersList');
+    if (offersEl) {
+        const offers = window.allProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0).slice(0, 8);
+        renderProductCards(offers, offersEl);
+        if (!offers.length) offersEl.innerHTML = '<p class="muted">No discounted products are currently listed.</p>';
+    }
+    const topRatedEl = $('homeTopRatedList');
+    if (topRatedEl) {
+        const topRated = [...window.allProductsData].filter(p => p.active !== false).sort((a,b) => Number(b.base_rating || 0) - Number(a.base_rating || 0)).slice(0, 4);
+        renderProductCards(topRated, topRatedEl);
+        if (!topRated.length) topRatedEl.innerHTML = '<p class="muted">No rated products are available yet.</p>';
+    }
+    const offersPageEl = $('offersPageList');
+    if (offersPageEl) {
+        const pageOffers = window.allProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0);
+        renderProductCards(pageOffers, offersPageEl);
+        if (!pageOffers.length) offersPageEl.innerHTML = '<p class="muted">اس وقت کوئی discounted پروڈکٹ دستیاب نہیں۔</p>';
+    }
     if ($('np')) $('np').textContent = String(window.allProductsData.length);
     loadPremiumSliders();
+    if (typeof window.renderCart === 'function') window.renderCart();
+    if (typeof window.renderWishlist === 'function') window.renderWishlist();
 }
 
 let premiumSliderTimer = null;
@@ -2192,10 +2461,12 @@ async function loadMyTeam() {
     if (error) { el.innerHTML = '<span class="status error">Could not load team: ' + esc(error.message) + '. Please run the team access SQL setup.</span>'; return; }
     
     if (!data || data.length === 0) {
+        const countEl = document.getElementById('gmTeamMembers'); if (countEl) countEl.textContent = '0';
         el.innerHTML = '<p class="muted">No team members yet.</p>';
         return;
     }
 
+    const countEl = document.getElementById('gmTeamMembers'); if (countEl) countEl.textContent = String(data.length);
     el.innerHTML = data.map(x => `
         <div class="team-member-node">
             <div class="team-member-header" onclick="toggleTeamNode('${x.id}', this)">
@@ -2862,6 +3133,7 @@ async function loadAdmin() {
             <button class="secondary" onclick="filterAdminProducts('Shoes')" style="white-space:nowrap;">👟 Shoes</button>
             <button class="secondary" onclick="filterAdminProducts('Jewelry')" style="white-space:nowrap;">💍 Jewelry</button>
             <button class="secondary" onclick="filterAdminProducts('Electronics')" style="white-space:nowrap;">🎧 Electronics</button>
+            <button class="secondary" onclick="filterAdminProducts('Other')" style="white-space:nowrap;">Other</button>
         </div>`;
         if (p.error) {
             $('adminManageProducts').innerHTML = bulkHtml + catHtml + esc(p.error.message);
@@ -2877,7 +3149,7 @@ async function loadAdmin() {
                         <img src="${esc(imgUrl)}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--line);">
                         <div style="min-width:0;overflow-wrap:anywhere;">
                             <b>${esc(x.name || 'Product')}</b><br>
-                            <small class="muted">${convertMoney(x.price_usd)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small>
+                            <small class="muted">${convertMoney(x.price_usd)} • ${x.active ? '<span style="color:#4CAF50">Active</span>' : '<span style="color:#f44336">Sold Out</span>'}</small><div class="product-admin-meta">${esc(x.category || 'Uncategorized')} · ${[x.show_in_featured&&'Featured',x.show_in_new_arrivals&&'New',x.show_in_premium&&'Premium',x.show_in_best_sellers&&'Best Seller'].filter(Boolean).join(' / ') || 'No homepage placement'}</div>
                         </div>
                     </div>
                     <div class="row-actions" style="display:flex; flex-direction:column; gap:5px;">
@@ -2886,6 +3158,7 @@ async function loadAdmin() {
                         <button class="secondary small-btn" data-premium="${esc(x.id)}" style="color:${x.show_in_premium ? '#4CAF50' : '#888'}">${x.show_in_premium ? '★ Remove from Premium' : '☆ Show in Premium'}</button>
                         <button class="secondary small-btn" data-featured="${esc(x.id)}" style="color:${x.show_in_featured ? '#4CAF50' : '#888'}">${x.show_in_featured ? '★ Remove from Featured' : '☆ Show in Featured'}</button>
                         <button class="secondary small-btn" data-arrival="${esc(x.id)}" style="color:${x.show_in_new_arrivals ? '#4CAF50' : '#888'}">${x.show_in_new_arrivals ? '★ Remove from New Arrivals' : '☆ Show in New Arrivals'}</button>
+                        <button class="secondary small-btn" data-bestseller="${esc(x.id)}" style="color:${x.show_in_best_sellers ? '#4CAF50' : '#888'}">${x.show_in_best_sellers ? '★ Remove from Best Sellers' : '☆ Show in Best Sellers'}</button>
                         <button class="secondary small-btn" data-delete="${esc(x.id)}" style="color:#f44336;">Delete</button>
                     </div>
                 </div>`;
@@ -2900,6 +3173,7 @@ async function loadAdmin() {
             $('adminManageProducts').querySelectorAll('[data-premium]').forEach(btn => btn.onclick = () => togglePremiumProduct(btn.dataset.premium));
             $('adminManageProducts').querySelectorAll('[data-featured]').forEach(btn => btn.onclick = () => toggleHomeSectionProduct(btn.dataset.featured, 'show_in_featured', 'Featured Products'));
             $('adminManageProducts').querySelectorAll('[data-arrival]').forEach(btn => btn.onclick = () => toggleHomeSectionProduct(btn.dataset.arrival, 'show_in_new_arrivals', 'New Arrivals'));
+            $('adminManageProducts').querySelectorAll('[data-bestseller]').forEach(btn => btn.onclick = () => toggleHomeSectionProduct(btn.dataset.bestseller, 'show_in_best_sellers', 'Best Sellers'));
             filterAdminProducts(window.adminProductFilter || 'All');
             updateAdminProductSelectionUI();
         }
@@ -3188,8 +3462,70 @@ async function markAsDelivered(orderId) {
     closeOrderDetailModal(); await loadMyAccountPage(); if (isAdmin) await loadAdmin();
 }
 
-async function editProduct(id) { if (!isAdmin) return alert('Admin access required.'); const { data: product, error } = await sb.from('products').select('*').eq('id', id).single(); if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.')); $('editProductId').value = product.id; $('editProductName').value = product.name || ''; $('editProductPrice').value = Number(product.price_usd || 0).toFixed(2); $('editProductRate').value = Number(product.commission_percent || 0); $('editProductImages').value = ''; $('editProductStatus').classList.add('hidden'); $('editProductModal').classList.remove('hidden'); }
-async function saveProductEdit() { if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error'); const id = $('editProductId').value, name = $('editProductName').value.trim(), price = Number($('editProductPrice').value), rate = Number($('editProductRate').value), files = $('editProductImages').files; if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error'); if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error'); status('editProductStatus', 'Saving changes…'); const update = { name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, base_rating: Number($('editProductBaseRating').value) || 5.0, base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0 }; if (files && files.length > 0) { const images = []; for (let i = 0; i < files.length; i++) { const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg', path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`; const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' }); if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error'); const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl; if (url) images.push(url); } if (images.length) { update.images = images; update.image_url = images[0]; } } const { error } = await sb.from('products').update(update).eq('id', id); if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error'); status('editProductStatus', 'Product updated successfully.', 'ok'); await loadProducts(); await loadAdmin(); setTimeout(() => $('editProductModal').classList.add('hidden'), 700); }
+async function editProduct(id) {
+    if (!isAdmin) return alert('Admin access required.');
+    const { data: product, error } = await sb.from('products').select('*').eq('id', id).single();
+    if (error || !product) return alert('Could not load product: ' + (error?.message || 'Product not found.'));
+    $('editProductId').value = product.id;
+    $('editProductName').value = product.name || '';
+    $('editProductCategory').value = product.category || '';
+    $('editProductPrice').value = Number(product.price_usd || 0).toFixed(2);
+    $('editProductDiscount').value = Number(product.discount_percent || 0);
+    $('editProductRate').value = Number(product.commission_percent || 0);
+    $('editProductDescription').value = product.description || '';
+    $('editProductBaseRating').value = Number(product.base_rating || 5);
+    $('editProductBaseReviewsCount').value = Number(product.base_reviews_count || 0);
+    $('editShowFeatured').checked = product.show_in_featured === true;
+    $('editShowArrivals').checked = product.show_in_new_arrivals === true;
+    $('editShowPremium').checked = product.show_in_premium === true;
+    $('editShowBestSellers').checked = product.show_in_best_sellers === true;
+    $('editProductImages').value = '';
+    $('editProductStatus').classList.add('hidden');
+    $('editProductModal').classList.remove('hidden');
+}
+async function saveProductEdit() {
+    if (!isAdmin) return status('editProductStatus', 'Admin access required.', 'error');
+    const id = $('editProductId').value;
+    const name = $('editProductName').value.trim();
+    const price = Number($('editProductPrice').value);
+    const rate = Number($('editProductRate').value);
+    const discount = Number($('editProductDiscount')?.value) || 0;
+    const category = $('editProductCategory').value;
+    const files = $('editProductImages').files;
+    if (!name || !Number.isFinite(price) || price < 1) return status('editProductStatus', 'Enter a product name and valid price.', 'error');
+    if (!category) return status('editProductStatus', 'Please select a product category.', 'error');
+    if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error');
+    if (!Number.isFinite(discount) || discount < 0 || discount > 90) return status('editProductStatus', 'Discount must be between 0 and 90%.', 'error');
+    status('editProductStatus', 'Saving changes…');
+    const update = {
+        name, category, description: $('editProductDescription').value.trim() || null,
+        price_usd: Math.round(price * 100) / 100, commission_percent: rate, discount_percent: discount,
+        base_rating: Number($('editProductBaseRating').value) || 5.0,
+        base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0,
+        show_in_featured: $('editShowFeatured').checked,
+        show_in_new_arrivals: $('editShowArrivals').checked,
+        show_in_premium: $('editShowPremium').checked,
+        show_in_best_sellers: $('editShowBestSellers').checked
+    };
+    if (files && files.length > 0) {
+        const images = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+            const path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
+            const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+            if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error');
+            const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+            if (url) images.push(url);
+        }
+        if (images.length) { update.images = images; update.image_url = images[0]; }
+    }
+    const { error } = await sb.from('products').update(update).eq('id', id);
+    if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error');
+    status('editProductStatus', 'Product updated successfully.', 'ok');
+    await loadProducts(); await loadAdmin();
+    setTimeout(() => $('editProductModal').classList.add('hidden'), 700);
+}
+
 async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
 async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); } }
 
@@ -3250,6 +3586,12 @@ async function addOnlineProduct() {
     const rate = Number($('newRate').value);
     const discount = Number($('newDiscount')?.value) || 0;
     const description = $('newDescription').value.trim();
+    const category = $('newProductCategory')?.value || '';
+    const showFeatured = !!$('newShowFeatured')?.checked;
+    const showArrivals = !!$('newShowArrivals')?.checked;
+    const showPremium = !!$('newShowPremium')?.checked;
+    const showBestSellers = !!$('newShowBestSellers')?.checked;
+    if (!category) return status('adminStatus', 'Please select a product category.', 'error');
     const baseRating = Number($('newBaseRating').value) || 4.5;
     const baseReviewsCount = Number($('newBaseReviewsCount').value) || 112;
     const files = $('newImageFiles').files;
@@ -3274,13 +3616,17 @@ async function addOnlineProduct() {
 
     const { error } = await sb.from('products').insert({
         name, price_usd: Math.round(price * 100) / 100, commission_percent: rate, discount_percent: discount, images,
-        image_url: images[0] || null, active: true, description: description || null,
+        image_url: images[0] || null, active: true, description: description || null, category,
+        show_in_featured: showFeatured, show_in_new_arrivals: showArrivals,
+        show_in_premium: showPremium, show_in_best_sellers: showBestSellers,
         base_rating: baseRating, base_reviews_count: baseReviewsCount
     });
 
     if (error) return status('adminStatus', 'Save failed: ' + error.message, 'error');
     $('newProduct').value = ''; $('newPrice').value = ''; $('newImageFiles').value = '';
     $('newRate').value = '5'; $('newDiscount').value = '0'; $('newDescription').value = '';
+    $('newProductCategory').value = '';
+    ['newShowFeatured','newShowArrivals','newShowPremium','newShowBestSellers'].forEach(id => { if ($(id)) $(id).checked = false; });
     status('adminStatus', 'Product saved successfully.', 'ok');
     await loadProducts(); await loadAdmin();
 }
@@ -3345,6 +3691,10 @@ function openProductView(index) {
         finalPrice = finalPrice - (finalPrice * (Number(p.discount_percent) / 100));
     }
     $('pvpPrice').textContent = convertMoney(finalPrice);
+    const oldPriceEl = $('pvpOldPrice'), discountBadgeEl = $('pvpDiscountBadge'), stockEl = $('pvpStockStatus');
+    if (oldPriceEl) { oldPriceEl.textContent = convertMoney(Number(p.price_usd)||0); oldPriceEl.classList.toggle('hidden', !(Number(p.discount_percent)>0)); }
+    if (discountBadgeEl) { discountBadgeEl.textContent = Number(p.discount_percent)>0 ? `-${Number(p.discount_percent)}% OFF` : ''; discountBadgeEl.classList.toggle('hidden', !(Number(p.discount_percent)>0)); }
+    if (stockEl) { stockEl.textContent = p.active === false ? 'SOLD OUT' : 'IN STOCK'; stockEl.style.background = p.active === false ? '#442020' : '#183b29'; }
     $('pvpDescription').textContent = p.description || 'No description available for this product.';
     const descriptionRow = $('pvpDescription').previousElementSibling;
     if (descriptionRow) descriptionRow.querySelector('span:last-child').textContent = '+';
@@ -3398,12 +3748,7 @@ function openProductView(index) {
     loadApprovedReviews(p.id);
 }
 
-function addToCartFromView() {
-    if (!checkoutData) return;
-    const selectedProduct = (window.allProductsData || []).find(item => String(item.id) === String(checkoutData.id));
-    if (selectedProduct && !selectedProduct.active) return alert('This product is sold out and currently unavailable.');
-    alert('Add to Cart is not available yet. Please use Buy Now to place this order.');
-}
+function addToCartFromView() { return window.addToCartFromView?.(); }
 
 function writeProductReview() {
     if (!user) return alert('Please sign in first to write a review.');
@@ -4215,6 +4560,7 @@ async function insertDemoByCategory(category) {
             const images = galleryIds.map(photoId => `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=700&q=85`);
             const productData = {
                 name,
+                category,
                 price_usd: Number(catalog.prices[index]),
                 commission_percent: 10,
                 discount_percent: 0,
@@ -4337,7 +4683,7 @@ async function togglePremiumProduct(productId) {
 
 async function toggleHomeSectionProduct(productId, column, sectionLabel) {
     if (!isAdmin || !sb) return gmPopup('Admin access required.', 'Permission denied', 'error');
-    const allowedColumns = ['show_in_featured', 'show_in_new_arrivals'];
+    const allowedColumns = ['show_in_featured', 'show_in_new_arrivals', 'show_in_best_sellers'];
     if (!allowedColumns.includes(column)) return gmPopup('Invalid home section setting.', 'Error', 'error');
 
     const { data: product, error: readError } = await sb.from('products')
@@ -4358,8 +4704,12 @@ function filterAdminProducts(category) {
     window.adminProductFilter = category || 'All';
     document.querySelectorAll('.admin-product-item').forEach(item => {
         const name = (item.getAttribute('data-name') || '').toLowerCase();
+        const productId = item.getAttribute('data-product-id');
+        const adminProduct = (window.allAdminProducts || []).find(p => String(p.id) === String(productId));
+        const savedCategory = String(adminProduct?.category || '').toLowerCase();
         let show = false;
         if (category === 'All') show = true;
+        else if (savedCategory) show = savedCategory === String(category).toLowerCase();
         else if (category === 'Watches') show = name.includes('watch');
         else if (category === 'Wallets') show = name.includes('wallet') || name.includes('card holder') || name.includes('passport holder');
         else if (category === 'Accessories') show = ['sunglasses','necklace','belt','earbuds','cap','scarf','gloves','keychain','earrings','bracelet'].some(word => name.includes(word));
@@ -4370,6 +4720,7 @@ function filterAdminProducts(category) {
         else if (category === 'Shoes') show = ['shoe','sneaker','oxford','running','heels','slip-on','loafers'].some(word => name.includes(word));
         else if (category === 'Jewelry') show = ['necklace','bracelet','earring','studs','ring','bangle','pendant','jewelry'].some(word => name.includes(word));
         else if (category === 'Electronics') show = ['earbuds','speaker','power bank','smart band','headphones','webcam','charger','lamp'].some(word => name.includes(word));
+        else if (category === 'Other') show = !savedCategory;
         item.style.display = show ? 'flex' : 'none';
     });
     updateAdminProductSelectionUI();
@@ -5147,5 +5498,62 @@ document.addEventListener('DOMContentLoaded', init);
         }
     });
 </script>
+
+<script>
+/* ===== GM NETWORK COMPLETION LAYER — cart, wishlist, tracking, notifications, reports ===== */
+(function(){
+ const KEY='gmNetworkCart_v2', WKEY='gmNetworkWishlist_v2';
+ const read=(k)=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(_){return []}};
+ const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.warn('Local storage unavailable',e)}};
+ const money=(n)=>typeof convertMoney==='function'?convertMoney(Number(n||0)):('$'+Number(n||0).toFixed(2));
+ const products=()=>Array.isArray(window.allProductsData)?window.allProductsData:[];
+ const safe=(v)=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function productById(id){return products().find(p=>String(p.id)===String(id))}
+ function itemPrice(p){let price=Number(p?.price_usd||0),d=Math.max(0,Math.min(90,Number(p?.discount_percent||0)));return price*(1-d/100)}
+ function getCart(){return read(KEY)} function setCart(a){write(KEY,a);window.updateCartBadges()}
+ function getWish(){return read(WKEY)} function setWish(a){write(WKEY,a)}
+ window.updateCartBadges=function(){let n=getCart().reduce((s,x)=>s+Number(x.qty||1),0);['menuCartCount','bottomCartCount'].forEach(id=>{let e=document.getElementById(id);if(e)e.textContent=n});};
+ window.addToCartFromView=function(){if(!checkoutData)return;let p=productById(checkoutData.id);if(!p||p.active===false){return gmMsg('یہ پروڈکٹ فی الحال دستیاب نہیں۔','warning')}let a=getCart(),found=a.find(x=>String(x.id)===String(p.id));if(found)found.qty=Math.min(99,Number(found.qty||1)+Number(productQty||1));else a.push({id:p.id,qty:Math.max(1,Number(productQty||1))});setCart(a);gmMsg('پروڈکٹ آپ کے کارٹ میں شامل ہو گئی۔','success');};
+ window.addProductToCartById=function(id){let p=productById(id);if(!p||p.active===false)return gmMsg('یہ پروڈکٹ فی الحال دستیاب نہیں۔','warning');let a=getCart(),found=a.find(x=>String(x.id)===String(p.id));if(found)found.qty=Math.min(99,Number(found.qty||1)+1);else a.push({id:p.id,qty:1});setCart(a);gmMsg('پروڈکٹ آپ کے کارٹ میں شامل ہو گئی۔','success');};
+ window.changeCartQty=function(id,delta){let a=getCart(),x=a.find(v=>String(v.id)===String(id));if(!x)return;x.qty=Math.max(1,Math.min(99,Number(x.qty||1)+delta));setCart(a);renderCart();};
+ window.removeCartItem=function(id){setCart(getCart().filter(x=>String(x.id)!==String(id)));renderCart();};
+ window.renderCart=function(){let el=document.getElementById('cartItemsList'),tot=document.getElementById('cartTotals');if(!el)return;let a=getCart();if(a.length&&!products().length){el.innerHTML='<div class="gm-notice">Catalog is loading. Please wait a moment and reopen your cart.</div>';tot?.classList.add('hidden');return;}let valid=a.map(x=>({x,p:productById(x.id)})).filter(z=>z.p);if(!valid.length){el.innerHTML='<div class="gm-notice">آپ کا کارٹ ابھی خالی ہے۔ <button class="secondary" onclick="tab(\'products\')">Shop Products</button></div>';tot?.classList.add('hidden');return;}let subtotal=0;el.innerHTML=valid.map(({x,p})=>{let q=Math.max(1,Number(x.qty||1)),price=itemPrice(p);subtotal+=price*q;let img=(p.images||[]).find(Boolean)||p.image_url||'https://placehold.co/160x160?text=Product';return `<div class="cart-line"><img src="${safe(img)}" alt="${safe(p.name)}"><div><b>${safe(p.name)}</b><div class="muted">${money(price)} each</div><div class="gm-qty"><button onclick="changeCartQty('${safe(p.id)}',-1)">−</button><b>${q}</b><button onclick="changeCartQty('${safe(p.id)}',1)">+</button><button class="gm-icon-btn" onclick="removeCartItem('${safe(p.id)}')">Remove</button></div></div><b>${money(price*q)}</b></div>`}).join('');let missing=a.length-valid.length;if(missing){setCart(valid.map(z=>z.x));}document.getElementById('cartSubtotal').textContent=money(subtotal);tot?.classList.remove('hidden');};
+ window.checkoutCart=function(){window.checkoutOrigin='cart';let a=getCart(),items=a.map(x=>{let p=productById(x.id);return p?{id:p.id,name:p.name,price:itemPrice(p),image:(p.images||[]).find(Boolean)||p.image_url||'',qty:Math.max(1,Number(x.qty||1))}:null}).filter(Boolean);if(!items.length)return gmMsg('کارٹ میں کوئی دستیاب پروڈکٹ موجود نہیں۔','warning');if(items.some(x=>productById(x.id)?.active===false))return gmMsg('کارٹ میں ایسی پروڈکٹ ہے جو فی الحال دستیاب نہیں۔','warning');window.cartCheckoutItems=items;checkoutData={id:null,name:`Cart (${items.length} items)`,price:items.reduce((s,x)=>s+x.price*x.qty,0),image:items[0].image,cartMode:true};productQty=1;window.openCheckoutPage();};
+ window.toggleCurrentWishlist=function(){if(!checkoutData)return;let id=checkoutData.id;if(!id)return;let a=getWish(),i=a.findIndex(x=>String(x.id)===String(id));if(i>=0){a.splice(i,1);gmMsg('Wishlist سے ہٹا دیا گیا۔','success')}else{a.push({id});gmMsg('Wishlist میں محفوظ ہو گیا۔','success')}setWish(a);};
+ window.toggleWishlistItem=function(id){let a=getWish(),i=a.findIndex(x=>String(x.id)===String(id));if(i>=0)a.splice(i,1);else a.push({id});setWish(a);renderWishlist();};
+ window.renderWishlist=function(){let el=document.getElementById('wishlistItems');if(!el)return;let a=getWish().map(x=>productById(x.id)).filter(Boolean);el.innerHTML=a.length?a.map(p=>{let img=(p.images||[]).find(Boolean)||p.image_url||'https://placehold.co/160x160?text=Product';let idx=products().findIndex(x=>String(x.id)===String(p.id));return `<div class="wish-line"><img src="${safe(img)}" alt="${safe(p.name)}"><div><b>${safe(p.name)}</b><div style="color:var(--gold);font-weight:bold">${money(itemPrice(p))}</div><button class="secondary" onclick="openProductView(${idx})">View Product</button></div><button class="gm-icon-btn" onclick="toggleWishlistItem('${safe(p.id)}')">♥</button></div>`}).join(''):'<div class="gm-notice">آپ کی Wishlist خالی ہے۔ پروڈکٹ کی تفصیل سے ♡ دباکر محفوظ کریں۔</div>';};
+ window.gmMsg=function(message,icon='info'){if(window.Swal)Swal.fire({toast:true,position:'top',timer:2200,showConfirmButton:false,icon,title:message,background:'#0d1c14',color:'#e5b853'});else alert(message)};
+ // Keep checkout totals and order submission consistent for a single product and a multi-item cart.
+ const oldOpenCheckout=window.openCheckoutPage;
+ window.openCheckoutPage=function(){if(!window.cartCheckoutItems?.length&&checkoutData?.id){window.checkoutOrigin='product';let p=productById(checkoutData.id);window.cartCheckoutItems=[{id:p?.id||checkoutData.id,name:checkoutData.name,price:Number(checkoutData.price),image:checkoutData.image,qty:Math.max(1,Number(productQty||1))}];}if(!window.cartCheckoutItems?.length)return oldOpenCheckout?.();let items=window.cartCheckoutItems;let subtotal=items.reduce((s,x)=>s+x.price*x.qty,0);let name=items.length===1?items[0].name:`${items.length} cart items`;let image=items[0].image;checkoutData={id:items.length===1?items[0].id:null,name,price:subtotal,image,cartMode:items.length>1};productQty=1;let nameEl=document.getElementById('coName');if(nameEl)nameEl.textContent=items.map(x=>`${x.name} × ${x.qty}`).join(' • ');let imgEl=document.getElementById('coImage');if(imgEl)imgEl.src=image||'';let priceEl=document.getElementById('coPrice');if(priceEl)priceEl.textContent=money(subtotal);if(!user)return gmMsg('آرڈر دینے کے لیے پہلے سائن اِن کریں۔','warning');document.getElementById('productViewPage')?.classList.add('hidden');document.getElementById('checkoutPage')?.classList.remove('hidden');document.body.style.overflow='hidden';if(typeof loadCheckoutWalletBalance==='function')loadCheckoutWalletBalance();if(typeof refreshCheckoutTotals==='function')refreshCheckoutTotals();if(typeof loadDeliveryCharge==='function')loadDeliveryCharge(false);history.pushState({page:'checkout'},'','#checkout');};
+ window.backToProductView=function(){document.getElementById('checkoutPage')?.classList.add('hidden');window.cartCheckoutItems=[];if(window.checkoutOrigin==='cart'){checkoutData=null;tab('cart');return;}document.getElementById('productViewPage')?.classList.remove('hidden');};
+ window.submitCheckout=async function(){if(!user||!sb||!window.cartCheckoutItems?.length)return gmMsg('براہِ کرم سائن اِن کریں اور پروڈکٹ منتخب کریں۔','warning');let items=window.cartCheckoutItems.map(x=>({...x}));for(let x of items){let p=productById(x.id);if(!p||p.active===false)return gmMsg(`${x.name} دستیاب نہیں۔ کارٹ اپڈیٹ کریں۔`,'warning');}
+  try{const lock=await checkSystemLockStatus();if(lock)return gmMsg('سسٹم عارضی طور پر لاک ہے۔','warning');if(!systemLockStatusLoaded)return gmMsg('سسٹم لاک اسٹیٹس چیک نہیں ہو سکا۔ دوبارہ کوشش کریں۔','warning');let {data:prof,error:pe}=await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();if(pe)throw pe;if(prof?.is_locked)return gmMsg('آپ کا اکاؤنٹ لاک ہے۔ ایڈمن سے رابطہ کریں۔','error');}catch(e){return gmMsg('اکاؤنٹ سیکیورٹی اسٹیٹس چیک نہیں ہو سکا: '+e.message,'error')}
+  let name=document.getElementById('coNameInput').value.trim(),phone=document.getElementById('coPhoneInput').value.trim(),street=document.getElementById('coAddressInput').value.trim(),city=document.getElementById('coCityInput').value.trim(),postal=document.getElementById('coPostalInput').value.trim();if(!name||!phone||!street||!city||!postal)return gmMsg('نام، فون، پتہ، شہر اور پوسٹل کوڈ مکمل کریں۔','warning');let address=`${street}, ${city} - ${postal}`;if(!deliveryChargeLoaded){let ok=await loadDeliveryCharge(false);if(!ok)return gmMsg('ڈیلیوری چارج لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔','error')}
+  let subtotal=items.reduce((s,x)=>s+x.price*x.qty,0),delivery=Number(getDeliveryChargeBase()||0),total=subtotal+delivery,method=document.querySelector('input[name="paymentMethod"]:checked')?.value==='wallet'?'wallet':'manual';window.pendingCheckoutData={items,phone_number:phone,shipping_address:address,buyer_name:name,subtotal_usd:subtotal,delivery_charge_usd:delivery,total_usd:total,payment_method:method};
+  if(method==='manual'){document.getElementById('checkoutPage').classList.add('hidden');document.getElementById('paymentProofPage').classList.remove('hidden');document.getElementById('payTotalAmount').textContent=money(total);let msg=encodeURIComponent(`GM Network cart order: ${items.map(x=>x.name+' x'+x.qty).join(', ')}. Name: ${name}, Phone: ${phone}, Total: ${money(total)}. I will send payment proof.`);let wa=document.getElementById('payWhatsappBtn');if(wa)wa.href=`https://wa.me/92${String(window.MY_EASYPAISA||'03082276093').replace(/^0/,'')}?text=${msg}`;history.pushState({page:'payment'},'','#payment');return;}
+  const btn=document.getElementById('coSubmitBtn');if(btn){btn.disabled=true;btn.textContent='Processing…'}let created=[];try{let {data:wallet,error:we}=await sb.from('wallets').select('id,balance').eq('user_id',user.id).maybeSingle();if(we)throw we;if(!wallet||Number(wallet.balance||0)<total)throw new Error('Wallet balance is insufficient.');
+   for(let i=0;i<items.length;i++){let x=items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?delivery:0,total_usd:line+(i===0?delivery:0),phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'wallet'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;created.push({id:r.data.id,amount:payload.total_usd});}
+   if(await checkSystemLockStatus())throw new Error('System lock changed during checkout.');let old=Number(wallet.balance||0),next=old-total;let upd=await sb.from('wallets').update({balance:next}).eq('id',wallet.id).eq('balance',old).select('balance').maybeSingle();if(upd.error||!upd.data)throw new Error('Wallet balance changed; no debit was completed. Please retry.');walletDebited=true;
+   let tx=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:user.id,amount:total,type:'purchase',status:'completed',order_id:created[0].id,balance_before:old,balance_after:next});if(tx.error)console.warn('Wallet audit transaction:',tx.error.message);for(let i=0;i<created.length;i++){let id=created[i].id;let c=await sb.from('orders').update({status:'confirmed'}).eq('id',id);if(c.error)throw new Error('Payment deducted, order confirmation needs admin attention. Order '+id);if(typeof processOrderRewards==='function'){try{await processOrderRewards(id,false)}catch(e){console.error(e)}}}
+   setCart([]);window.cartCheckoutItems=[];window.pendingCheckoutData=null;document.getElementById('checkoutPage').classList.add('hidden');document.body.style.overflow='';gmMsg('آپ کا آرڈر کامیابی سے جمع ہو گیا۔','success');tab('orders');loadMemberOrders();if(typeof loadMyWallet==='function')loadMyWallet();
+  }catch(e){if(!walletDebited){for(let x of created){try{await sb.from('orders').delete().eq('id',x.id).eq('status','pending')}catch(_){}}gmMsg('آرڈر مکمل نہیں ہو سکا: '+e.message,'error')}else{gmMsg('والٹ سے رقم کٹ گئی ہے مگر آرڈر کی تصدیق مکمل نہیں ہوئی۔ آرڈرز Pending محفوظ ہیں؛ براہِ کرم ایڈمن سے رابطہ کریں۔ '+e.message,'warning')}}finally{if(btn){btn.disabled=false;btn.textContent='Confirm & Place Order'}}
+ };
+ window.submitPaymentProof=async function(){if(!user||!sb||!window.pendingCheckoutData)return gmMsg('آرڈر ڈیٹا دستیاب نہیں۔ دوبارہ چیک آؤٹ کریں۔','error');let file=document.getElementById('paymentProofInput').files?.[0];if(!file)return gmMsg('ادائیگی کا اسکرین شاٹ منتخب کریں۔','warning');if(file.size>8*1024*1024)return gmMsg('تصویر 8 MB سے کم ہونی چاہیے۔','warning');let btn=document.getElementById('proofSubmitBtn'),p=window.pendingCheckoutData,created=[];btn.disabled=true;status('proofStatus','آرڈر اور ادائیگی کا ثبوت محفوظ کیا جا رہا ہے…');try{if(await checkSystemLockStatus())throw new Error('System is currently locked. Please contact support.');if(!systemLockStatusLoaded)throw new Error('Could not verify system lock status. Please retry.');let {data:proofProfile,error:proofProfileError}=await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();if(proofProfileError)throw proofProfileError;if(proofProfile?.is_locked)throw new Error('Your account is locked. Contact admin.');for(let i=0;i<p.items.length;i++){let x=p.items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?p.delivery_charge_usd:0,total_usd:line+(i===0?p.delivery_charge_usd:0),phone_number:p.phone_number,shipping_address:p.shipping_address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'manual'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;created.push(r.data.id);}
+  for(let id of created){let ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg',path=`payments/${id}-${Date.now()}.${ext}`;let up=await sb.storage.from('product-images').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(up.error)throw up.error;let url=sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;if(!url)throw new Error('Payment proof URL unavailable');let upd=await sb.from('orders').update({payment_proof:url}).eq('id',id);if(upd.error)throw upd.error;}
+  setCart([]);window.cartCheckoutItems=[];window.pendingCheckoutData=null;status('proofStatus','✅ ادائیگی کا ثبوت جمع ہو گیا۔ آپ کے تمام آرڈرز ایڈمن کی جانچ کے لیے Pending ہیں۔','ok');setTimeout(()=>{document.getElementById('paymentProofPage').classList.add('hidden');document.body.style.overflow='';document.getElementById('paymentProofInput').value='';document.getElementById('proofStatus').classList.add('hidden');btn.disabled=false;tab('orders');loadMemberOrders()},2200);
+ }catch(e){for(let id of created){try{await sb.from('orders').delete().eq('id',id).eq('status','pending')}catch(_){}}status('proofStatus','Error: '+e.message,'error');btn.disabled=false;}};
+ window.loadMemberOrders=async function(){let el=document.getElementById('memberOrdersList');if(!el)return;if(!user||!sb){el.textContent='آرڈرز دیکھنے کے لیے سائن اِن کریں۔';return}el.textContent='Loading…';let {data,error}=await sb.from('orders').select('*').eq('buyer_id',user.id).order('created_at',{ascending:false}).limit(50);if(error){el.textContent='آرڈرز لوڈ نہیں ہوئے: '+error.message;return}el.innerHTML=(data||[]).length?(data||[]).map(o=>`<div class="gm-notice"><div style="display:flex;justify-content:space-between;gap:8px"><b>Order …${safe(String(o.id).slice(-8))}</b><span class="gm-status">${safe(o.status||'pending')}</span></div><div class="muted">${safe(o.product_name||'Product order')} · ${safe(o.created_at?new Date(o.created_at).toLocaleString():'')}</div><b>${money(o.total_usd??o.unit_price_usd??0)}</b><button class="gm-icon-btn" onclick="document.getElementById('trackOrderId').value='${safe(o.id)}';trackOrderById()">Track</button></div>`).join(''):'<div class="gm-notice">ابھی کوئی آرڈر موجود نہیں۔</div>'};
+ window.trackOrderById=async function(){let id=document.getElementById('trackOrderId').value.trim(),el=document.getElementById('trackOrderResult');if(!id)return gmMsg('مکمل Order ID درج کریں۔','warning');if(!user||!sb)return gmMsg('پہلے سائن اِن کریں۔','warning');el.textContent='Searching…';let q=sb.from('orders').select('id,status,created_at,total_usd,unit_price_usd,shipping_address').eq('id',id);if(!isAdmin)q=q.eq('buyer_id',user.id);let {data,error}=await q.maybeSingle();if(error||!data){el.innerHTML='<p class="status error">آرڈر نہیں ملا۔ Order ID دوبارہ چیک کریں۔</p>';return}let steps=['pending','confirmed','delivered'],st=String(data.status||'pending').toLowerCase();el.innerHTML=`<div class="gm-notice"><b>Order …${safe(String(data.id).slice(-8))}</b><p>Status: <span class="gm-status">${safe(st)}</span></p><div style="display:flex;justify-content:space-between;gap:5px;margin:12px 0">${steps.map(x=>`<span style="font-size:10px;color:${x===st||steps.indexOf(x)<steps.indexOf(st)?'var(--gold)':'var(--muted)'}">${x===st?'●':'○'} ${x}</span>`).join('')}</div><div class="muted">${safe(data.created_at?new Date(data.created_at).toLocaleString():'')} · ${money(data.total_usd??data.unit_price_usd??0)}</div></div>`};
+ window.loadGMNotifications=async function(){let el=document.getElementById('gmNotificationsList');if(!el)return;if(!user||!sb){el.textContent='نوٹیفکیشنز کے لیے سائن اِن کریں۔';return}el.textContent='Loading…';let {data,error}=await sb.from('orders').select('id,status,created_at,total_usd').eq('buyer_id',user.id).order('created_at',{ascending:false}).limit(20);if(error){el.textContent='Notifications unavailable: '+error.message;return}let rows=(data||[]).map(o=>({date:o.created_at,title:'Order update',body:`Order …${String(o.id).slice(-8)} · ${o.status||'pending'} · ${money(o.total_usd||0)}`,icon:'📦'}));(products()||[]).filter(p=>p.active!==false&&Number(p.discount_percent||0)>0).slice(0,5).forEach(p=>rows.push({date:null,title:'Special Offer',body:`${p.name} · ${Number(p.discount_percent)}% OFF · ${money(itemPrice(p))}`,icon:'🏷️'}));try{let cr=await sb.from('commission_logs').select('commission_amount,type,created_at,order_id').eq('user_id',user.id).order('created_at',{ascending:false}).limit(10);if(!cr.error)(cr.data||[]).forEach(c=>rows.push({date:c.created_at,title:'New Commission',body:`${c.type||'Commission'} · +${money(c.commission_amount||0)}`,icon:'🎁'}));}catch(_){}rows.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));el.innerHTML=rows.length?rows.slice(0,25).map(n=>`<div class="gm-notice"><b>${n.icon||'🔔'} ${safe(n.title)}</b><div>${safe(n.body)}</div><small class="muted">${safe(n.date?new Date(n.date).toLocaleString():'')}</small></div>`).join(''):'<div class="gm-notice">فی الحال کوئی نئی اپڈیٹ نہیں۔</div>'};
+ window.loadGMAdminReports=async function(){if(!isAdmin||!sb)return gmMsg('Admin access required.','error');let el=document.getElementById('gmAdminReportsContent')||document.getElementById('gmAdminReportsInline');if(!el)return;el.textContent='Loading report…';let {data,error}=await sb.from('orders').select('id,status,total_usd,subtotal_usd,created_at');if(error){el.textContent='Report could not load: '+error.message;return}let a=data||[],sum=a.filter(x=>!['cancelled','refunded'].includes(String(x.status||'').toLowerCase())).reduce((n,x)=>n+Number(x.total_usd??x.subtotal_usd??0),0),count=(st)=>a.filter(x=>String(x.status||'').toLowerCase()===st).length;let html=`<div class="stats"><div class="stat"><small>Total Orders</small><strong>${a.length}</strong></div><div class="stat"><small>Gross Order Value*</small><strong>${money(sum)}</strong></div><div class="stat"><small>Pending</small><strong>${count('pending')}</strong></div><div class="stat"><small>Confirmed</small><strong>${count('confirmed')}</strong></div><div class="stat"><small>Delivered</small><strong>${count('delivered')}</strong></div><div class="stat"><small>Cancelled / Refunded</small><strong>${count('cancelled')+count('refunded')}</strong></div></div><p class="muted" style="font-size:11px">*یہ آرڈرز کی درج شدہ مالیت ہے، تصدیق شدہ اکاؤنٹنگ آمدنی نہیں۔</p>`;el.innerHTML=html;let inline=document.getElementById('gmAdminReportsInline');if(inline&&inline!==el)inline.innerHTML=html};
+ window.loadGMTeamRewards=function(){let p=myProfile||{};let set=(id,v)=>{let e=document.getElementById(id);if(e)e.textContent=v};set('gmTeamCoins',p.points??'—');set('gmTeamCommission',money(p.total_commission??0));let coins=Number(p.points||0),rank=coins>=1000000?'Crown Diamond 💠':coins>=200000?'Diamond 👑':coins>=50000?'Platinum 💎':coins>=12000?'Gold 🥇':coins>=3000?'Silver 🥈':'Bronze 🥉';set('gmTeamRank',rank);if(!user)set('gmTeamMembers','—');};
+ // Extend navigation lifecycle without changing the existing auth / admin guards.
+ window.loadGMCustomerReviews=async function(){let summary=document.getElementById('gmReviewSummary'),dist=document.getElementById('gmReviewDistribution'),list=document.getElementById('gmAllReviewsList');if(!summary||!dist||!list)return;if(!sb){list.textContent='Reviews are unavailable until the database connects.';return}list.textContent='Loading approved reviews…';let {data,error}=await sb.from('product_reviews').select('product_id,user_name,rating,comment,created_at').eq('is_approved',true).order('created_at',{ascending:false}).limit(100);if(error){list.textContent='Reviews could not be loaded: '+error.message;return}let rows=data||[],count=rows.length,avg=count?rows.reduce((n,r)=>n+Number(r.rating||0),0)/count:0;summary.innerHTML=`<div class="stat"><small>Overall Rating</small><strong>${count?avg.toFixed(1)+' / 5':'—'}</strong></div><div class="stat"><small>Approved Reviews</small><strong>${count}</strong></div>`;let bins=[5,4,3,2,1].map(n=>({n,c:rows.filter(r=>Math.round(Number(r.rating||0))===n).length}));dist.innerHTML=bins.map(x=>`<div style="display:grid;grid-template-columns:35px 1fr 42px;gap:8px;align-items:center;margin:7px 0;font-size:12px"><b>${x.n} ★</b><div style="height:9px;background:#1b3025;border-radius:20px;overflow:hidden"><div style="height:100%;width:${count?x.c/count*100:0}%;background:var(--gold)"></div></div><span class="muted">${count?Math.round(x.c/count*100):0}%</span></div>`).join('');list.innerHTML=rows.length?rows.map(r=>{let p=productById(r.product_id),stars=Math.max(0,Math.min(5,Math.round(Number(r.rating||0))));return `<article class="gm-notice"><div style="display:flex;justify-content:space-between;gap:8px"><b>${safe(r.user_name||'GM Network Member')}</b><span style="color:var(--gold)">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</span></div><p style="margin:7px 0">${safe(r.comment||'')}</p><small class="muted">${safe(r.created_at?new Date(r.created_at).toLocaleDateString():'')} · ${safe(p?.name||'GM Network Product')}</small>${p?`<button class="secondary" onclick="openProductView(${products().findIndex(x=>String(x.id)===String(p.id))})">View Product</button>`:''}</article>`}).join(''):'<div class="gm-notice">ابھی کوئی منظور شدہ ریویو موجود نہیں۔</div>'};
+ const originalTab=window.tab;window.tab=function(id,skip){let result=originalTab(id,skip);if(id==='cart')renderCart();if(id==='wishlist')renderWishlist();if(id==='orders')loadMemberOrders();if(id==='notifications')loadGMNotifications();if(id==='team')loadGMTeamRewards();if(id==='reports')loadGMAdminReports();if(id==='reviews')loadGMCustomerReviews();return result};
+ document.addEventListener('DOMContentLoaded',()=>{window.updateCartBadges();});window.addEventListener('storage',window.updateCartBadges);
+})();
+</script>
+
 </body>
 </html>

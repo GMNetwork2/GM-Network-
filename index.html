@@ -3639,10 +3639,29 @@ async function searchCJProducts(page=1) {
     } catch(e) { if(status){status.textContent='Search error: '+(e.message||e);status.className='status error';} }
 }
 function cjFindObject(root, keys) {
+  if(typeof root === 'string') { const t=root.trim(); if((t.startsWith('{')&&t.endsWith('}'))||(t.startsWith('[')&&t.endsWith(']'))) { try { root=JSON.parse(t); } catch(_) {} } }
   if(!root||typeof root!=='object')return null;
-  for(const k of keys)if(root[k]!==undefined&&root[k]!==null)return root[k];
-  for(const v of Object.values(root)){if(v&&typeof v==='object'){const found=cjFindObject(v,keys);if(found!==null)return found;}}
+  for(const k of keys)if(root[k]!==undefined&&root[k]!==null&&root[k]!=='')return root[k];
+  for(const v of Object.values(root)){if(v&&typeof v==='object'){const found=cjFindObject(v,keys);if(found!==null)return found;} else if(typeof v==='string' && /^[\[{]/.test(v.trim())) { const found=cjFindObject(v,keys); if(found!==null)return found; }}
   return null;
+}
+function cjParseMaybeJSON(value) {
+  if(typeof value!=='string') return value;
+  const t=value.trim();
+  if((t.startsWith('[')&&t.endsWith(']'))||(t.startsWith('{')&&t.endsWith('}'))) { try{return JSON.parse(t);}catch(_){} }
+  return value;
+}
+function cjCollectImageUrls(value, out=[], seen=new Set()) {
+  value=cjParseMaybeJSON(value);
+  if(!value)return out;
+  if(typeof value==='string') {
+    const matches=value.match(/https?:\/\/[^\s\"'<>\]]+/gi)||[];
+    for(let u of matches){u=u.replace(/[),]+$/,'');if(!seen.has(u)){seen.add(u);out.push(u);}}
+    return out;
+  }
+  if(Array.isArray(value)){for(const item of value)cjCollectImageUrls(item,out,seen);return out;}
+  if(typeof value==='object'){for(const [k,v] of Object.entries(value)){if(/image|photo|picture|url|src/i.test(k)||typeof v==='object')cjCollectImageUrls(v,out,seen);}}
+  return out;
 }
 async function importCJProduct(pid) {
   if (!pid) return;
@@ -3652,12 +3671,11 @@ async function importCJProduct(pid) {
     const name = String(cjFindObject(raw, ['nameEn','productNameEn','productName','name']) || 'CJ Product');
     const cost = Number(cjFindObject(raw, ['sellPrice','nowPrice','productPrice','price']) || 0);
     const description = String(cjFindObject(raw, ['description','descriptionEn','productDescription']) || '');
-    const variantsRaw = cjFindObject(raw, ['variants','productVariantList','variantList','productVariants']) || [];
-    const imageRaw = cjFindObject(raw, ['bigImage','productImage','image','imageUrl']);
-    const imageListRaw = cjFindObject(raw, ['images','imageList','productImages']);
-    const imageCandidates = [imageRaw, ...(Array.isArray(imageListRaw) ? imageListRaw : [])];
-    const images = [...new Set(imageCandidates.map(x => typeof x === 'string' ? x : (x?.image || x?.url || x?.bigImage || x?.imageUrl)).filter(x => typeof x === 'string' && /^https:\/\//i.test(x)))];
-    const variants = Array.isArray(variantsRaw) ? variantsRaw : [];
+    const variantsRaw = cjParseMaybeJSON(cjFindObject(raw, ['variants','productVariantList','variantList','productVariants']) || []);
+    // CJ returns images in several shapes; some accounts receive productImageSet as JSON text.
+    // Collect every image URL recursively so the full gallery is retained, not only the cover.
+    const images = cjCollectImageUrls(raw);
+    const variants = Array.isArray(variantsRaw) ? variantsRaw : (variantsRaw && typeof variantsRaw==='object' ? Object.values(variantsRaw) : []);
     const previewImage = images[0] || '';
     const previewDescription = description.slice(0, 650);
     const { value: form } = await Swal.fire({
@@ -3719,7 +3737,8 @@ async function importCJProduct(pid) {
       category_folder: form.category,
       supplier_source: 'CJ Dropshipping',
       cj_product_id: String(pid),
-      cj_product_sku: String(cjFindObject(raw, ['sku','productSku','spu']) || ''),
+      cj_product_sku: String(cjFindObject(raw, ['productSku','sku','spu']) || ''),
+      cj_source_url: `https://www.cjdropshipping.com/product/${encodeURIComponent(String(pid))}.html`,
       cj_cost_usd: cost,
       cj_variants: variants,
       cj_source_data: raw,

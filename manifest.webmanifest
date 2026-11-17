@@ -1,0 +1,35 @@
+{
+  "id": "./",
+  "name": "GM Network",
+  "short_name": "GM Network",
+  "description": "GM Network - Referral & Product Sales",
+  "start_url": "./?source=installed-app",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050a08",
+  "theme_color": "#050a08",
+  "icons": [
+    {
+      "src": "icons/gm-network-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/gm-network-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "./?cjSharedUrl={url}&cjSharedTitle={title}&cjSharedText={text}",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

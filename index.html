@@ -1956,24 +1956,7 @@ button:active,.hero-btn:active,.secondary:active,.primary:active,[role="button"]
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
         <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><button class="secondary" type="button" onclick="document.getElementById('paymentProofPage').classList.add('hidden'); document.getElementById('checkoutPage').classList.remove('hidden');" style="margin-top:10px;width:100%;">Back to Checkout</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
     </div>
-</div>  
-<script>
-// Best-effort cleanup of this site's service-worker caches. This cannot clear the WebView HTTP cache.
-(function () {
-    try {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                registrations.forEach(function (registration) { registration.unregister(); });
-            }).catch(function () {});
-        }
-        if ('caches' in window) {
-            caches.keys().then(function (names) {
-                return Promise.all(names.map(function (name) { return caches.delete(name); }));
-            }).catch(function () {});
-        }
-    } catch (_) {}
-})();
-</script>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
@@ -2251,10 +2234,12 @@ function gmExtractCJProductId(sharedValue) {
 async function handleCJSharedImport() {
     if (gmCJSharedImportStarted || !user || !sb) return;
     const params = new URLSearchParams(window.location.search);
+    // Web Share Target uses the manifest's parameter names (url/text/title).
+    // Keep legacy aliases too, so older installed app shares remain compatible.
     const sharedParts = [
-        params.get('cjSharedUrl'), params.get('url'),
-        params.get('cjSharedText'), params.get('text'),
-        params.get('cjSharedTitle'), params.get('title')
+        params.get('url'), params.get('text'), params.get('title'),
+        params.get('cjSharedUrl'), params.get('cjSharedText'), params.get('cjSharedTitle'),
+        params.get('shared_url'), params.get('shared_text')
     ].filter(Boolean);
     if (!sharedParts.length) return;
     if (!isAdmin) {
@@ -3660,43 +3645,115 @@ function cjFindObject(root, keys) {
   return null;
 }
 async function importCJProduct(pid) {
-  if(!pid)return;
+  if (!pid) return;
   try {
-    const detailResp=await cjCall('detail',{pid});
-    const raw=detailResp.data||{};
-    const name=String(cjFindObject(raw,['nameEn','productNameEn','productName','name'])||'CJ Product');
-    const image=cjFindObject(raw,['bigImage','productImage','image','imageUrl']);
-    const cost=Number(cjFindObject(raw,['sellPrice','nowPrice','productPrice','price'])||0);
-    const description=String(cjFindObject(raw,['description','descriptionEn','productDescription'])||'');
-    const variants=cjFindObject(raw,['variants','productVariantList','variantList','productVariants'])||[];
-    const {value:form}=await Swal.fire({title:'Import to GM Network',width:'95%',html:`
-      <div style="text-align:left;display:grid;gap:7px;">
-        <b>${cjEscape(name)}</b><small style="color:#aaa;">CJ supplier cost: $${cost.toFixed(2)} (صرف ایڈمن کے لیے)</small>
-        <label>GM Network پر فروخت کی قیمت (USD)</label><input id="cjSellPrice" type="number" min="0.01" step="0.01" value="${Math.max(cost*1.5,cost+1).toFixed(2)}" class="swal2-input" style="margin:0;width:100%;">
-        <label>آپ کا ڈسکاؤنٹ (%)</label><input id="cjDiscount" type="number" min="0" max="90" step="1" value="0" class="swal2-input" style="margin:0;width:100%;">
-        <label>پروڈکٹ فولڈر / کیٹیگری</label><select id="cjCategory" class="swal2-select" style="margin:0;width:100%;"><option>Electronics</option><option>Perfumes</option><option>Wallets</option><option>Watches</option><option>Fashion</option><option>Accessories</option><option>Other Products</option></select>
-        <label>ویب سائٹ پر کہاں دکھائیں؟</label>
-        <label><input id="cjFeatured" type="checkbox"> Featured Products</label><label><input id="cjNew" type="checkbox" checked> New Arrivals</label><label><input id="cjPremium" type="checkbox"> Premium Products</label><label><input id="cjBest" type="checkbox"> Best Sellers</label>
-        <small style="color:#aaa;">پروڈکٹ امپورٹ کے بعد غیر فعال (Draft) رہے گی۔ آپ Admin میں جا کر اسے چیک کرکے Active کر سکتے ہیں۔</small>
-      </div>`,focusConfirm:false,showCancelButton:true,confirmButtonText:'Import Product',preConfirm:()=>{
-        const price=Number(document.getElementById('cjSellPrice').value),discount=Number(document.getElementById('cjDiscount').value);
-        if(!(price>0)){Swal.showValidationMessage('درست فروخت کی قیمت درج کریں۔');return false;}
-        if(discount<0||discount>90){Swal.showValidationMessage('ڈسکاؤنٹ 0 سے 90 فیصد کے درمیان رکھیں۔');return false;}
-        return {price,discount,category:document.getElementById('cjCategory').value,featured:document.getElementById('cjFeatured').checked,newArrival:document.getElementById('cjNew').checked,premium:document.getElementById('cjPremium').checked,best:document.getElementById('cjBest').checked};
-      }});
-    if(!form)return;
-    const imageList=Array.isArray(cjFindObject(raw,['images','imageList','productImages']))?cjFindObject(raw,['images','imageList','productImages']):[];
-    const images=[...new Set([image,...imageList.map(x=>typeof x==='string'?x:(x.image||x.url||x.bigImage))].filter(x=>typeof x==='string'&&/^https:\/\//i.test(x)))];
-    const cleanVariants=Array.isArray(variants)?variants:[];
-    const productRow={name,description,price_usd:Math.round(form.price*100)/100,discount_percent:form.discount,commission_percent:0,active:false,category:form.category,category_folder:form.category,supplier_source:'CJ Dropshipping',cj_product_id:String(pid),cj_product_sku:String(cjFindObject(raw,['sku','productSku','spu'])||''),cj_cost_usd:cost,cj_variants:cleanVariants,cj_source_data:raw,images,image_url:images[0]||null,base_rating:5,base_reviews_count:0,show_in_featured:form.featured,show_in_new_arrivals:form.newArrival,show_in_premium:form.premium,show_in_best_sellers:form.best};
-    const {data:existing}=await sb.from('products').select('id').eq('cj_product_id',String(pid)).maybeSingle();
-    if(existing?.id){await gmPopup('یہ CJ پروڈکٹ پہلے سے GM Network میں موجود ہے۔ ڈپلیکیٹ امپورٹ نہیں کی گئی۔','Already Imported','info');return;}
-    const {data:inserted,error}=await sb.from('products').insert(productRow).select('id').single();
-    if(error)throw error;
-    await sb.from('cj_product_import_logs').insert({cj_product_id:String(pid),product_id:inserted.id,admin_user_id:user.id,action:'imported',details:{category:form.category,cj_cost_usd:cost,selling_price_usd:form.price}});
-    await gmPopup('پروڈکٹ GM Network میں Draft کے طور پر محفوظ ہوگئی۔ اب Product Manager میں جا کر اسے چیک اور Active کریں۔','Product Imported','success');
-    if(typeof loadAdmin==='function')await loadAdmin();
-  } catch(e){console.error('CJ import error',e);await gmPopup('پروڈکٹ امپورٹ نہیں ہو سکی: '+(e.message||e),'Import Failed','error');}
+    const detailResp = await cjCall('detail', { pid });
+    const raw = detailResp.data || {};
+    const name = String(cjFindObject(raw, ['nameEn','productNameEn','productName','name']) || 'CJ Product');
+    const cost = Number(cjFindObject(raw, ['sellPrice','nowPrice','productPrice','price']) || 0);
+    const description = String(cjFindObject(raw, ['description','descriptionEn','productDescription']) || '');
+    const variantsRaw = cjFindObject(raw, ['variants','productVariantList','variantList','productVariants']) || [];
+    const imageRaw = cjFindObject(raw, ['bigImage','productImage','image','imageUrl']);
+    const imageListRaw = cjFindObject(raw, ['images','imageList','productImages']);
+    const imageCandidates = [imageRaw, ...(Array.isArray(imageListRaw) ? imageListRaw : [])];
+    const images = [...new Set(imageCandidates.map(x => typeof x === 'string' ? x : (x?.image || x?.url || x?.bigImage || x?.imageUrl)).filter(x => typeof x === 'string' && /^https:\/\//i.test(x)))];
+    const variants = Array.isArray(variantsRaw) ? variantsRaw : [];
+    const previewImage = images[0] || '';
+    const previewDescription = description.slice(0, 650);
+    const { value: form } = await Swal.fire({
+      title: 'CJ Product — GM Network',
+      width: 'min(680px, 96vw)',
+      html: `
+        <div style="text-align:left;display:grid;gap:9px;color:#e8eee9;">
+          ${previewImage ? `<img src="${cjEscape(previewImage)}" alt="${cjEscape(name)}" style="width:100%;max-height:210px;object-fit:contain;background:#07110c;border:1px solid #294333;border-radius:12px;padding:8px;">` : ''}
+          <b style="font-size:16px;line-height:1.4;">${cjEscape(name)}</b>
+          <small style="color:#e5b853;">CJ supplier cost: $${Number.isFinite(cost) ? cost.toFixed(2) : '0.00'} · ${images.length} image(s) · ${variants.length} variant(s)</small>
+          ${previewDescription ? `<div style="font-size:12px;color:#b9c8bf;line-height:1.5;max-height:90px;overflow:auto;white-space:pre-wrap;">${cjEscape(previewDescription)}${description.length > 650 ? '…' : ''}</div>` : '<small style="color:#9aa99f;">CJ نے اس پروڈکٹ کی تفصیل فراہم نہیں کی۔</small>'}
+          <label>GM Network پر فروخت کی قیمت (USD)</label>
+          <input id="cjSellPrice" type="number" min="0.01" step="0.01" value="${Math.max(cost * 1.5, cost + 1).toFixed(2)}" class="swal2-input" style="margin:0;width:100%;">
+          <label>آپ کا ڈسکاؤنٹ (%)</label>
+          <input id="cjDiscount" type="number" min="0" max="90" step="1" value="0" class="swal2-input" style="margin:0;width:100%;">
+          <label>پروڈکٹ فولڈر / کیٹیگری</label>
+          <select id="cjCategory" class="swal2-select" style="margin:0;width:100%;"><option>Electronics</option><option>Perfumes</option><option>Wallets</option><option>Watches</option><option>Fashion</option><option>Accessories</option><option>Other Products</option></select>
+          <label>ویب سائٹ پر کہاں دکھائیں؟</label>
+          <label><input id="cjFeatured" type="checkbox"> Featured Products</label>
+          <label><input id="cjNew" type="checkbox" checked> New Arrivals</label>
+          <label><input id="cjPremium" type="checkbox"> Premium Products</label>
+          <label><input id="cjBest" type="checkbox"> Best Sellers</label>
+          <div style="border-top:1px solid #294333;padding-top:9px;margin-top:3px;">
+            <label style="font-weight:700;color:#e5b853;"><input id="cjPublish" type="checkbox" checked> Submit کے بعد پروڈکٹ فوراً ویب سائٹ پر دکھائیں</label>
+            <small style="display:block;color:#aab8ae;margin-top:4px;">اسے بند رکھنے پر پروڈکٹ Draft میں محفوظ ہوگی۔</small>
+          </div>
+        </div>`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Submit Product',
+      cancelButtonText: 'Cancel',
+      background: '#0b1710',
+      color: '#e8eee9',
+      confirmButtonColor: '#b88b32',
+      preConfirm: () => {
+        const price = Number(document.getElementById('cjSellPrice').value);
+        const discount = Number(document.getElementById('cjDiscount').value);
+        if (!(price > 0)) { Swal.showValidationMessage('درست فروخت کی قیمت درج کریں۔'); return false; }
+        if (discount < 0 || discount > 90) { Swal.showValidationMessage('ڈسکاؤنٹ 0 سے 90 فیصد کے درمیان رکھیں۔'); return false; }
+        return {
+          price, discount,
+          category: document.getElementById('cjCategory').value,
+          featured: document.getElementById('cjFeatured').checked,
+          newArrival: document.getElementById('cjNew').checked,
+          premium: document.getElementById('cjPremium').checked,
+          best: document.getElementById('cjBest').checked,
+          publish: document.getElementById('cjPublish').checked
+        };
+      }
+    });
+    if (!form) return;
+    const productRow = {
+      name, description,
+      price_usd: Math.round(form.price * 100) / 100,
+      discount_percent: form.discount,
+      commission_percent: 0,
+      active: form.publish,
+      category: form.category,
+      category_folder: form.category,
+      supplier_source: 'CJ Dropshipping',
+      cj_product_id: String(pid),
+      cj_product_sku: String(cjFindObject(raw, ['sku','productSku','spu']) || ''),
+      cj_cost_usd: cost,
+      cj_variants: variants,
+      cj_source_data: raw,
+      images,
+      image_url: images[0] || null,
+      base_rating: 5,
+      base_reviews_count: 0,
+      show_in_featured: form.featured,
+      show_in_new_arrivals: form.newArrival,
+      show_in_premium: form.premium,
+      show_in_best_sellers: form.best
+    };
+    const { data: existing } = await sb.from('products').select('id').eq('cj_product_id', String(pid)).maybeSingle();
+    if (existing?.id) {
+      await gmPopup('یہ CJ پروڈکٹ پہلے سے GM Network میں موجود ہے۔ ڈپلیکیٹ امپورٹ نہیں کی گئی۔', 'Already Imported', 'info');
+      return;
+    }
+    const { data: inserted, error } = await sb.from('products').insert(productRow).select('id').single();
+    if (error) throw error;
+    await sb.from('cj_product_import_logs').insert({
+      cj_product_id: String(pid), product_id: inserted.id, admin_user_id: user.id,
+      action: form.publish ? 'imported_and_published' : 'imported',
+      details: { category: form.category, cj_cost_usd: cost, selling_price_usd: form.price, published: form.publish }
+    });
+    await gmPopup(form.publish
+      ? 'پروڈکٹ GM Network میں محفوظ اور شائع ہوگئی ہے۔'
+      : 'پروڈکٹ GM Network میں Draft کے طور پر محفوظ ہوگئی ہے۔',
+      form.publish ? 'Product Published' : 'Product Saved', 'success');
+    if (typeof loadAdmin === 'function') await loadAdmin();
+    if (typeof loadProducts === 'function') await loadProducts();
+  } catch (e) {
+    console.error('CJ import error', e);
+    await gmPopup('پروڈکٹ امپورٹ نہیں ہو سکی: ' + (e.message || e), 'Import Failed', 'error');
+  }
 }
 
 // Securely request CJ token creation/refresh through the protected Supabase Edge Function.

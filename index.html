@@ -2228,34 +2228,46 @@ async function init() {
     }
 }
 
-// Receive a CJ product shared from the Android share sheet (no browser extension required).
+// Receive a CJ product shared from Android share sheet / PWA share target.
+// CJ has multiple URL formats: desktop /product/-p-ID.html and mobile /product/details/ID.
 let gmCJSharedImportStarted = false;
+function gmExtractCJProductId(sharedValue) {
+    const raw = String(sharedValue || '').trim();
+    if (!raw) return '';
+    const urls = raw.match(/https?:\/\/[^\s<>"']+/gi) || [raw];
+    for (const candidate of urls) {
+        try {
+            const parsed = new URL(candidate.replace(/[),.;]+$/, ''));
+            if (!/(^|\.)cjdropshipping\.com$/i.test(parsed.hostname)) continue;
+            const path = parsed.pathname;
+            const match = path.match(/\/product\/details\/(\d{8,30})(?:\/|$)/i)
+                || path.match(/(?:-p-|\/p-)(\d{8,30})(?:\.html)?(?:\/|$)/i)
+                || parsed.href.match(/(?:[?&](?:pid|productId|product_id)=)(\d{8,30})/i);
+            if (match) return match[1];
+        } catch (_) {}
+    }
+    return '';
+}
 async function handleCJSharedImport() {
     if (gmCJSharedImportStarted || !user || !sb) return;
     const params = new URLSearchParams(window.location.search);
-    const sharedUrl = (params.get('cjSharedUrl') || '').trim();
-    if (!sharedUrl) return;
+    const sharedParts = [
+        params.get('cjSharedUrl'), params.get('url'),
+        params.get('cjSharedText'), params.get('text'),
+        params.get('cjSharedTitle'), params.get('title')
+    ].filter(Boolean);
+    if (!sharedParts.length) return;
     if (!isAdmin) {
         await gmPopup('CJ سے پروڈکٹ امپورٹ کرنے کے لیے GM Network کے ایڈمن اکاؤنٹ میں سائن اِن کریں۔', 'Admin Sign-in Required', 'warning');
         return;
     }
     gmCJSharedImportStarted = true;
-    let pid = '';
-    try {
-        const parsed = new URL(sharedUrl);
-        if (!/(^|\.)cjdropshipping\.com$/i.test(parsed.hostname)) throw new Error('یہ CJ Dropshipping کا لنک نہیں ہے۔');
-        const match = parsed.pathname.match(/(?:-p-|\/p-)(\d+)(?:\.html)?$/i) || parsed.href.match(/p-(\d+)(?:\.html)?/i);
-        if (match) pid = match[1];
-    } catch (e) {
-        console.warn('Invalid shared CJ URL', e);
-    }
-    params.delete('cjSharedUrl');
-    params.delete('cjSharedTitle');
-    params.delete('cjSharedText');
+    const pid = gmExtractCJProductId(sharedParts.join(' '));
+    ['cjSharedUrl','url','cjSharedTitle','title','cjSharedText','text'].forEach(key => params.delete(key));
     const cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
     history.replaceState({}, '', cleanUrl);
     if (!pid) {
-        await gmPopup('CJ پروڈکٹ لنک سے Product ID نہیں مل سکی۔ براہ کرم CJ پروڈکٹ پیج کا مکمل لنک شیئر کریں۔', 'CJ Link Not Recognized', 'error');
+        await gmPopup('CJ موبائل یا ویب لنک سے Product ID نہیں مل سکی۔ CJ پروڈکٹ کا مکمل لنک Share کریں۔', 'CJ Link Not Recognized', 'error');
         return;
     }
     await importCJProduct(pid);

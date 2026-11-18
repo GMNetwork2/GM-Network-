@@ -1168,6 +1168,7 @@ button:active,.hero-btn:active,.secondary:active,.primary:active,[role="button"]
         <button data-menu="my-account" onclick="menuTab('my-account')">🆔 My Account</button>
         <button data-menu="my-wallet" onclick="menuTab('my-wallet')">💰 My Wallet</button>
         <button data-menu="products" onclick="menuTab('products')">🛍️ Products</button>
+        <button data-menu="global-products" onclick="menuTab('global-products')">🌐 Global Products</button>
         <button data-menu="categories" onclick="menuTab('categories')">▦ Categories</button>
         <button data-menu="offers" onclick="menuTab('offers')">🏷️ Offers & Discounts</button>
         <button data-menu="cart" onclick="menuTab('cart')">🛒 Shopping Cart <span id="menuCartCount" class="pill">0</span></button>
@@ -1486,6 +1487,28 @@ button:active,.hero-btn:active,.secondary:active,.primary:active,[role="button"]
     </div>
 </section>
 
+<section id="global-products" class="view hidden">
+  <div class="panel">
+    <h2>🌐 Global Products</h2>
+    <p class="muted">یہاں صرف CJ Dropshipping سے امپورٹ کی گئی پروڈکٹس دکھائی جاتی ہیں۔ یہ عام GM Products، Premium، Featured اور عام Arrivals سے الگ ہیں۔</p>
+    <h3 style="color:var(--gold);margin:16px 0 10px;">✨ Global New Arrivals</h3>
+    <div class="product-grid" id="globalArrivalsList"><p class="muted">Global arrivals لوڈ ہو رہی ہیں…</p></div>
+    <h3 style="color:var(--gold);margin:18px 0 10px;">Global Categories</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+      <button class="secondary" onclick="filterGlobalProducts('All')">All</button>
+      <button class="secondary" onclick="filterGlobalProducts('Electronics')">🎧 Electronics</button>
+      <button class="secondary" onclick="filterGlobalProducts('Perfumes')">🧴 Perfumes</button>
+      <button class="secondary" onclick="filterGlobalProducts('Wallets')">👛 Wallets</button>
+      <button class="secondary" onclick="filterGlobalProducts('Watches')">⌚ Watches</button>
+      <button class="secondary" onclick="filterGlobalProducts('Fashion')">👕 Fashion</button>
+      <button class="secondary" onclick="filterGlobalProducts('Accessories')">👜 Accessories</button>
+      <button class="secondary" onclick="filterGlobalProducts('Other Products')">📦 Other</button>
+    </div>
+    <input id="globalProductSearch" type="search" placeholder="Global Products میں تلاش کریں…" oninput="searchGlobalProducts(this.value)" style="margin-bottom:12px;">
+    <div class="product-grid" id="globalProductList"><p class="muted">Global products لوڈ ہو رہی ہیں…</p></div>
+  </div>
+</section>
+
 <section id="team" class="view hidden"><div class="panel"><h2>🏆 Team & Rewards</h2><div class="stats"><div class="stat"><small>Direct Members</small><strong id="gmTeamMembers">—</strong></div><div class="stat"><small>Total Commission</small><strong id="gmTeamCommission">—</strong></div><div class="stat"><small>My Coins</small><strong id="gmTeamCoins">—</strong></div><div class="stat"><small>My Rank</small><strong id="gmTeamRank">—</strong></div></div></div><div class="panel"><h2>My Team</h2><p class="muted">People who joined using your referral code. Click on any member to view their downline.</p><div id="teamList">Sign in to view your team.</div></div></section>
 
 <section id="admin" class="view hidden">
@@ -1511,19 +1534,26 @@ button:active,.hero-btn:active,.secondary:active,.primary:active,[role="button"]
             <p class="muted" style="font-size:12px;margin-top:12px;">کنکشن اور ٹوکن سرور پر محفوظ ہیں۔ CJ کا نام یا لوگو آپ کے اسٹور کی پروڈکٹ لسٹنگ میں نہیں دکھایا جائے گا۔</p>
         </div>
         <div class="panel" style="margin-top:14px;">
-            <h3 style="color:var(--gold);margin:0 0 8px;">🔎 CJ Product Search & Import</h3>
-            <p class="muted">CJ کی اصل قیمت صرف آپ کے ایڈمن کے لیے ہوگی۔ امپورٹ کے بعد آپ اپنی فروخت کی قیمت، ڈسکاؤنٹ، تفصیل اور ویب سائٹ پر جگہ منتخب کریں گے۔</p>
+            <h3 style="color:var(--gold);margin:0 0 8px;">🛒 CJ مکمل پروڈکٹ کیٹلاگ</h3>
+            <p class="muted">اب نام لکھے بغیر بھی CJ کی پروڈکٹس براؤز کریں۔ کسی پروڈکٹ کو منتخب کرنے پر مکمل تفصیل، تصاویر، ویریئنٹس اور دستیاب قیمت حاصل کرکے GM Network میں امپورٹ کریں۔</p>
             <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:end;">
-              <div><label for="cjSearchKeyword">پروڈکٹ تلاش کریں</label><input id="cjSearchKeyword" placeholder="مثلاً perfume, wallet, earbuds"></div>
+              <div><label for="cjSearchKeyword">اختیاری سرچ / کیٹیگری لفظ</label><input id="cjSearchKeyword" placeholder="مثلاً perfume, wallet, earbuds"></div>
               <button class="primary" type="button" onclick="searchCJProducts(1)" style="margin:0;">Search</button>
             </div>
-            <div id="cjSearchStatus" class="status" style="margin-top:10px;">پروڈکٹس تلاش کرنے کے لیے اوپر نام لکھیں۔</div>
+            <button class="primary" type="button" onclick="browseCJCatalog(1)" style="width:100%;margin-top:9px;background:linear-gradient(135deg,#d6a63e,#8e6720);color:#10150f;">🌐 CJ کی تمام دستیاب پروڈکٹس دکھائیں</button>
+            <div id="cjSearchStatus" class="status" style="margin-top:10px;">CJ کیٹلاگ کھولنے کے لیے اوپر والا بٹن دبائیں۔</div>
             <div id="cjSearchResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:12px;"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;">
               <button class="secondary" id="cjPrevPage" onclick="searchCJProducts(Math.max(1,window.cjSearchPage-1))" disabled>← Previous</button>
               <small id="cjPageInfo" class="muted">Page 1</small>
               <button class="secondary" id="cjNextPage" onclick="searchCJProducts((window.cjSearchPage||1)+1)" disabled>Next →</button>
             </div>
+        </div>
+        <div class="panel" style="margin-top:14px;">
+          <h3 style="color:var(--gold);margin:0 0 8px;">🌐 Global Products — Admin Manager</h3>
+          <p class="muted">CJ سے امپورٹ ہونے والی پروڈکٹس صرف Global Products میں رہیں گی۔ یہاں سے ان کا اسٹاک، دستیابی، لنک، ترمیم اور ڈیلیٹ کنٹرول کریں۔</p>
+          <button class="secondary" type="button" onclick="loadGlobalAdminProducts()" style="width:100%;">↻ Refresh Global Products</button>
+          <div id="globalAdminProducts" style="margin-top:12px;">Global products لوڈ ہو رہی ہیں…</div>
         </div>
         <div class="panel" style="margin-top:14px;">
           <h3 style="color:var(--gold);margin:0 0 8px;">📁 GM Network Product Folders</h3>
@@ -1751,7 +1781,7 @@ button:active,.hero-btn:active,.secondary:active,.primary:active,[role="button"]
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
 <div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous image" onclick="moveLightbox(-1)">‹</button><img id="lightboxImage" alt="Full-size product" src=""><button type="button" class="lightbox-nav lightbox-next" aria-label="Next image" onclick="moveLightbox(1)">›</button><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
-<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="cjOrderSupplierBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
 
 <!-- Product View Page (Full Screen) -->
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
@@ -2154,6 +2184,7 @@ function tab(id, skipHistory = false) {
     if (id === 'my-account' && user) loadMyAccountPage();
     if (id === 'my-wallet' && user) loadMyWallet();
     if (id === 'admin' && isAdmin) loadAdmin();
+    if (id === 'global-products') loadGlobalProducts();
 }
 
 function toggleMenu() {
@@ -2952,7 +2983,7 @@ function filterProductsByCategory(categoryName) {
     if (titleEl) titleEl.textContent = categoryName + ' Collection';
     const el = $('productList');
     if (!window.allProductsData) return;
-    renderProductCards(window.allProductsData.filter(p => productMatchesCategory(p, categoryName)), el);
+    renderProductCards((window.standardProductsData || []).filter(p => productMatchesCategory(p, categoryName)), el);
 }
 
 function renderProductCards(productsToRender, container) {
@@ -3030,7 +3061,7 @@ function searchProductsByText(value) {
     const query = String(value || '').trim().toLowerCase();
     const titleEl = $('productPageTitle');
     if (titleEl) titleEl.textContent = query ? 'Search Results' : 'Premium Products';
-    const products = Array.isArray(window.allProductsData) ? window.allProductsData : [];
+    const products = Array.isArray(window.standardProductsData) ? window.standardProductsData : [];
     const matches = query ? products.filter(p => [p.name, p.category, p.description].some(v => String(v || '').toLowerCase().includes(query))) : products;
     renderProductCards(matches, $('productList'));
 }
@@ -3048,53 +3079,55 @@ async function loadProducts() {
     const { data, error } = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
     if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
 
-    window.allProductsData = data || [];
+    window.allProductsData = data || []; // all products retained for cart/order lookup
+    window.standardProductsData = window.allProductsData.filter(p => p.supplier_source !== 'CJ Dropshipping');
+    window.globalProductsData = window.allProductsData.filter(p => p.supplier_source === 'CJ Dropshipping');
     if ($('productPageTitle')) $('productPageTitle').textContent = 'Premium Products';
 
-    const productIds = window.allProductsData.map(p => p.id);
+    const productIds = window.standardProductsData.map(p => p.id);
     window.currentRatingsMap = await fetchProductRatings(productIds);
     await loadHomeCustomerReviews();
 
-    renderProductCards(window.allProductsData, el);
+    renderProductCards(window.standardProductsData, el);
 
     // Home sections are controlled independently by Admin product selections.
     const featuredEl = $('featuredProductList');
     if (featuredEl) {
-        const featuredProducts = window.allProductsData.filter(product => product.show_in_featured === true).slice(0, 8);
+        const featuredProducts = window.standardProductsData.filter(product => product.show_in_featured === true).slice(0, 8);
         renderProductCards(featuredProducts, featuredEl);
         if (!featuredProducts.length) featuredEl.innerHTML = '<p class="muted">No Featured Products selected yet. Please select products from Admin Panel.</p>';
     }
     const newArrivalsEl = $('newArrivalsList');
     if (newArrivalsEl) {
-        const newArrivalProducts = window.allProductsData.filter(product => product.show_in_new_arrivals === true).slice(0, 8);
+        const newArrivalProducts = window.standardProductsData.filter(product => product.show_in_new_arrivals === true).slice(0, 8);
         renderProductCards(newArrivalProducts, newArrivalsEl);
         if (!newArrivalProducts.length) newArrivalsEl.innerHTML = '<p class="muted">No New Arrivals selected yet. Please select products from Admin Panel.</p>';
     }
     const bestSellersEl = $('bestSellersList');
     if (bestSellersEl) {
-        const bestSellers = window.allProductsData.filter(product => product.active !== false && product.show_in_best_sellers === true).slice(0, 8);
+        const bestSellers = window.standardProductsData.filter(product => product.active !== false && product.show_in_best_sellers === true).slice(0, 8);
         renderProductCards(bestSellers, bestSellersEl);
         if (!bestSellers.length) bestSellersEl.innerHTML = '<p class="muted">No Best Sellers selected yet. Admin can choose products in Manage Products.</p>';
     }
     const offersEl = $('homeOffersList');
     if (offersEl) {
-        const offers = window.allProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0).slice(0, 8);
+        const offers = window.standardProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0).slice(0, 8);
         renderProductCards(offers, offersEl);
         if (!offers.length) offersEl.innerHTML = '<p class="muted">No discounted products are currently listed.</p>';
     }
     const topRatedEl = $('homeTopRatedList');
     if (topRatedEl) {
-        const topRated = [...window.allProductsData].filter(p => p.active !== false).sort((a,b) => Number(b.base_rating || 0) - Number(a.base_rating || 0)).slice(0, 4);
+        const topRated = [...window.standardProductsData].filter(p => p.active !== false).sort((a,b) => Number(b.base_rating || 0) - Number(a.base_rating || 0)).slice(0, 4);
         renderProductCards(topRated, topRatedEl);
         if (!topRated.length) topRatedEl.innerHTML = '<p class="muted">No rated products are available yet.</p>';
     }
     const offersPageEl = $('offersPageList');
     if (offersPageEl) {
-        const pageOffers = window.allProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0);
+        const pageOffers = window.standardProductsData.filter(p => p.active !== false && Number(p.discount_percent || 0) > 0);
         renderProductCards(pageOffers, offersPageEl);
         if (!pageOffers.length) offersPageEl.innerHTML = '<p class="muted">اس وقت کوئی discounted پروڈکٹ دستیاب نہیں۔</p>';
     }
-    if ($('np')) $('np').textContent = String(window.allProductsData.length);
+    if ($('np')) $('np').textContent = String(window.standardProductsData.length);
     loadPremiumSliders();
     if (typeof window.renderCart === 'function') window.renderCart();
     if (typeof window.renderWishlist === 'function') window.renderWishlist();
@@ -3106,7 +3139,7 @@ function loadPremiumSliders() {
     const dashboard = $('dashboardPremiumSlider');
     if (!home && !dashboard) return;
 
-    const products = Array.isArray(window.allProductsData) ? window.allProductsData : [];
+    const products = Array.isArray(window.standardProductsData) ? window.standardProductsData : [];
     const isRealActiveProduct = p => {
         if (!p || p.active === false || String(p.name || '').toUpperCase() === 'WEBSITE_BANNERS') return false;
         const name = String(p.name || '').toLowerCase();
@@ -3585,16 +3618,64 @@ function openAdminSection(sectionId) {
     }
     const target = document.getElementById('adminSection-' + sectionId);
     if (target) target.classList.remove('hidden');
+    if (sectionId === 'cj') loadGlobalAdminProducts();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Global Products catalog: CJ imports remain isolated from the regular GM catalog.
+async function loadGlobalProducts() {
+  const list = $('globalProductList'), arrivals = $('globalArrivalsList');
+  if (!sb) { if (list) list.textContent = 'Store connection is not ready.'; return; }
+  if (list) list.innerHTML = '<p class="muted">Global products لوڈ ہو رہی ہیں…</p>';
+  const { data, error } = await sb.from('products').select('*').eq('supplier_source', 'CJ Dropshipping').order('created_at', { ascending: false });
+  if (error) { if (list) list.innerHTML = '<p class="status error">Global catalog load error: ' + esc(error.message) + '</p>'; return; }
+  window.globalProductsData = data || [];
+  const active = window.globalProductsData.filter(p => p.active !== false);
+  if (arrivals) {
+    const newOnes = active.filter(p => p.show_in_new_arrivals === true).slice(0, 8);
+    renderProductCards(newOnes, arrivals);
+    if (!newOnes.length) arrivals.innerHTML = '<p class="muted">ابھی کوئی Global New Arrival منتخب نہیں۔</p>';
+  }
+  if (list) renderProductCards(active, list);
+}
+function filterGlobalProducts(category) {
+  const all = (window.globalProductsData || []).filter(p => p.active !== false);
+  const matches = category && category !== 'All' ? all.filter(p => String(p.category || '').toLowerCase() === String(category).toLowerCase()) : all;
+  renderProductCards(matches, $('globalProductList'));
+}
+function searchGlobalProducts(value) {
+  const q = String(value || '').trim().toLowerCase();
+  const all = (window.globalProductsData || []).filter(p => p.active !== false);
+  renderProductCards(q ? all.filter(p => [p.name,p.category,p.description].some(v => String(v || '').toLowerCase().includes(q))) : all, $('globalProductList'));
+}
+async function loadGlobalAdminProducts() {
+  const el = $('globalAdminProducts');
+  if (!el || !sb || !isAdmin) return;
+  el.innerHTML = '<p class="muted">Loading CJ Global Products…</p>';
+  const { data, error } = await sb.from('products').select('id,name,category,active,price_usd,cj_cost_usd,cj_product_id,cj_product_sku,cj_source_url,cj_stock_quantity,images,image_url').eq('supplier_source','CJ Dropshipping').order('created_at',{ascending:false});
+  if (error) { el.innerHTML = '<p class="status error">' + esc(error.message) + '</p>'; return; }
+  window.globalAdminProductsData = data || [];
+  el.innerHTML = window.globalAdminProductsData.map(p => {
+    const img = (Array.isArray(p.images) && p.images[0]) || p.image_url || 'https://placehold.co/90x90?text=CJ';
+    const url = p.cj_source_url || (p.cj_product_id ? `https://www.cjdropshipping.com/product/${encodeURIComponent(p.cj_product_id)}.html` : 'https://www.cjdropshipping.com/');
+    return `<div class="item" style="align-items:flex-start;gap:9px;"><img src="${esc(img)}" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;"><div style="flex:1;min-width:0;"><b>${esc(p.name || 'CJ Product')}</b><div class="muted">${esc(p.category || 'Other')} · SKU ${esc(p.cj_product_sku || '—')}</div><div class="muted">Cost $${Number(p.cj_cost_usd||0).toFixed(2)} · Sell $${Number(p.price_usd||0).toFixed(2)} · Stock ${Number(p.cj_stock_quantity||0)}</div><div class="muted">${p.active ? 'Published' : 'Draft / Sold Out'}</div><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);font-size:12px;">↗ Open this exact CJ product</a></div><div style="display:flex;flex-direction:column;gap:5px;"><button class="secondary small-btn" onclick="editProduct('${esc(p.id)}')">Edit</button><button class="secondary small-btn" onclick="toggleProduct('${esc(p.id)}',${p.active ? 'true':'false'})">${p.active ? 'Unpublish':'Publish'}</button><button class="secondary small-btn" style="color:#f77" onclick="deleteProduct('${esc(p.id)}')">Delete</button></div></div>`;
+  }).join('') || '<p class="muted">ابھی کوئی CJ Global Product امپورٹ نہیں ہوئی۔</p>';
 }
 
 // CJ API calls are routed through the protected Edge Function. Tokens never reach this page.
 window.cjSearchPage = 1;
 function cjEscape(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function cjPickList(data) {
-    if (Array.isArray(data?.content)) return data.content.flatMap(x => Array.isArray(x?.productList) ? x.productList : []);
-    if (Array.isArray(data?.productList)) return data.productList;
     if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.productList)) return data.productList;
+    if (Array.isArray(data?.list)) return data.list;
+    if (Array.isArray(data?.records)) return data.records;
+    if (Array.isArray(data?.content)) return data.content.flatMap(x => {
+      if (Array.isArray(x?.productList)) return x.productList;
+      if (Array.isArray(x?.list)) return x.list;
+      if (x && (x.id || x.pid || x.productId)) return [x];
+      return [];
+    });
     return [];
 }
 async function cjCall(action, extra={}) {
@@ -3611,15 +3692,14 @@ async function cjCall(action, extra={}) {
 async function searchCJProducts(page=1) {
     const keyword=($('cjSearchKeyword')?.value||'').trim();
     const status=$('cjSearchStatus'), results=$('cjSearchResults');
-    if(!keyword){if(status)status.textContent='براہ کرم پروڈکٹ کا نام لکھیں۔';return;}
     window.cjSearchPage=page;
     if(status){status.textContent='CJ کیٹلاگ سے پروڈکٹس تلاش ہو رہی ہیں…';status.className='status';}
     if(results)results.innerHTML='';
     try {
-      const response=await cjCall('search',{keyword,page,size:20});
+      const response=await cjCall('search',{keyword:keyword || undefined,page,size:20});
       const products=cjPickList(response.data);
       if(!products.length){if(status)status.textContent='اس تلاش میں کوئی پروڈکٹ نہیں ملی۔';return;}
-      if(status){status.textContent=`${response.data?.totalRecords ?? products.length} نتائج ملے۔ مطلوبہ پروڈکٹ منتخب کرکے GM Network میں امپورٹ کریں۔`;status.className='status ok';}
+      if(status){status.textContent=`${response.data?.totalRecords ?? products.length} پروڈکٹس ملیں۔ مطلوبہ پروڈکٹ منتخب کرکے امپورٹ کریں۔`;status.className='status ok';}
       if(results) results.innerHTML=products.map((p,i)=>{
         const pid=p.id||p.pid||''; const img=p.bigImage||p.productImage||p.image||'';
         const name=p.nameEn||p.productNameEn||p.name||'CJ Product';
@@ -3630,13 +3710,18 @@ async function searchCJProducts(page=1) {
           <small class="muted">CJ SKU: ${cjEscape(p.sku||p.spu||'—')}</small>
           <div style="color:var(--gold);font-weight:800;margin:6px 0;">Supplier cost: $${cost.toFixed(2)}</div>
           <small class="muted">${cjEscape(p.threeCategoryName||p.categoryName||'CJ Catalog')}</small>
-          <button class="primary" type="button" style="margin-top:9px;" onclick="importCJProduct('${cjEscape(pid)}')">Import to GM Network</button>
+          <a href="https://www.cjdropshipping.com/product/${encodeURIComponent(String(pid))}.html" target="_blank" rel="noopener noreferrer" style="display:block;color:var(--gold);font-size:12px;margin-top:9px;text-decoration:underline;">↗ CJ پر اسٹاک، ویریئنٹس اور شپنگ چیک کریں</a>
+          <button class="primary" type="button" style="margin-top:9px;" onclick="importCJProduct('${cjEscape(pid)}')">Import to Global Products</button>
         </article>`;
       }).join('');
       const totalPages=Number(response.data?.totalPages||page);
       $('cjPageInfo').textContent=`Page ${page} of ${totalPages}`;
       $('cjPrevPage').disabled=page<=1; $('cjNextPage').disabled=page>=totalPages;
     } catch(e) { if(status){status.textContent='Search error: '+(e.message||e);status.className='status error';} }
+}
+async function browseCJCatalog(page=1) {
+    const field=$('cjSearchKeyword'); if(field) field.value='';
+    return searchCJProducts(page);
 }
 function cjFindObject(root, keys) {
   if(typeof root === 'string') { const t=root.trim(); if((t.startsWith('{')&&t.endsWith('}'))||(t.startsWith('[')&&t.endsWith(']'))) { try { root=JSON.parse(t); } catch(_) {} } }
@@ -3687,17 +3772,19 @@ async function importCJProduct(pid) {
           <b style="font-size:16px;line-height:1.4;">${cjEscape(name)}</b>
           <small style="color:#e5b853;">CJ supplier cost: $${Number.isFinite(cost) ? cost.toFixed(2) : '0.00'} · ${images.length} image(s) · ${variants.length} variant(s)</small>
           ${previewDescription ? `<div style="font-size:12px;color:#b9c8bf;line-height:1.5;max-height:90px;overflow:auto;white-space:pre-wrap;">${cjEscape(previewDescription)}${description.length > 650 ? '…' : ''}</div>` : '<small style="color:#9aa99f;">CJ نے اس پروڈکٹ کی تفصیل فراہم نہیں کی۔</small>'}
+          <a href="https://www.cjdropshipping.com/product/${encodeURIComponent(String(pid))}.html" target="_blank" rel="noopener noreferrer" style="display:block;padding:11px;border:1px solid #b88b32;border-radius:9px;background:#171b12;color:#f0d99c;text-align:center;font-weight:700;text-decoration:none;">↗ CJ پر اصل پروڈکٹ کھولیں — اسٹاک، ویریئنٹس اور شپنگ چیک کریں</a>
+          <div style="padding:9px;border:1px solid #725b2c;border-radius:9px;background:#171b12;font-size:12px;color:#f0d99c;">امپورٹ سے پہلے اوپر CJ پر اسٹاک، دستیابی، ویریئنٹ اور اپنے ملک کی شپنگ چیک کریں۔ شپنگ کی حتمی قیمت منزل اور منتخب ویریئنٹ کے مطابق آرڈر بناتے وقت طے ہوگی۔</div>
           <label>GM Network پر فروخت کی قیمت (USD)</label>
           <input id="cjSellPrice" type="number" min="0.01" step="0.01" value="${Math.max(cost * 1.5, cost + 1).toFixed(2)}" class="swal2-input" style="margin:0;width:100%;">
+          <label>CJ اسٹاک کی مقدار (اگر دستیاب ہو)</label>
+          <input id="cjStockQuantity" type="number" min="0" step="1" value="0" class="swal2-input" style="margin:0;width:100%;">
           <label>آپ کا ڈسکاؤنٹ (%)</label>
           <input id="cjDiscount" type="number" min="0" max="90" step="1" value="0" class="swal2-input" style="margin:0;width:100%;">
           <label>پروڈکٹ فولڈر / کیٹیگری</label>
           <select id="cjCategory" class="swal2-select" style="margin:0;width:100%;"><option>Electronics</option><option>Perfumes</option><option>Wallets</option><option>Watches</option><option>Fashion</option><option>Accessories</option><option>Other Products</option></select>
-          <label>ویب سائٹ پر کہاں دکھائیں؟</label>
-          <label><input id="cjFeatured" type="checkbox"> Featured Products</label>
-          <label><input id="cjNew" type="checkbox" checked> New Arrivals</label>
-          <label><input id="cjPremium" type="checkbox"> Premium Products</label>
-          <label><input id="cjBest" type="checkbox"> Best Sellers</label>
+          <label>Global Products میں جگہ</label>
+          <label><input id="cjNew" type="checkbox" checked> Global New Arrivals میں بھی دکھائیں</label>
+          <small style="color:#aab8ae;">CJ پروڈکٹ عام Featured، Premium یا GM New Arrivals میں شامل نہیں ہوگی۔</small>
           <div style="border-top:1px solid #294333;padding-top:9px;margin-top:3px;">
             <label style="font-weight:700;color:#e5b853;"><input id="cjPublish" type="checkbox" checked> Submit کے بعد پروڈکٹ فوراً ویب سائٹ پر دکھائیں</label>
             <small style="display:block;color:#aab8ae;margin-top:4px;">اسے بند رکھنے پر پروڈکٹ Draft میں محفوظ ہوگی۔</small>
@@ -3716,12 +3803,9 @@ async function importCJProduct(pid) {
         if (!(price > 0)) { Swal.showValidationMessage('درست فروخت کی قیمت درج کریں۔'); return false; }
         if (discount < 0 || discount > 90) { Swal.showValidationMessage('ڈسکاؤنٹ 0 سے 90 فیصد کے درمیان رکھیں۔'); return false; }
         return {
-          price, discount,
+          price, discount, stockQuantity: Math.max(0, Math.floor(Number(document.getElementById('cjStockQuantity').value)||0)),
           category: document.getElementById('cjCategory').value,
-          featured: document.getElementById('cjFeatured').checked,
           newArrival: document.getElementById('cjNew').checked,
-          premium: document.getElementById('cjPremium').checked,
-          best: document.getElementById('cjBest').checked,
           publish: document.getElementById('cjPublish').checked
         };
       }
@@ -3740,16 +3824,18 @@ async function importCJProduct(pid) {
       cj_product_sku: String(cjFindObject(raw, ['productSku','sku','spu']) || ''),
       cj_source_url: `https://www.cjdropshipping.com/product/${encodeURIComponent(String(pid))}.html`,
       cj_cost_usd: cost,
+      cj_stock_quantity: form.stockQuantity,
+      cj_stock_checked_at: new Date().toISOString(),
       cj_variants: variants,
       cj_source_data: raw,
       images,
       image_url: images[0] || null,
       base_rating: 5,
       base_reviews_count: 0,
-      show_in_featured: form.featured,
+      show_in_featured: false,
       show_in_new_arrivals: form.newArrival,
-      show_in_premium: form.premium,
-      show_in_best_sellers: form.best
+      show_in_premium: false,
+      show_in_best_sellers: false
     };
     const { data: existing } = await sb.from('products').select('id').eq('cj_product_id', String(pid)).maybeSingle();
     if (existing?.id) {
@@ -3761,7 +3847,7 @@ async function importCJProduct(pid) {
     await sb.from('cj_product_import_logs').insert({
       cj_product_id: String(pid), product_id: inserted.id, admin_user_id: user.id,
       action: form.publish ? 'imported_and_published' : 'imported',
-      details: { category: form.category, cj_cost_usd: cost, selling_price_usd: form.price, published: form.publish }
+      details: { category: form.category, cj_cost_usd: cost, cj_stock_quantity: form.stockQuantity, selling_price_usd: form.price, published: form.publish }
     });
     await gmPopup(form.publish
       ? 'پروڈکٹ GM Network میں محفوظ اور شائع ہوگئی ہے۔'
@@ -3769,6 +3855,8 @@ async function importCJProduct(pid) {
       form.publish ? 'Product Published' : 'Product Saved', 'success');
     if (typeof loadAdmin === 'function') await loadAdmin();
     if (typeof loadProducts === 'function') await loadProducts();
+    if (typeof loadGlobalProducts === 'function') await loadGlobalProducts();
+    if (typeof loadGlobalAdminProducts === 'function') await loadGlobalAdminProducts();
   } catch (e) {
     console.error('CJ import error', e);
     await gmPopup('پروڈکٹ امپورٹ نہیں ہو سکی: ' + (e.message || e), 'Import Failed', 'error');
@@ -4015,7 +4103,7 @@ async function loadAdmin() {
                     let buyerName = 'Unknown Buyer';
                     const { data: bName } = await sb.rpc('get_order_buyer_name', { p_order_id: order.id });
                     if (bName) buyerName = bName;
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName);
+                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName, order.product_id);
                 };
             }
         });
@@ -4089,7 +4177,7 @@ async function loadAdmin() {
         if (p.error) {
             $('adminManageProducts').innerHTML = bulkHtml + catHtml + esc(p.error.message);
         } else {
-            window.allAdminProducts = p.data || [];
+            window.allAdminProducts = (p.data || []).filter(x => x.supplier_source !== 'CJ Dropshipping');
             const productsHtml = window.allAdminProducts.map(x => {
                 const productId = String(x.id);
                 const imgUrl = (Array.isArray(x.images) && x.images.length > 0) ? x.images[0] : (x.image_url || 'https://placehold.co/100x100?text=GM');
@@ -4220,7 +4308,7 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null, buyerNameFallback = null) {
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null, buyerNameFallback = null, productId = null) {
     $('orderDetailName').textContent = (name || 'Unknown Product') + ' • ' + (buyerNameFallback || 'Loading buyer…') + ' • Order …' + String(id).slice(-6);
     const imgContainer = document.getElementById('orderProductImageContainer');
     if (imgContainer) {
@@ -4262,6 +4350,20 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
             ((historyRows || []).length ? historyRows.map(row => `<div style="border-top:1px solid var(--line);padding:8px 0;font-size:12px"><b>${esc(String(row.new_status || row.event_type || '').toUpperCase())}</b> · ${esc(row.description || '')}<br><span class="muted">${esc(row.created_at ? new Date(row.created_at).toLocaleString() : '')} · Cycle ${Number(row.settlement_cycle || 0)}</span></div>`).join('') : '<div class="muted" style="padding:8px 0">No status history available.</div>');
     } catch (historyErr) {
         historyBox.innerHTML = '<b style="color:var(--gold)">Order & Reward History</b><div class="muted" style="padding:8px 0">History will appear after the database SQL update is installed.</div>';
+    }
+
+    const cjBox = $('cjOrderSupplierBox');
+    if (cjBox) {
+      cjBox.innerHTML = '';
+      if (isAdmin && productId) {
+        try {
+          const { data: supplierProduct, error: supplierProductError } = await sb.from('products').select('id,name,supplier_source,cj_product_id,cj_product_sku,cj_source_url,cj_cost_usd,cj_stock_quantity,cj_variants').eq('id', productId).maybeSingle();
+          if (!supplierProductError && supplierProduct?.supplier_source === 'CJ Dropshipping') {
+            const cjUrl = supplierProduct.cj_source_url || (supplierProduct.cj_product_id ? `https://www.cjdropshipping.com/product/${encodeURIComponent(supplierProduct.cj_product_id)}.html` : 'https://www.cjdropshipping.com/');
+            cjBox.innerHTML = `<div style="margin:12px 0;padding:13px;border:1px solid #9b7838;border-radius:12px;background:rgba(18,35,23,.8);"><b style="color:var(--gold);display:block;margin-bottom:8px;">🌐 CJ Supplier Product — محفوظ ریکارڈ</b><div class="item"><span>CJ Product ID</span><b>${esc(supplierProduct.cj_product_id || '—')}</b></div><div class="item"><span>CJ SKU</span><b>${esc(supplierProduct.cj_product_sku || '—')}</b></div><div class="item"><span>اصل لاگت</span><b>${supplierProduct.cj_cost_usd == null ? '—' : '$' + Number(supplierProduct.cj_cost_usd).toFixed(2)}</b></div><div class="item"><span>محفوظ اسٹاک</span><b>${supplierProduct.cj_stock_quantity == null ? 'نامعلوم' : Number(supplierProduct.cj_stock_quantity)}</b></div><a href="${esc(cjUrl)}" target="_blank" rel="noopener noreferrer" class="primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px;">CJ پر یہی پروڈکٹ کھولیں ↗</a><small class="muted" style="display:block;margin-top:8px;">یہ لنک اسی آرڈر والی محفوظ CJ پروڈکٹ کا ہے۔ CJ پر آرڈر مکمل کرنے سے پہلے ویریئنٹ، تازہ اسٹاک اور اصل شپنگ قیمت دوبارہ چیک کریں۔</small></div>`;
+          }
+        } catch (supplierLookupError) { console.warn('CJ order lookup:', supplierLookupError); }
+      }
     }
 
     const actionDiv = $('orderActionButtons'); actionDiv.innerHTML = '';
@@ -4448,15 +4550,17 @@ async function saveProductEdit() {
     if (!Number.isFinite(rate) || rate < 0 || rate > 50) return status('editProductStatus', 'Commission must be between 0 and 50%.', 'error');
     if (!Number.isFinite(discount) || discount < 0 || discount > 90) return status('editProductStatus', 'Discount must be between 0 and 90%.', 'error');
     status('editProductStatus', 'Saving changes…');
+    const { data: existingProduct } = await sb.from('products').select('supplier_source').eq('id', id).maybeSingle();
+    const isCJGlobal = existingProduct?.supplier_source === 'CJ Dropshipping';
     const update = {
         name, category, description: $('editProductDescription').value.trim() || null,
-        price_usd: Math.round(price * 100) / 100, commission_percent: rate, discount_percent: discount,
+        price_usd: Math.round(price * 100) / 100, commission_percent: isCJGlobal ? 0 : rate, discount_percent: discount,
         base_rating: Number($('editProductBaseRating').value) || 5.0,
         base_reviews_count: Number($('editProductBaseReviewsCount').value) || 0,
-        show_in_featured: $('editShowFeatured').checked,
+        show_in_featured: isCJGlobal ? false : $('editShowFeatured').checked,
         show_in_new_arrivals: $('editShowArrivals').checked,
-        show_in_premium: $('editShowPremium').checked,
-        show_in_best_sellers: $('editShowBestSellers').checked
+        show_in_premium: isCJGlobal ? false : $('editShowPremium').checked,
+        show_in_best_sellers: isCJGlobal ? false : $('editShowBestSellers').checked
     };
     if (files && files.length > 0) {
         const images = [];
@@ -4473,12 +4577,12 @@ async function saveProductEdit() {
     const { error } = await sb.from('products').update(update).eq('id', id);
     if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error');
     status('editProductStatus', 'Product updated successfully.', 'ok');
-    await loadProducts(); await loadAdmin();
+    await loadProducts(); await loadAdmin(); await loadGlobalProducts(); await loadGlobalAdminProducts();
     setTimeout(() => $('editProductModal').classList.add('hidden'), 700);
 }
 
-async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); } }
-async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); } }
+async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); await loadGlobalProducts(); await loadGlobalAdminProducts(); } }
+async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); await loadGlobalProducts(); await loadGlobalAdminProducts(); } }
 
 async function loadBanners() {
     const el = $('bannerSlider');
@@ -4652,7 +4756,7 @@ function openProductView(index) {
     $('pvpDescription').classList.add('hidden');
 
     const relatedSlider = $('relatedProductsSlider'); relatedSlider.innerHTML = '';
-    const related = products.map((prod, i) => ({ prod, index: i })).filter(item => item.index !== index).slice(0, 3);
+    const related = products.map((prod, i) => ({ prod, index: i })).filter(item => item.index !== index && (item.prod.supplier_source === p.supplier_source)).slice(0, 3);
     if (related.length) {
         related.forEach(({ prod: rp, index: relatedIndex }) => {
             const rImgs = Array.isArray(rp.images) && rp.images.length ? rp.images.filter(Boolean) : (rp.image_url ? [rp.image_url] : ['https://placehold.co/300x300?text=GM']);

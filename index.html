@@ -1592,8 +1592,11 @@ body.gm-admin-page-open{overflow:hidden!important}
     <div class="panel">
         <label for="productSearchInput" class="muted" style="margin:0 0 6px">Search the collection</label>
         <input id="productSearchInput" type="search" placeholder="Search by product name or category…" oninput="searchProductsByText(this.value)" style="margin-bottom:14px">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-    <h2 style="font-size:20px; margin:0;" id="productPageTitle">Premium Products</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+      <button type="button" class="secondary" onclick="backFromProducts()" aria-label="Go back" style="flex:0 0 auto;padding:7px 12px;font-size:18px;line-height:1;">←</button>
+      <h2 style="font-size:20px; margin:0;" id="productPageTitle">Premium Products</h2>
+    </div>
     <button class="secondary" onclick="loadProducts()" style="padding:5px 10px; font-size:12px;">Show All</button>
 </div>
         <div class="product-grid" id="productList">Loading products…</div>
@@ -3160,8 +3163,15 @@ async function fetchProductRatings(productIds) {
 }
 
 function openCategory(categoryName) {
+    window.gmCurrentProductCategory = String(categoryName || '');
     tab('products');
     filterProductsByCategory(categoryName);
+}
+
+function backFromProducts() {
+    // Return to the actual previous screen; keep search/category DOM intact.
+    if (history.state && history.state.page === 'products') { history.back(); return; }
+    tab('home', true);
 }
 
 function productMatchesCategory(product, categoryName) {
@@ -3243,9 +3253,10 @@ function renderProductCards(productsToRender, container) {
         if (hasHalfStar) starsHtml += '⯨';
         for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
         starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
-        const prioritizeImage = container.id === 'productList' ? cardIndex < 24 : cardIndex < 8;
+        const prioritizeImage = container.id === 'productList' ? cardIndex < 4 : cardIndex < 2;
+        const highPriorityImage = prioritizeImage && cardIndex < 2;
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
-            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="${prioritizeImage ? 'eager' : 'lazy'}" decoding="async" ${prioritizeImage ? 'fetchpriority="high"' : 'fetchpriority="auto"'}>
+            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="${prioritizeImage ? 'eager' : 'lazy'}" decoding="async" ${highPriorityImage ? 'fetchpriority="high"' : 'fetchpriority="auto"'}>
             <div class="product-info">
                 <h3>${esc(customerName)}</h3>
                 ${starsHtml}
@@ -4815,59 +4826,100 @@ async function loadAdmin() {
     if (!isAdmin || !sb) return;
     await Promise.all([checkSystemLockStatus(), loadDeliveryCharge(true)]);
 
-    const [m, p, o, w, r] = await Promise.all([
+    const [m, p, recentOrders, pendingOrders, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
         sb.from('products').select('*').order('created_at', { ascending: false }),
-        sb.from('orders').select('*').order('created_at', { ascending: false }).limit(20),
+        // Fetch EVERY order in server-side batches. 500 is only the batch size,
+        // never a total-order cap; Supabase's per-request row cap is respected.
+        (async () => {
+            const allRows = [];
+            const batchSize = 500;
+            for (let offset = 0; ; offset += batchSize) {
+                const { data, error } = await sb.from('orders').select('*')
+                    .order('created_at', { ascending: false })
+                    .order('id', { ascending: false })
+                    .range(offset, offset + batchSize - 1);
+                if (error) return { data: null, error };
+                const batch = data || [];
+                allRows.push(...batch);
+                if (batch.length < batchSize) break;
+            }
+            return { data: allRows, error: null };
+        })(),
+        Promise.resolve({ data: [], error: null }),
         sb.from('withdrawals').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(10),
         sb.from('product_reviews').select('*, products(name)').eq('is_approved', false).order('created_at', { ascending: false })
     ]);
 
+    // All orders are loaded; pending orders are sorted to the top below.
+    const adminOrderMap = new Map();
+    (recentOrders.data || []).forEach(order => adminOrderMap.set(String(order.id), order));
+    const adminOrdersRows = [...adminOrderMap.values()].sort((a, b) => {
+        const ap = String(a.status || '').toLowerCase() === 'pending' ? 0 : 1;
+        const bp = String(b.status || '').toLowerCase() === 'pending' ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
+
     if($('am')) $('am').textContent = '500';
     if($('ap')) $('ap').textContent = p.error ? '—' : String(p.data?.length || 0);
-    if($('ao')) $('ao').textContent = o.error ? '—' : String(o.data?.length || 0);
+    if($('ao')) $('ao').textContent = String(adminOrdersRows.length || 0);
 
     if($('adminOrders')) {
-        const adminBuyerIds = [...new Set((o.data || []).map(x => x.buyer_id).filter(Boolean))];
+        const adminBuyerIds = [...new Set(adminOrdersRows.map(x => x.buyer_id).filter(Boolean))];
         const adminBuyerNames = {};
+        // Buyer-name lookup is optional display data; its failure must never prevent Orders from rendering.
         if (adminBuyerIds.length) {
-            const { data: adminBuyerProfiles, error: adminBuyerProfilesError } = await sb.from('profiles').select('id, full_name').in('id', adminBuyerIds);
-            if (!adminBuyerProfilesError && adminBuyerProfiles) adminBuyerProfiles.forEach(profile => { adminBuyerNames[profile.id] = profile.full_name; });
+            try {
+                const { data: adminBuyerProfiles, error: adminBuyerProfilesError } = await sb.from('profiles').select('id, full_name').in('id', adminBuyerIds);
+                if (!adminBuyerProfilesError && adminBuyerProfiles) adminBuyerProfiles.forEach(profile => { adminBuyerNames[profile.id] = profile.full_name; });
+            } catch (buyerLookupError) {
+                console.warn('Admin order buyer-name lookup failed; rendering orders without names:', buyerLookupError);
+            }
         }
-        $('adminOrders').innerHTML = o.error ? esc(o.error.message) : (o.data || []).map(x => {
+        const orderRowsHtml = adminOrdersRows.map(x => {
             const date = x.created_at ? new Date(x.created_at).toLocaleString('en-GB') : '—';
-            const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()}`;
-            return `<div class="item admin-order-item" data-search="${esc(searchTxt)}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;">
+            const buyerName = adminBuyerNames[x.buyer_id] || 'Unknown Buyer';
+            const statusText = String(x.status || 'pending');
+            const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()} ${buyerName.toLowerCase()} ${statusText.toLowerCase()}`;
+            const isPending = statusText.toLowerCase() === 'pending';
+            return `<div class="item admin-order-item" data-search="${esc(searchTxt)}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;${isPending ? 'border:1px solid var(--gold)!important;' : ''}">
                 <div style="width:100%; display:flex; justify-content:space-between;">
-                    <b>Order …${esc(String(x.id).slice(-4))}</b>
-                    <span class="pill">${esc(x.status || 'pending')}</span>
+                    <b>Order …${esc(String(x.id).slice(-4))}${isPending ? ' • NEEDS ACTION' : ''}</b>
+                    <span class="pill">${esc(statusText)}</span>
                 </div>
                 <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
-                    <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(adminBuyerNames[x.buyer_id] || 'Unknown Buyer')}</span><br>
+                    <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(buyerName)}</span><br>
                     <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
                     <b>Amount:</b> ${convertMoney(x.total_usd ?? (Number(x.unit_price_usd || 0) * Number(x.quantity || 1)))}<br>
                     <b>Date:</b> ${esc(date)}
                 </div>
             </div>`;
-        }).join('') || 'No orders yet.';
+        }).join('');
+        const orderLoadErrors = [recentOrders.error].filter(Boolean).map(err => err.message);
+        $('adminOrders').innerHTML = (orderRowsHtml || 'No orders yet.') + (orderLoadErrors.length ? `<div class="status error" style="margin-top:10px;">Order loading warning: ${esc(orderLoadErrors.join(' | '))}</div>` : '');
 
         $('adminOrders').querySelectorAll('[data-order]').forEach(el => {
-            const order = (o.data || []).find(r => String(r.id) === el.dataset.order);
+            const order = adminOrdersRows.find(row => String(row.id) === el.dataset.order);
             if (order) {
                 el.onclick = async function(e) {
                     e.preventDefault();
-                    // orders query no longer embeds products; find the product from the products query result
                     const orderProduct = (p.data || []).find(product => String(product.id) === String(order.product_id));
                     const prodName = orderProduct?.name || 'Unknown Product';
                     const prodImg = orderProduct?.images?.[0] || orderProduct?.image_url || 'https://placehold.co/100x100?text=Product';
-                    // خریدار کا نام نکالیں
-                    let buyerName = 'Unknown Buyer';
-                    const { data: bName } = await sb.rpc('get_order_buyer_name', { p_order_id: order.id });
-                    if (bName) buyerName = bName;
-                    showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName, order.product_id);
+                    let buyerName = adminBuyerNames[order.buyer_id] || 'Unknown Buyer';
+                    try {
+                        const { data: bName, error: buyerNameError } = await sb.rpc('get_order_buyer_name', { p_order_id: order.id });
+                        if (!buyerNameError && bName) buyerName = bName;
+                    } catch (buyerNameError) {
+                        console.warn('Order detail buyer-name lookup failed:', buyerNameError);
+                    }
+                    await showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName, order.product_id);
                 };
             }
         });
+        window.gmAdminOrdersPage = 1;
+        gmUpdateAdminOrdersPager();
     }
 
     if($('adminWithdrawals')) {
@@ -5717,12 +5769,14 @@ async function loadApprovedReviews(productId) {
 }
 
 function closeProductView() {
+    // Use the browser/app back stack so the previous category, search and scroll remain.
+    if (history.state && history.state.page === 'product') { history.back(); return; }
     $('productViewPage').classList.add('hidden');
     document.body.style.overflow = '';
     checkoutData = null;
     const waBtn = document.querySelector('.whatsapp-float');
     if (waBtn) waBtn.style.display = 'flex';
-    history.replaceState({ page: 'home' }, '', window.location.pathname);
+    tab('products', true);
 }
 
 function backToProductView() {
@@ -6338,6 +6392,7 @@ function restoreHistoryPage(page) {
         document.body.style.overflow = 'hidden';
         return;
     }
+    if (page !== 'checkout' && page !== 'product') checkoutData = null;
     tab(validTabs.includes(page) ? page : 'home', true);
 }
 
@@ -7122,14 +7177,44 @@ loadAdmin = async function() {
     await loadRankBonusSettings();
 };
 
-function filterAdminOrders() {
+// Admin Orders: all records are fetched in batches; this is display pagination only.
+window.gmAdminOrdersPage = 1;
+window.gmAdminOrdersPageSize = 500;
+function gmUpdateAdminOrdersPager() {
+    const host = document.getElementById('adminOrders');
+    if (!host) return;
     const input = document.getElementById('adminOrderSearchInput');
-    if (!input) return;
-    const term = input.value.toLowerCase().trim();
-    document.querySelectorAll('.admin-order-item').forEach(item => {
-        const searchData = item.getAttribute('data-search') || '';
-        item.style.display = searchData.includes(term) ? 'flex' : 'none';
-    });
+    const term = String(input?.value || '').toLowerCase().trim();
+    const all = Array.from(host.querySelectorAll('.admin-order-item'));
+    const filtered = all.filter(item => (item.getAttribute('data-search') || '').includes(term));
+    const pageSize = Math.max(1, Number(window.gmAdminOrdersPageSize) || 500);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    window.gmAdminOrdersPage = Math.min(Math.max(1, Number(window.gmAdminOrdersPage) || 1), totalPages);
+    const start = (window.gmAdminOrdersPage - 1) * pageSize;
+    const end = Math.min(start + pageSize, filtered.length);
+    const visible = new Set(filtered.slice(start, end));
+    all.forEach(item => { item.style.display = visible.has(item) ? 'flex' : 'none'; });
+    let pager = document.getElementById('gmAdminOrdersPager');
+    if (!pager) { pager = document.createElement('div'); pager.id = 'gmAdminOrdersPager'; host.appendChild(pager); }
+    if (!filtered.length) {
+      pager.innerHTML = '<div class="muted" style="text-align:center;padding:16px 8px;">کوئی آرڈر نہیں ملا۔</div>';
+      return;
+    }
+    const pages = new Set([1, totalPages, window.gmAdminOrdersPage-2, window.gmAdminOrdersPage-1, window.gmAdminOrdersPage, window.gmAdminOrdersPage+1, window.gmAdminOrdersPage+2]);
+    const nums = [...pages].filter(n => n >= 1 && n <= totalPages).sort((a,b)=>a-b);
+    let buttons = ''; let last = 0;
+    nums.forEach(n => { if (last && n > last + 1) buttons += '<span style="padding:6px;color:var(--muted);">…</span>'; buttons += `<button type="button" onclick="gmAdminOrdersGoPage(${n})" aria-current="${n===window.gmAdminOrdersPage?'page':'false'}" style="min-width:38px;min-height:38px;padding:7px 10px;border-radius:9px;border:1px solid ${n===window.gmAdminOrdersPage?'var(--gold)':'var(--line)'};background:${n===window.gmAdminOrdersPage?'var(--gold)':'#0b2116'};color:${n===window.gmAdminOrdersPage?'#102016':'var(--ink)'};font-weight:800;">${n}</button>`; last=n; });
+    pager.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0 4px;padding:14px 8px 22px;border-top:1px solid var(--line);"><small class="muted">Showing ${start+1}–${end} of ${filtered.length.toLocaleString()} orders</small><div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;"><button type="button" onclick="gmAdminOrdersGoPage(${window.gmAdminOrdersPage-1})" ${window.gmAdminOrdersPage===1?'disabled':''} style="min-height:38px;padding:7px 11px;border-radius:9px;border:1px solid var(--gold);background:#0b2116;color:var(--gold);">‹ Previous</button>${buttons}<button type="button" onclick="gmAdminOrdersGoPage(${window.gmAdminOrdersPage+1})" ${window.gmAdminOrdersPage===totalPages?'disabled':''} style="min-height:38px;padding:7px 11px;border-radius:9px;border:1px solid var(--gold);background:#0b2116;color:var(--gold);">Next ›</button></div></div>`;
+}
+function gmAdminOrdersGoPage(page) {
+    window.gmAdminOrdersPage = Math.max(1, Number(page) || 1);
+    gmUpdateAdminOrdersPager();
+    const host = document.getElementById('adminOrders');
+    if (host) host.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function filterAdminOrders() {
+    window.gmAdminOrdersPage = 1;
+    gmUpdateAdminOrdersPager();
 }
 
 
@@ -8193,4 +8278,13 @@ window.saveGMMemberProfile = async function(){
 .gm-profile-edit-card .gm-save-profile{width:100%;margin-top:16px;background:linear-gradient(120deg,#f4df9c,#bd8730)!important;color:#172013!important;font-weight:900;border:1px solid #ffe5a1}
 .gm-profile-edit-card .status{margin-top:12px;white-space:normal;overflow-wrap:anywhere;color:#e8cb7d}
 @media(max-width:380px){.gm-edit-two{grid-template-columns:1fr}.gm-profile-edit-card{padding:13px}}
+</style>
+
+<style id="gm-orders-pagination-and-back-fix">
+#adminOrders{padding-bottom:30px!important;overflow:visible!important;scroll-margin-top:16px}
+#adminOrders .admin-order-item:last-of-type{margin-bottom:24px!important}
+#gmAdminOrdersPager{display:block!important;width:100%;min-height:70px;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important;clear:both}
+#products .panel{padding-bottom:28px!important}
+#products #productList{padding-bottom:18px!important}
+#productViewPage>div:first-child button{min-width:44px;min-height:44px;border-radius:10px!important;background:rgba(229,184,83,.12)!important;border:1px solid rgba(229,184,83,.5)!important;color:#f5d47f!important}
 </style>

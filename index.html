@@ -1767,6 +1767,12 @@ body.gm-admin-page-open{overflow:hidden!important}
         <div class="admin-subpage hidden" id="adminSub-products-placement">
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('products')">← Products Menu</button>
           <div class="admin-info-card"><h3>Homepage Product Placement</h3><p>نئی پروڈکٹ شامل کرتے وقت Featured، New Arrivals، Premium اور Best Sellers میں سے مطلوبہ جگہ منتخب کریں۔ موجودہ پروڈکٹس کی جگہ تبدیل کرنے کے لیے Product Manager میں متعلقہ پروڈکٹ Edit کریں۔</p><button class="primary" type="button" onclick="openAdminSubpage('products','catalog')">Open Product Manager</button></div>
+        <h3 style="margin-top:20px;">GM Network Image CDN</h3>
+        <div class="admin-info-card" style="margin:10px 0;">
+          <p>یہ ٹول موجودہ CJ، عام اور دیگر پروڈکٹس کی بیرونی تصاویر کو GM Network کے اپنے Supabase Storage میں محفوظ کرے گا، تاکہ ہر وزیٹر کے موبائل پر بار بار supplier سرور سے تصویر ڈاؤن لوڈ نہ ہو۔ Markaz کے لیے صرف Admin-approved image_url استعمال ہوگا۔</p>
+          <button class="primary" type="button" onclick="gmCacheAllProductImages()">Optimize & Cache All Product Images</button>
+          <div id="gmImageCacheStatus" class="status" style="margin-top:8px;">پہلے Supabase میں gm-image-cache Edge Function deploy کریں، پھر یہ بٹن دبائیں۔</div>
+        </div>
         <h3 style="margin-top:20px;">All Products List</h3>
         <div id="adminManageProducts" class="muted">Loading…</div>
         </div>
@@ -3237,9 +3243,9 @@ function renderProductCards(productsToRender, container) {
         if (hasHalfStar) starsHtml += '⯨';
         for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
         starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
-        const prioritizeImage = container.id === 'productList' ? cardIndex < 8 : cardIndex < 2;
+        const prioritizeImage = container.id === 'productList' ? cardIndex < 24 : cardIndex < 8;
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
-            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="${prioritizeImage ? 'eager' : 'lazy'}" decoding="async" ${prioritizeImage ? 'fetchpriority="high"' : 'fetchpriority="low"'}>
+            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="${prioritizeImage ? 'eager' : 'lazy'}" decoding="async" ${prioritizeImage ? 'fetchpriority="high"' : 'fetchpriority="auto"'}>
             <div class="product-info">
                 <h3>${esc(customerName)}</h3>
                 ${starsHtml}
@@ -4767,6 +4773,44 @@ async function toggleEmergencyLock() {
     }
 }
 
+
+async function gmCacheAllProductImages() {
+    const statusEl = $('gmImageCacheStatus');
+    if (!isAdmin || !sb) {
+        if (statusEl) statusEl.textContent = 'صرف Admin یہ کام کر سکتا ہے۔';
+        return;
+    }
+    const ok = await gmConfirm('یہ عمل موجودہ پروڈکٹ تصاویر کو GM Network کے اپنے Storage میں کاپی کرے گا۔ اصل پروڈکٹ، آرڈر، قیمت یا کمیشن تبدیل نہیں ہوں گے۔ شروع کریں؟', 'Product Images Optimize کریں؟');
+    if (!ok) return;
+    let afterId = null, total = 0, copied = 0, failed = 0, batches = 0;
+    if (statusEl) statusEl.textContent = 'تصاویر اپنے GM Network Storage میں منتقل ہو رہی ہیں… براہ کرم صفحہ بند نہ کریں۔';
+    try {
+        while (true) {
+            const { data, error } = await sb.functions.invoke('gm-image-cache', {
+                body: { after_id: afterId, batch_size: 5 }
+            });
+            if (error) throw error;
+            if (!data || data.error) throw new Error(data?.error || 'Image cache function نے درست جواب نہیں دیا۔');
+            total += Number(data.processed || 0);
+            copied += Number(data.copied || 0);
+            failed += Number(data.failed || 0);
+            batches++;
+            afterId = data.next_after_id || null;
+            if (statusEl) statusEl.textContent = `پروڈکٹس چیک: ${total} · تصاویر محفوظ: ${copied} · ناکام لنکس: ${failed} · مرحلہ: ${batches}`;
+            if (data.done) break;
+            if (!afterId) throw new Error('اگلا batch cursor نہیں ملا؛ دوبارہ کوشش کریں۔');
+        }
+        if (statusEl) statusEl.textContent = `مکمل ہوگیا۔ پروڈکٹس چیک: ${total} · Storage میں منتقل تصاویر: ${copied} · ناکام/بلاک لنکس: ${failed}۔ ناکام لنکس کو اصل supplier سرور اجازت نہ دے تو وہ دستی طور پر بدلنے ہوں گے۔`;
+        window.gmProductsCacheLoaded = false;
+        if (typeof loadProducts === 'function') await loadProducts(true);
+        if (typeof loadGlobalProducts === 'function') await loadGlobalProducts(true);
+        if (typeof loadAdmin === 'function') await loadAdmin();
+    } catch (e) {
+        if (statusEl) statusEl.textContent = 'منتقلی مکمل نہیں ہوئی: ' + (e.message || String(e)) + '۔ پہلے gm-image-cache Edge Function deploy ہونے کی تصدیق کریں۔';
+        console.error('GM image cache error', e);
+    }
+}
+
 async function loadAdmin() {
     if (!isAdmin || !sb) return;
     await Promise.all([checkSystemLockStatus(), loadDeliveryCharge(true)]);
@@ -5504,7 +5548,10 @@ function openProductView(index) {
     imgs.forEach((img, i) => {
         const imgEl = document.createElement('img');
         imgEl.src = img; imgEl.alt = (p.name || 'Product') + ' image ' + (i + 1);
-        imgEl.loading = i === 0 ? 'eager' : 'lazy';
+        imgEl.loading = 'eager';
+        imgEl.decoding = 'async';
+        imgEl.referrerPolicy = 'no-referrer';
+        if (i === 0) imgEl.fetchPriority = 'high';
         imgEl.onerror = function () { this.onerror = null; this.src = 'https://placehold.co/600x600?text=Image+Unavailable'; };
         imgEl.onclick = () => openImageLightbox(img, imgs);
         slider.appendChild(imgEl);

@@ -2226,19 +2226,51 @@ function esc(v) {
     return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// DISPLAY-ONLY currency selector. All stored values and financial calculations remain in USD.
-const DISPLAY_CURRENCY_RATES = {
-    USD: 1,
-    USDT: 1,
-    PKR: 276.54,
-    INR: 94.06,
-    EUR: 0.8924,
-    GBP: 0.7446
-};
-const DISPLAY_CURRENCY_SYMBOLS = {
-    USD: '$', USDT: 'USDT ', PKR: 'Rs ', INR: '₹', EUR: '€', GBP: '£'
-};
+// CENTRAL LIVE EXCHANGE RATES: all display conversions and supplier imports use this one USD base.
+// The public rate feed is refreshed periodically; last successful rates are cached for offline fallback.
+const DISPLAY_CURRENCY_RATES = { USD:1, USDT:1, PKR:280, INR:83, EUR:0.92, GBP:0.79 };
+const DISPLAY_CURRENCY_SYMBOLS = { USD:'$', USDT:'USDT ', PKR:'Rs ', INR:'₹', EUR:'€', GBP:'£' };
 let selectedDisplayCurrency = 'USD';
+let GM_PKR_PER_USD = Number(DISPLAY_CURRENCY_RATES.PKR) || 280;
+window.GM_PKR_PER_USD = GM_PKR_PER_USD;
+let gmExchangeRateUpdatedAt = null;
+let gmExchangeRateRefreshPromise = null;
+function applyGmExchangeRates(rates, updatedAt) {
+    if (!rates || !(Number(rates.PKR) > 0)) return false;
+    for (const code of ['PKR','INR','EUR','GBP']) if (Number(rates[code]) > 0) DISPLAY_CURRENCY_RATES[code] = Number(rates[code]);
+    DISPLAY_CURRENCY_RATES.USD = 1; DISPLAY_CURRENCY_RATES.USDT = 1;
+    GM_PKR_PER_USD = Number(DISPLAY_CURRENCY_RATES.PKR);
+    window.GM_PKR_PER_USD = GM_PKR_PER_USD;
+    gmExchangeRateUpdatedAt = updatedAt || new Date().toISOString();
+    try { localStorage.setItem('gm_live_exchange_rates', JSON.stringify({rates:DISPLAY_CURRENCY_RATES,updatedAt:gmExchangeRateUpdatedAt})); } catch(e) {}
+    return true;
+}
+function loadCachedGmExchangeRates() {
+    try { const cached=JSON.parse(localStorage.getItem('gm_live_exchange_rates')||'null'); if(cached?.rates) applyGmExchangeRates(cached.rates,cached.updatedAt); } catch(e) {}
+}
+async function refreshGmExchangeRates(force=false) {
+    if (gmExchangeRateRefreshPromise) return gmExchangeRateRefreshPromise;
+    const last=gmExchangeRateUpdatedAt ? Date.parse(gmExchangeRateUpdatedAt) : 0;
+    if (!force && last && Date.now()-last < 30*60*1000) return DISPLAY_CURRENCY_RATES;
+    gmExchangeRateRefreshPromise=(async()=>{
+        try {
+            const response=await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'});
+            if(!response.ok) throw new Error('Exchange rate service returned '+response.status);
+            const data=await response.json();
+            if(data.result!=='success'||!data.rates) throw new Error('Live exchange rates unavailable');
+            applyGmExchangeRates({PKR:data.rates.PKR,INR:data.rates.INR,EUR:data.rates.EUR,GBP:data.rates.GBP},data.time_last_update_utc||new Date().toISOString());
+            if(typeof loadProducts==='function') loadProducts();
+            if(user&&typeof loadProfile==='function') loadProfile();
+            if(user&&typeof loadMyAccountPage==='function') loadMyAccountPage();
+            if(user&&typeof loadWallet==='function') loadWallet();
+            if(isAdmin&&typeof loadAdmin==='function') loadAdmin();
+            return DISPLAY_CURRENCY_RATES;
+        } catch(e) { console.warn('GM live exchange-rate refresh failed; using last saved rate.',e); return DISPLAY_CURRENCY_RATES; }
+        finally { gmExchangeRateRefreshPromise=null; }
+    })();
+    return gmExchangeRateRefreshPromise;
+}
+loadCachedGmExchangeRates();
 
 function setDisplayCurrency(currency) {
     const allowed = Object.keys(DISPLAY_CURRENCY_RATES);
@@ -2266,6 +2298,16 @@ function initializeDisplayCurrency() {
 
 // Restore the user's display-only currency preference after its constants are initialized.
 initializeDisplayCurrency();
+// Always check the central rate feed on app startup; cached data is only an offline fallback.
+refreshGmExchangeRates(true);
+setInterval(()=>refreshGmExchangeRates(true),30*60*1000);
+
+function gmProductUsdPrice(product) {
+    if (product && String(product.supplier_source || '').trim().toLowerCase() === 'markaz pakistan' && Number(product.price_pkr) > 0 && Number(GM_PKR_PER_USD) > 0) {
+        return Number(product.price_pkr) / Number(GM_PKR_PER_USD);
+    }
+    return Number(product?.price_usd || 0);
+}
 
 function convertMoney(usdAmount) {
     const amount = Number(usdAmount || 0);
@@ -3145,6 +3187,16 @@ function filterProductsByCategory(categoryName) {
 function gmCustomerText(value) {
     return String(value ?? '').replace(/\bmarkaz(?:\s+pakistan)?\b/gi, '').replace(/(?:PKR|Rs\.?|₨)\s*[\d,]+(?:\.\d{1,2})?/gi, '').replace(/[|•·–—-]\s*(?:PKR|Rs\.?|₨)?\s*[\d,]+(?:\.\d{1,2})?\s*$/i, '').replace(/\s*[|•·–—-]\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
+function gmHandleProductImageError(img) {
+    if (!img) return;
+    let candidates = [];
+    try { candidates = JSON.parse(img.getAttribute('data-fallback-images') || '[]'); } catch (_) {}
+    const next = Number(img.dataset.fallbackIndex || 0) + 1;
+    img.dataset.fallbackIndex = String(next);
+    if (candidates[next]) { img.src = candidates[next]; return; }
+    img.onerror = null; img.src = 'https://placehold.co/600x600/0a1f15/e5b853?text=GM+NETWORK';
+}
+
 function renderProductCards(productsToRender, container) {
     if (!container) return;
     const ratingsMap = window.currentRatingsMap || {};
@@ -3152,7 +3204,8 @@ function renderProductCards(productsToRender, container) {
         const originalIndex = window.allProductsData.findIndex(prod => prod.id === p.id);
         const isMarkazProduct = p.supplier_source === 'Markaz Pakistan';
         // Supplier catalogue photos may contain supplier watermarks. Markaz items use only the GM-approved image_url; otherwise show a neutral GM placeholder.
-        const imgs = isMarkazProduct ? ((p.image_url ? [p.image_url] : (Array.isArray(p.images) ? p.images.filter(Boolean) : [])).length ? (p.image_url ? [p.image_url] : p.images.filter(Boolean)) : ['https://placehold.co/600x600/0a1f15/e5b853?text=GM+NETWORK']) : (Array.isArray(p.images) && p.images.length ? p.images : (p.image_url ? [p.image_url] : ['https://placehold.co/100x100?text=GM']));
+        const rawImages = [...(p.image_url ? [p.image_url] : []), ...(Array.isArray(p.images) ? p.images : [])].filter((u, i, a) => typeof u === 'string' && /^https?:\/\//i.test(u) && a.indexOf(u) === i);
+        const imgs = rawImages.length ? rawImages : ['https://placehold.co/600x600/0a1f15/e5b853?text=GM+NETWORK'];
         const customerName = gmCustomerText(p.name) || 'GM Network Product';
         // Keep the original demo-rating fallback so zero/NULL DB values never hide stars.
         const storedRating = Number(p.base_rating || 0);
@@ -3167,14 +3220,14 @@ function renderProductCards(productsToRender, container) {
             : baseRating;
         let priceHtml = '';
         if (p.discount_percent && Number(p.discount_percent) > 0) {
-            const originalPrice = Number(p.price_usd);
+            const originalPrice = gmProductUsdPrice(p);
             const discountedPrice = originalPrice - (originalPrice * (Number(p.discount_percent) / 100));
             priceHtml = `<div class="price" style="display:flex; flex-direction:column; gap:2px;">
                             <span style="text-decoration:line-through; color:#888; font-size:12px;">${convertMoney(originalPrice)}</span>
                             <span style="color:#4CAF50; font-weight:bold; font-size:16px;">${convertMoney(discountedPrice)}</span>
                          </div>`;
         } else {
-            priceHtml = `<div class="price">${convertMoney(p.price_usd)}</div>`;
+            priceHtml = `<div class="price">${convertMoney(gmProductUsdPrice(p))}</div>`;
         }
         const fullStars = Math.floor(finalRating);
         const hasHalfStar = (finalRating - fullStars) >= 0.25 && (finalRating - fullStars) < 0.75;
@@ -3185,7 +3238,7 @@ function renderProductCards(productsToRender, container) {
         for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
         starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
-            <img src="${esc(imgs[0])}" class="main-img" alt="${esc(p.name)}" loading="lazy">
+            <img src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="lazy">
             <div class="product-info">
                 <h3>${esc(customerName)}</h3>
                 ${starsHtml}
@@ -3195,6 +3248,7 @@ function renderProductCards(productsToRender, container) {
             <div style="display:flex;gap:7px;margin-top:8px;">
                 <button class="primary buy-btn" type="button" ${p.active ? `onclick="event.stopPropagation();openProductView(${originalIndex})"` : 'disabled'} style="flex:1;${p.active ? 'background:var(--g2);color:var(--gold);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active ? 'View Details' : 'SOLD OUT'}</button>
                 <button class="primary buy-btn" type="button" ${p.active ? '' : 'disabled'} onclick="event.stopPropagation();addProductToCartById('${esc(p.id)}')" style="flex:1;${p.active ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">Add to Cart</button>
+                ${gmCodSupplierKind(p.supplier_source)==='markaz' ? `<button class="primary buy-btn gm-product-cod-btn" type="button" ${p.active && p.cod_enabled===true ? '' : 'disabled'} onclick="event.stopPropagation();buyMarkazWithCOD('${esc(p.id)}')" title="${p.cod_enabled===true?'Cash on Delivery':'COD admin setting is OFF'}" style="flex:1;background:${p.active && p.cod_enabled===true?'#174a2e':'#222'};color:${p.active && p.cod_enabled===true?'#f0d27d':'#888'};border:1px solid ${p.active && p.cod_enabled===true?'var(--gold)':'#555'};">COD</button>` : ''}
             </div>
         </div>`;
     }).join('') || '<p class="muted">No products found in this category.</p>';
@@ -3235,20 +3289,28 @@ function searchFromHome() {
     searchProductsByText(q);
 }
 
-async function loadProducts() {
+async function loadProducts(forceRefresh = false) {
     if (!sb) return;
     const el = $('productList');
-    const { data, error } = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
-    if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
+    const cacheFresh = !forceRefresh && window.gmProductsCacheLoaded === true && (Date.now() - Number(window.gmProductsCacheAt || 0) < 5 * 60 * 1000) && Array.isArray(window.allProductsData);
+    let data = window.allProductsData || [], error = null;
+    if (!cacheFresh) {
+        const result = await sb.from('products').select('*').neq('name', 'WEBSITE_BANNERS').order('created_at', { ascending: false });
+        data = result.data; error = result.error;
+        if (error) { el.innerHTML = '<span class="status error">Could not load products: ' + esc(error.message) + '</span>'; return; }
+        window.gmProductsCacheLoaded = true; window.gmProductsCacheAt = Date.now();
+    }
 
     window.allProductsData = data || []; // all products retained for cart/order lookup
     window.standardProductsData = window.allProductsData.filter(p => p.supplier_source !== 'CJ Dropshipping' && p.supplier_source !== 'Markaz Pakistan');
     window.globalProductsData = window.allProductsData.filter(p => ['CJ Dropshipping','Markaz Pakistan'].includes(p.supplier_source) && p.active !== false && (p.supplier_source !== 'Markaz Pakistan' || p.markaz_stock_status === 'in_stock'));
     if ($('productPageTitle')) $('productPageTitle').textContent = 'Premium Products';
 
-    const productIds = window.standardProductsData.map(p => p.id);
-    window.currentRatingsMap = await fetchProductRatings(productIds);
-    await loadHomeCustomerReviews();
+    if (!cacheFresh || !window.currentRatingsMap) {
+        const productIds = window.standardProductsData.map(p => p.id);
+        const [, ratings] = await Promise.all([loadHomeCustomerReviews(), fetchProductRatings(productIds)]);
+        window.currentRatingsMap = ratings || {};
+    }
 
     renderProductCards(window.standardProductsData, el);
 
@@ -3321,7 +3383,7 @@ function loadPremiumSliders() {
     const html = selected.map(p => {
         const index = products.findIndex(item => String(item.id) === String(p.id));
         const image = (Array.isArray(p.images) && p.images.find(Boolean)) || p.image_url || 'https://placehold.co/600x400?text=GM+Network';
-        const price = Math.max(0, Number(p.price_usd || 0));
+        const price = Math.max(0, gmProductUsdPrice(p));
         const discount = Math.min(90, Math.max(0, Number(p.discount_percent || 0)));
         const salePrice = price * (1 - discount / 100);
         const oldPriceHtml = discount > 0 ? `<span class="old-price">${convertMoney(price)}</span>` : '';
@@ -3886,7 +3948,7 @@ function gmRenderGlobalProductCards(items, container) {
     const name = gmCustomerText(p.name) || 'GM Network Product';
     const rating = Math.max(0, Math.min(5, Number(p.base_rating) || 5));
     const reviews = Number(p.base_reviews_count) || 0;
-    const price = convertMoney(p.price_usd);
+    const price = convertMoney(gmProductUsdPrice(p));
     return `<article class="product-card gm-global-compact-card" role="button" tabindex="0" aria-label="${esc(name)}" onclick="${openCard}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${openCard}}">
       <img src="${esc(imgs[0])}" class="main-img" alt="${esc(name)}" loading="lazy">
       <div class="product-info">
@@ -3999,18 +4061,26 @@ function searchGlobalProducts(value){
   const matches=q?all.filter(p=>[p.name,p.category,p.category_folder,p.description].some(v=>String(v||'').toLowerCase().includes(q))):all;
   const list=$('globalProductList');if(list){list.style.display='grid';gmRenderGlobalProductCards(matches,list);}
 }
+function gmCodSupplierKind(value) {
+  const source = String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (source.includes('markaz')) return 'markaz';
+  if (source.includes('cj')) return 'cj';
+  return '';
+}
+
 async function loadGlobalAdminProducts() {
   const el = $('globalAdminProducts');
   if (!el || !sb || !isAdmin) return;
   el.innerHTML = '<p class="muted">Loading Global Products…</p>';
-  const { data, error } = await sb.from('products').select('id,name,category,category_folder,active,price_usd,cj_cost_usd,cj_product_id,cj_product_sku,cj_source_url,cj_stock_quantity,markaz_cost_usd,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,supplier_source,images,image_url').in('supplier_source',['CJ Dropshipping','Markaz Pakistan']).order('created_at',{ascending:false});
+  // Use case-insensitive partial matching so legacy supplier labels / extra spaces do not hide COD controls.
+  const { data, error } = await sb.from('products').select('id,name,category,category_folder,active,price_usd,cod_enabled,cj_cost_usd,cj_product_id,cj_product_sku,cj_source_url,cj_stock_quantity,markaz_cost_usd,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,supplier_source,images,image_url').or('supplier_source.ilike.%cj%,supplier_source.ilike.%markaz%').order('created_at',{ascending:false});
   if (error) { el.innerHTML = '<p class="status error">' + esc(error.message) + '</p>'; return; }
-  window.globalAdminProductsData = data || [];
+  window.globalAdminProductsData = (data || []).filter(p => !!gmCodSupplierKind(p.supplier_source));
   el.innerHTML = window.globalAdminProductsData.map(p => {
     const img = (Array.isArray(p.images) && p.images[0]) || p.image_url || 'https://placehold.co/90x90?text=CJ';
-    const isMarkaz=p.supplier_source==='Markaz Pakistan';
+    const isMarkaz=gmCodSupplierKind(p.supplier_source)==='markaz';
     const url = isMarkaz ? (p.markaz_app_url || markazAppShareUrl({sku:p.markaz_product_sku,source_url:p.markaz_source_url}) || '') : (p.cj_source_url || (p.cj_product_id ? `https://www.cjdropshipping.com/product/${encodeURIComponent(p.cj_product_id)}.html` : 'https://www.cjdropshipping.com/'));
-    return `<div class="item" style="align-items:flex-start;gap:9px;"><img src="${esc(img)}" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;"><div style="flex:1;min-width:0;"><b>${esc(p.name || 'CJ Product')}</b><div class="muted">${esc(p.category_folder||p.category||'Other')} · ${esc(p.supplier_source||'')} · SKU ${esc(isMarkaz?p.markaz_product_sku:p.cj_product_sku||'—')}</div><div class="muted">Cost $${Number(isMarkaz?p.markaz_cost_usd:p.cj_cost_usd||0).toFixed(2)} · Sell $${Number(p.price_usd||0).toFixed(2)} · Stock ${isMarkaz?esc(p.markaz_stock_status||'unknown'):Number(p.cj_stock_quantity||0)}</div><div class="muted">${p.active ? 'Published' : 'Draft / Unpublished'}</div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);font-size:12px;">↗ ${isMarkaz?'Open in Markaz App':'Open supplier product'}</a>`:(isMarkaz?'<small class="muted">Markaz app link unavailable</small>':'')}</div><div style="display:flex;flex-direction:column;gap:5px;"><button class="secondary small-btn" onclick="editProduct('${esc(p.id)}')">Edit</button><button class="secondary small-btn" onclick="toggleProduct('${esc(p.id)}',${p.active ? 'true':'false'})">${p.active ? 'Unpublish':'Publish'}</button><button class="secondary small-btn" style="color:#f77" onclick="deleteProduct('${esc(p.id)}')">Delete</button></div></div>`;
+    return `<div class="item" style="align-items:flex-start;gap:9px;"><img src="${esc(img)}" onerror="this.onerror=null;this.src='https://placehold.co/90x90/0a1f15/e5b853?text=GM';" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;"><div style="flex:1;min-width:0;"><b>${esc(p.name || 'CJ Product')}</b><div class="muted">${esc(p.category_folder||p.category||'Other')} · ${esc(p.supplier_source||'')} · SKU ${esc(isMarkaz?p.markaz_product_sku:p.cj_product_sku||'—')}</div><div class="muted">Cost $${Number(isMarkaz?p.markaz_cost_usd:p.cj_cost_usd||0).toFixed(2)} · Sell $${Number(p.price_usd||0).toFixed(2)} · Stock ${isMarkaz?esc(p.markaz_stock_status||'unknown'):Number(p.cj_stock_quantity||0)}</div><div class="muted">${p.active ? 'Published' : 'Draft / Unpublished'}</div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);font-size:12px;">↗ ${isMarkaz?'Open in Markaz App':'Open supplier product'}</a>`:(isMarkaz?'<small class="muted">Markaz app link unavailable</small>':'')}</div><div style="display:flex;flex-direction:column;gap:5px;min-width:92px;"><button class="secondary small-btn" onclick="editProduct('${esc(p.id)}')">Edit Product</button>${gmCodSupplierKind(p.supplier_source)?`<button class="secondary small-btn" style="border-color:${p.cod_enabled?'#28a765':'#b98b3c'}!important;color:${p.cod_enabled?'#68e39a':'#f0d18a'}!important;" onclick="toggleProductCod('${esc(p.id)}',${p.cod_enabled===true?'true':'false'})">🚚 COD ${p.cod_enabled?'ON':'OFF'}</button>`:''}<button class="secondary small-btn" onclick="toggleProduct('${esc(p.id)}',${p.active ? 'true':'false'})">${p.active ? 'Unpublish':'Publish'}</button><button class="secondary small-btn" style="color:#f77" onclick="deleteProduct('${esc(p.id)}')">Delete</button></div></div>`;
   }).join('') || '<p class="muted">ابھی کوئی Global Product امپورٹ نہیں ہوئی۔</p>';
 }
 
@@ -4120,12 +4190,12 @@ async function previewMarkazDirectUrl(){
 }
 async function loadMarkazAdminProducts(){
   const el=$('markazAdminProducts');if(!el||!isAdmin||!sb)return;el.innerHTML='<p class="muted">Loading Markaz products…</p>';
-  const {data,error}=await sb.from('products').select('id,name,active,markaz_admin_enabled,price_pkr,markaz_cost_pkr,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,images,image_url,show_in_new_arrivals,show_in_featured,show_in_premium').eq('supplier_source','Markaz Pakistan').order('created_at',{ascending:false});
+  const {data,error}=await sb.from('products').select('id,name,active,cod_enabled,markaz_admin_enabled,price_pkr,markaz_cost_pkr,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,images,image_url,show_in_new_arrivals,show_in_featured,show_in_premium').eq('supplier_source','Markaz Pakistan').order('created_at',{ascending:false});
   if(error){el.innerHTML='<p class="status error">'+markazEscape(error.message)+'</p>';return;}
   el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;"><button class="primary" type="button" onclick="restoreExistingMarkazImages()">Restore Missing Images</button><button class="secondary" type="button" onclick="hideExistingMarkazSupplierImages()">Hide Supplier Images</button></div><div class="gm-markaz-admin-grid">' + (data||[]).map(p=>{
     const gallery=Array.isArray(p.images)?p.images.filter(Boolean):[];const img=p.image_url||gallery[0]||'https://placehold.co/600x600/0a1f15/e5b853?text=GM+NETWORK';
     const stock=p.markaz_stock_status||'unknown';const appUrl=p.markaz_app_url||markazAppShareUrl({sku:p.markaz_product_sku,source_url:p.markaz_source_url});
-    return `<article class="gm-markaz-admin-card"><img class="gm-markaz-admin-photo" src="${markazEscape(img)}" alt="${markazEscape(p.name)}" loading="lazy"><div class="gm-markaz-admin-body"><b class="gm-markaz-admin-name" title="${markazEscape(p.name)}">${markazEscape(gmCustomerText(p.name)||'Markaz Product')}</b><div class="gm-markaz-admin-meta">SKU: ${markazEscape(p.markaz_product_sku||'—')} · ${gallery.length|| (p.image_url?1:0)} image(s)</div><div class="gm-markaz-admin-meta">Cost PKR ${Number(p.markaz_cost_pkr||0).toLocaleString('en-PK')} · Sell PKR ${Number(p.price_pkr||0).toLocaleString('en-PK')}</div><div class="gm-markaz-admin-status">${markazEscape(stock.replaceAll('_',' ').toUpperCase())} · ${p.active?'PUBLISHED':'UNPUBLISHED'}</div>${appUrl?`<a class="gm-markaz-app-link" href="${markazEscape(appUrl)}" target="_blank" rel="noopener noreferrer">Open in Markaz App ↗</a>`:'<small class="muted">App link unavailable for this product</small>'}<div class="gm-markaz-actions"><button class="secondary small-btn" onclick="refreshMarkazProductDetails('${markazEscape(p.id)}')">Refresh Gallery</button><button class="secondary small-btn" onclick="setMarkazStock('${markazEscape(p.id)}','in_stock')">In Stock</button><button class="secondary small-btn" onclick="setMarkazStock('${markazEscape(p.id)}','out_of_stock')">Out of Stock</button><button class="secondary small-btn" onclick="setMarkazPublish('${markazEscape(p.id)}',${p.markaz_admin_enabled===false?'false':'true'})">${p.markaz_admin_enabled===false?'Publish':'Unpublish'}</button><button class="secondary small-btn" onclick="toggleHomeSectionProduct('${markazEscape(p.id)}','show_in_new_arrivals','New Arrivals')">${p.show_in_new_arrivals?'Remove Arrival':'New Arrival'}</button><button class="secondary small-btn" onclick="toggleHomeSectionProduct('${markazEscape(p.id)}','show_in_featured','Featured')">${p.show_in_featured?'Remove Featured':'Featured'}</button><button class="secondary small-btn" onclick="togglePremiumProduct('${markazEscape(p.id)}')">${p.show_in_premium?'Remove Special':'Special'}</button><button class="secondary small-btn gm-markaz-delete" onclick="deleteProduct('${markazEscape(p.id)}')">Delete</button></div></div></article>`;
+    return `<article class="gm-markaz-admin-card"><img class="gm-markaz-admin-photo" src="${markazEscape(img)}" alt="${markazEscape(p.name)}" loading="lazy"><div class="gm-markaz-admin-body"><b class="gm-markaz-admin-name" title="${markazEscape(p.name)}">${markazEscape(gmCustomerText(p.name)||'Markaz Product')}</b><div class="gm-markaz-admin-meta">SKU: ${markazEscape(p.markaz_product_sku||'—')} · ${gallery.length|| (p.image_url?1:0)} image(s)</div><div class="gm-markaz-admin-meta">Cost PKR ${Number(p.markaz_cost_pkr||0).toLocaleString('en-PK')} · Sell PKR ${Number(p.price_pkr||0).toLocaleString('en-PK')}</div><div class="gm-markaz-admin-status">${markazEscape(stock.replaceAll('_',' ').toUpperCase())} · ${p.active?'PUBLISHED':'UNPUBLISHED'}</div><div class="gm-markaz-admin-status" style="color:${p.cod_enabled===true?'#68e39a':'#f0d18a'};font-weight:800;">🚚 CASH ON DELIVERY: ${p.cod_enabled===true?'ON':'OFF'}</div>${appUrl?`<a class="gm-markaz-app-link" href="${markazEscape(appUrl)}" target="_blank" rel="noopener noreferrer">Open in Markaz App ↗</a>`:'<small class="muted">App link unavailable for this product</small>'}<div class="gm-markaz-actions"><button class="secondary small-btn" style="border-color:${p.cod_enabled===true?'#28a765':'#b98b3c'};color:${p.cod_enabled===true?'#68e39a':'#f0d18a'};" onclick="toggleProductCod('${markazEscape(p.id)}',${p.cod_enabled===true?'true':'false'})">🚚 COD ${p.cod_enabled===true?'ON':'OFF'} — ${p.cod_enabled===true?'Turn OFF':'Turn ON'}</button><button class="secondary small-btn" onclick="refreshMarkazProductDetails('${markazEscape(p.id)}')">Refresh Gallery</button><button class="secondary small-btn" onclick="setMarkazStock('${markazEscape(p.id)}','in_stock')">In Stock</button><button class="secondary small-btn" onclick="setMarkazStock('${markazEscape(p.id)}','out_of_stock')">Out of Stock</button><button class="secondary small-btn" onclick="setMarkazPublish('${markazEscape(p.id)}',${p.markaz_admin_enabled===false?'false':'true'})">${p.markaz_admin_enabled===false?'Publish':'Unpublish'}</button><button class="secondary small-btn" onclick="toggleHomeSectionProduct('${markazEscape(p.id)}','show_in_new_arrivals','New Arrivals')">${p.show_in_new_arrivals?'Remove Arrival':'New Arrival'}</button><button class="secondary small-btn" onclick="toggleHomeSectionProduct('${markazEscape(p.id)}','show_in_featured','Featured')">${p.show_in_featured?'Remove Featured':'Featured'}</button><button class="secondary small-btn" onclick="togglePremiumProduct('${markazEscape(p.id)}')">${p.show_in_premium?'Remove Special':'Special'}</button><button class="secondary small-btn gm-markaz-delete" onclick="deleteProduct('${markazEscape(p.id)}')">Delete</button></div></div></article>`;
   }).join('')+'</div>';
 }
 
@@ -4199,12 +4269,13 @@ async function setMarkazStock(id,status){
 async function openMarkazImportForm() {
   const p = window.markazPreviewData;
   if (!p || !isAdmin || !sb || !user) return;
-  const fx = Number(window.GM_PKR_PER_USD || 278);
+  await refreshGmExchangeRates(true);
+  const fx = Number(window.GM_PKR_PER_USD || GM_PKR_PER_USD);
   const {value: form} = await Swal.fire({
     title:'Markaz Product — GM Network', width:'min(650px,96vw)', background:'#0b1710', color:'#e8eee9',
-    html:`<div style="text-align:left;display:grid;gap:8px;"><b>${markazEscape(p.name)}</b>${(p.app_share_url||markazAppShareUrl(p))?`<a href="${markazEscape(p.app_share_url||markazAppShareUrl(p))}" target="_blank" rel="noopener noreferrer" style="display:block;padding:10px;border:1px solid #b88b32;border-radius:9px;color:#f0c66c;text-align:center;text-decoration:none;">↗ Open this product in Markaz App</a>`:''}<div class="muted">Markaz ویب قیمت: ${p.price_pkr?'PKR '+Number(p.price_pkr).toLocaleString('en-PK'):'دستیاب نہیں'} · یہ reseller cost کی ضمانت نہیں۔</div><label>Markaz کی اصل لاگت (PKR)</label><input id="mkCostPkr" type="number" min="1" step="1" value="" placeholder="Markaz پر تصدیق شدہ لاگت درج کریں" class="swal2-input" style="margin:0;width:100%;"><label>GM Network پر فروخت کی قیمت (PKR)</label><input id="mkSellPkr" type="number" min="1" step="1" value="${Number(p.price_pkr||0)||''}" placeholder="اپنی فروخت کی قیمت درج کریں" class="swal2-input" style="margin:0;width:100%;"><label>PKR فی USD شرح</label><input id="mkFx" type="number" min="1" step="0.01" value="${fx}" class="swal2-input" style="margin:0;width:100%;"><label>GM Network کیٹیگری / خودکار فولڈر</label><select id="mkCategory" class="swal2-select" style="margin:0;width:100%;">${(window.markazCategoriesData||[]).map(c=>`<option value="${markazEscape(c.name)}" ${c.name===(p.markaz_category_name||'')?'selected':''}>${markazEscape(c.name)}</option>`).join('')}<option value="Other Products">Other Products</option></select><label>GM Network کے لیے صاف پروڈکٹ تصویر کا URL (اختیاری)</label><input id="mkCleanImage" type="url" placeholder="اپنی صاف / بغیر سپلائر لوگو والی تصویر کا لنک" class="swal2-input" style="margin:0;width:100%;"><small class="muted">اصل سپلائر تصویر میں Markaz کا واٹرمارک ہو سکتا ہے؛ صاف GM تصویر نہ دیں تو کسٹمر کو GM کا سادہ placeholder نظر آئے گا۔</small><label><input id="mkPublish" type="checkbox"> میں نے اسٹاک چیک کر لیا ہے؛ GM Network پر شائع کریں</label><small style="color:#e5b853;">صرف اپنی تصدیق کے بعد شائع کریں۔ Markaz کا reseller rate آپ کے اکاؤنٹ میں مختلف ہو سکتا ہے۔</small></div>`,
+    html:`<div style="text-align:left;display:grid;gap:8px;"><b>${markazEscape(p.name)}</b>${(p.app_share_url||markazAppShareUrl(p))?`<a href="${markazEscape(p.app_share_url||markazAppShareUrl(p))}" target="_blank" rel="noopener noreferrer" style="display:block;padding:10px;border:1px solid #b88b32;border-radius:9px;color:#f0c66c;text-align:center;text-decoration:none;">↗ Open this product in Markaz App</a>`:''}<div class="muted">Markaz ویب قیمت: ${p.price_pkr?'PKR '+Number(p.price_pkr).toLocaleString('en-PK'):'دستیاب نہیں'} · یہ reseller cost کی ضمانت نہیں۔</div><label>Markaz کی اصل لاگت (PKR)</label><input id="mkCostPkr" type="number" min="1" step="1" value="" placeholder="Markaz پر تصدیق شدہ لاگت درج کریں" class="swal2-input" style="margin:0;width:100%;"><label>GM Network پر فروخت کی قیمت (PKR)</label><input id="mkSellPkr" type="number" min="1" step="1" value="${Number(p.price_pkr||0)||''}" placeholder="اپنی فروخت کی قیمت درج کریں" class="swal2-input" style="margin:0;width:100%;"><div class="muted" style="padding:8px;border:1px solid #b88b32;border-radius:8px;">Live USD/PKR rate: <b>Rs ${fx.toFixed(4)}</b> — automatically managed by GM Network</div><label>GM Network کیٹیگری / خودکار فولڈر</label><select id="mkCategory" class="swal2-select" style="margin:0;width:100%;">${(window.markazCategoriesData||[]).map(c=>`<option value="${markazEscape(c.name)}" ${c.name===(p.markaz_category_name||'')?'selected':''}>${markazEscape(c.name)}</option>`).join('')}<option value="Other Products">Other Products</option></select><label>GM Network کے لیے صاف پروڈکٹ تصویر کا URL (اختیاری)</label><input id="mkCleanImage" type="url" placeholder="اپنی صاف / بغیر سپلائر لوگو والی تصویر کا لنک" class="swal2-input" style="margin:0;width:100%;"><small class="muted">اصل سپلائر تصویر میں Markaz کا واٹرمارک ہو سکتا ہے؛ صاف GM تصویر نہ دیں تو کسٹمر کو GM کا سادہ placeholder نظر آئے گا۔</small><label><input id="mkPublish" type="checkbox"> میں نے اسٹاک چیک کر لیا ہے؛ GM Network پر شائع کریں</label><small style="color:#e5b853;">صرف اپنی تصدیق کے بعد شائع کریں۔ Markaz کا reseller rate آپ کے اکاؤنٹ میں مختلف ہو سکتا ہے۔</small></div>`,
     showCancelButton:true, confirmButtonText:'Import Product', cancelButtonText:'Cancel', confirmButtonColor:'#b88b32', focusConfirm:false,
-    preConfirm:()=>{const cost=Number(document.getElementById('mkCostPkr').value),sell=Number(document.getElementById('mkSellPkr').value),rate=Number(document.getElementById('mkFx').value);if(!(cost>0&&sell>0&&rate>0)){Swal.showValidationMessage('لاگت، فروخت کی قیمت اور ایکسچینج ریٹ درست درج کریں۔');return false;}return {cost,sell,rate,category:document.getElementById('mkCategory').value,cleanImage:String(document.getElementById('mkCleanImage').value||'').trim(),publish:document.getElementById('mkPublish').checked};}
+    preConfirm:()=>{const cost=Number(document.getElementById('mkCostPkr').value),sell=Number(document.getElementById('mkSellPkr').value),rate=Number(window.GM_PKR_PER_USD||GM_PKR_PER_USD);if(!(cost>0&&sell>0&&rate>0)){Swal.showValidationMessage('لاگت اور فروخت کی قیمت درست درج کریں۔');return false;}return {cost,sell,rate,category:document.getElementById('mkCategory').value,cleanImage:String(document.getElementById('mkCleanImage').value||'').trim(),publish:document.getElementById('mkPublish').checked};}
   });
   if (!form) return;
   const costUsd = form.cost / form.rate, sellUsd = form.sell / form.rate;
@@ -4219,7 +4290,7 @@ async function openMarkazImportForm() {
     const savedImages = suppliedCleanImage ? [suppliedCleanImage] : [...new Set((sourceImages.length ? sourceImages : [primarySourceImage]).filter(Boolean))];
     const cleanImage = savedImages[0] || null;
     const selectedCategory = String(form.category||p.markaz_category_name||'Other Products').trim() || 'Other Products';
-    const row = {name:customerName,description:customerDescription,markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Math.round(sellUsd*100)/100,price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Math.round(costUsd*100)/100,images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
+    const row = {name:customerName,description:customerDescription,markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Number(sellUsd.toFixed(8)),price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Number(costUsd.toFixed(8)),images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
     if (p.sku) { const {data:dupe,error:de}=await sb.from('products').select('id').eq('supplier_source','Markaz Pakistan').eq('markaz_product_sku',p.sku).maybeSingle(); if(de) throw de; if(dupe?.id){await gmPopup('یہ Markaz SKU پہلے سے امپورٹ ہے۔ ڈپلیکیٹ نہیں بنائی گئی۔','Already Imported','info');return;} }
     const {error}=await sb.from('products').insert(row); if(error) throw error;
     await gmPopup('Markaz پروڈکٹ GM Network میں محفوظ ہوگئی۔','Import Complete','success');
@@ -4691,8 +4762,7 @@ async function toggleEmergencyLock() {
 
 async function loadAdmin() {
     if (!isAdmin || !sb) return;
-    await checkSystemLockStatus();
-    await loadDeliveryCharge(true);
+    await Promise.all([checkSystemLockStatus(), loadDeliveryCharge(true)]);
 
     const [m, p, o, w, r] = await Promise.all([
         sb.from('profiles').select('id,full_name,member_code,points,total_commission,created_at').order('created_at', { ascending: false }).limit(20),
@@ -4833,6 +4903,7 @@ async function loadAdmin() {
                     </div>
                     <div class="row-actions" style="display:flex; flex-direction:column; gap:5px;">
                         <button class="secondary small-btn" data-edit="${esc(x.id)}">Edit</button>
+                        ${gmCodSupplierKind(x.supplier_source) ? `<button class="secondary small-btn" data-cod="${esc(x.id)}" style="border-color:${x.cod_enabled ? '#28a765' : '#b98b3c'}!important;color:${x.cod_enabled ? '#68e39a' : '#f0d18a'}!important;">🚚 COD ${x.cod_enabled ? 'ON' : 'OFF'}</button>` : ''}
                         <button class="secondary small-btn" data-toggle="${esc(x.id)}" style="color:${x.active ? '#f44336' : '#4CAF50'}">${x.active ? 'Mark Sold Out' : 'Mark Active'}</button>
                         <button class="secondary small-btn" data-premium="${esc(x.id)}" style="color:${x.show_in_premium ? '#4CAF50' : '#888'}">${x.show_in_premium ? '★ Remove from Premium' : '☆ Show in Premium'}</button>
                         <button class="secondary small-btn" data-featured="${esc(x.id)}" style="color:${x.show_in_featured ? '#4CAF50' : '#888'}">${x.show_in_featured ? '★ Remove from Featured' : '☆ Show in Featured'}</button>
@@ -4844,6 +4915,10 @@ async function loadAdmin() {
             }).join('');
             $('adminManageProducts').innerHTML = bulkHtml + catHtml + `<div id="adminProductsListContainer">${productsHtml || 'No products yet.'}</div>`;
             $('adminManageProducts').querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => editProduct(btn.dataset.edit));
+            $('adminManageProducts').querySelectorAll('[data-cod]').forEach(btn => {
+                const product = window.allAdminProducts.find(x => String(x.id) === btn.dataset.cod);
+                btn.onclick = () => { if (product) toggleProductCod(product.id, product.cod_enabled === true); };
+            });
             $('adminManageProducts').querySelectorAll('[data-toggle]').forEach(btn => {
                 const product = window.allAdminProducts.find(x => String(x.id) === btn.dataset.toggle);
                 btn.onclick = () => { if (product) toggleProduct(product.id, product.active); };
@@ -5238,12 +5313,30 @@ async function saveProductEdit() {
     const { error } = await sb.from('products').update(update).eq('id', id);
     if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error');
     status('editProductStatus', 'Product updated successfully.', 'ok');
-    await loadProducts(); await loadAdmin(); await loadGlobalProducts(); await loadGlobalAdminProducts();
+    window.gmProductsCacheLoaded = false;
+    await Promise.all([loadProducts(true), loadAdmin(), loadGlobalProducts(), loadGlobalAdminProducts()]);
     setTimeout(() => $('editProductModal').classList.add('hidden'), 700);
 }
 
-async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { await loadAdmin(); await loadProducts(); await loadGlobalProducts(); await loadGlobalAdminProducts(); } }
-async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); await loadAdmin(); await loadProducts(); await loadGlobalProducts(); await loadGlobalAdminProducts(); } }
+async function toggleProductCod(id, current) {
+    if (!isAdmin || !sb) return gmMsg('Admin access required.', 'error');
+    const { data: product, error: readError } = await sb.from('products').select('id,supplier_source').eq('id', id).maybeSingle();
+    if (readError) return gmMsg('پروڈکٹ کی تفصیل نہیں مل سکی: ' + readError.message, 'error');
+    if (!product || !gmCodSupplierKind(product.supplier_source)) return gmMsg('یہ صرف CJ یا Markaz پروڈکٹ کے لیے دستیاب ہے۔', 'warning');
+    const next = !Boolean(current);
+    const { data, error } = await sb.from('products').update({ cod_enabled: next }).eq('id', id).select('id,cod_enabled').maybeSingle();
+    if (error) return gmMsg('COD setting محفوظ نہیں ہوئی: ' + error.message, 'error');
+    if (!data) return gmMsg('COD setting محفوظ نہیں ہوئی؛ ڈیٹا بیس اجازت چیک کریں۔', 'error');
+    window.gmProductsCacheLoaded = false;
+    [window.globalAdminProductsData, window.allProductsData, window.globalProductsData].forEach(list => {
+        if (Array.isArray(list)) { const item = list.find(x => String(x.id) === String(id)); if (item) item.cod_enabled = next; }
+    });
+    await Promise.all([loadGlobalAdminProducts(), loadMarkazAdminProducts()]);
+    gmMsg(next ? 'Cash on Delivery اس پروڈکٹ کے لیے ON کر دی گئی۔' : 'Cash on Delivery اس پروڈکٹ کے لیے OFF کر دی گئی۔', 'success');
+}
+
+async function toggleProduct(id, current) { if (!isAdmin) return alert('Admin access required.'); const { error } = await sb.from('products').update({ active: !current }).eq('id', id); if (error) alert('Update failed: ' + error.message); else { window.gmProductsCacheLoaded = false; await Promise.all([loadAdmin(), loadProducts(true), loadGlobalProducts(), loadGlobalAdminProducts()]); } }
+async function deleteProduct(id) { if (!isAdmin) return alert('Admin access required.'); if (!(await gmConfirm('Delete this product?', 'Delete Product'))) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) alert('Delete failed: ' + error.message); else { if (window.adminSelectedProductIds) window.adminSelectedProductIds.delete(String(id)); window.gmProductsCacheLoaded = false; await Promise.all([loadAdmin(), loadProducts(true), loadGlobalProducts(), loadGlobalAdminProducts()]); } }
 
 async function loadBanners() {
     const el = $('bannerSlider');
@@ -5422,13 +5515,13 @@ function openProductView(index) {
     $('pvpName').textContent = gmCustomerText(p.name) || 'GM Network Product';
     $('pvpStars').innerHTML = starsHtml;
     $('pvpReviews').textContent = baseReviews + ' Reviews';
-    let finalPrice = Number(p.price_usd) || 0;
+    let finalPrice = gmProductUsdPrice(p);
     if (p.discount_percent && Number(p.discount_percent) > 0) {
         finalPrice = finalPrice - (finalPrice * (Number(p.discount_percent) / 100));
     }
     $('pvpPrice').textContent = convertMoney(finalPrice);
     const oldPriceEl = $('pvpOldPrice'), discountBadgeEl = $('pvpDiscountBadge'), stockEl = $('pvpStockStatus');
-    if (oldPriceEl) { oldPriceEl.textContent = convertMoney(Number(p.price_usd)||0); oldPriceEl.classList.toggle('hidden', !(Number(p.discount_percent)>0)); }
+    if (oldPriceEl) { oldPriceEl.textContent = convertMoney(gmProductUsdPrice(p)); oldPriceEl.classList.toggle('hidden', !(Number(p.discount_percent)>0)); }
     if (discountBadgeEl) { discountBadgeEl.textContent = Number(p.discount_percent)>0 ? `-${Number(p.discount_percent)}% OFF` : ''; discountBadgeEl.classList.toggle('hidden', !(Number(p.discount_percent)>0)); }
     if (stockEl) { stockEl.textContent = p.active === false ? 'SOLD OUT' : 'IN STOCK'; stockEl.style.background = p.active === false ? '#442020' : '#183b29'; }
     $('pvpDescription').textContent = gmCustomerText(p.description) || 'No description available for this product.';
@@ -5444,7 +5537,7 @@ function openProductView(index) {
             const card = document.createElement('div');
             card.style.cssText = 'min-width:140px;max-width:140px;flex:0 0 140px;border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:#fff;';
             card.setAttribute('role', 'button'); card.setAttribute('tabindex', '0');
-            const relatedOriginalPrice = Number(rp.price_usd) || 0;
+            const relatedOriginalPrice = gmProductUsdPrice(rp);
             const relatedFinalPrice = rp.discount_percent && Number(rp.discount_percent) > 0
                 ? relatedOriginalPrice - (relatedOriginalPrice * (Number(rp.discount_percent) / 100))
                 : relatedOriginalPrice;
@@ -7219,7 +7312,7 @@ document.addEventListener('DOMContentLoaded', init);
  const products=()=>{const m=new Map();(Array.isArray(window.allProductsData)?window.allProductsData:[]).forEach(p=>m.set(String(p.id),p));(Array.isArray(window.globalProductsData)?window.globalProductsData:[]).forEach(p=>m.set(String(p.id),p));return Array.from(m.values())};
  const safe=(v)=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function productById(id){return products().find(p=>String(p.id)===String(id))}
- function itemPrice(p){let price=Number(p?.price_usd||0),d=Math.max(0,Math.min(90,Number(p?.discount_percent||0)));return price*(1-d/100)}
+ function itemPrice(p){let price=gmProductUsdPrice(p),d=Math.max(0,Math.min(90,Number(p?.discount_percent||0)));return price*(1-d/100)}
  function getCart(){return read(KEY)} function setCart(a){write(KEY,a);window.updateCartBadges()}
  function getWish(){return read(WKEY)} function setWish(a){write(WKEY,a)}
  window.updateCartBadges=function(){let n=getCart().reduce((s,x)=>s+Number(x.qty||1),0);['menuCartCount','bottomCartCount'].forEach(id=>{let e=document.getElementById(id);if(e)e.textContent=n});};
@@ -7228,6 +7321,7 @@ document.addEventListener('DOMContentLoaded', init);
  window.changeCartQty=function(id,delta){let a=getCart(),x=a.find(v=>String(v.id)===String(id));if(!x)return;x.qty=Math.max(1,Math.min(99,Number(x.qty||1)+delta));setCart(a);renderCart();};
  window.removeCartItem=function(id){setCart(getCart().filter(x=>String(x.id)!==String(id)));renderCart();};
  window.renderCart=function(){let el=document.getElementById('cartItemsList'),tot=document.getElementById('cartTotals');if(!el)return;let a=getCart();if(a.length&&!products().length){el.innerHTML='<div class="gm-notice">Catalog is loading. Please wait a moment and reopen your cart.</div>';tot?.classList.add('hidden');return;}let valid=a.map(x=>({x,p:productById(x.id)})).filter(z=>z.p);if(!valid.length){el.innerHTML='<div class="gm-notice">آپ کا کارٹ ابھی خالی ہے۔ <button class="secondary" onclick="tab(\'products\')">Shop Products</button></div>';tot?.classList.add('hidden');return;}let subtotal=0;el.innerHTML=valid.map(({x,p})=>{let q=Math.max(1,Number(x.qty||1)),price=itemPrice(p);subtotal+=price*q;let img=(p.images||[]).find(Boolean)||p.image_url||'https://placehold.co/160x160?text=Product';return `<div class="cart-line"><img src="${safe(img)}" alt="${safe(p.name)}"><div><b>${safe(p.name)}</b><div class="muted">${money(price)} each</div><div class="gm-qty"><button onclick="changeCartQty('${safe(p.id)}',-1)">−</button><b>${q}</b><button onclick="changeCartQty('${safe(p.id)}',1)">+</button><button class="gm-icon-btn" onclick="removeCartItem('${safe(p.id)}')">Remove</button></div></div><b>${money(price*q)}</b></div>`}).join('');let missing=a.length-valid.length;if(missing){setCart(valid.map(z=>z.x));}document.getElementById('cartSubtotal').textContent=money(subtotal);tot?.classList.remove('hidden');};
+ window.buyMarkazWithCOD=function(id){const p=productById(id);if(!p||p.active===false)return gmMsg('یہ پروڈکٹ فی الحال دستیاب نہیں۔','warning');if(gmCodSupplierKind(p.supplier_source)!=='markaz')return gmMsg('یہ COD بٹن صرف Markaz پروڈکٹ کے لیے ہے۔','warning');if(p.cod_enabled!==true)return gmMsg('اس پروڈکٹ کے لیے COD ابھی ایڈمن نے فعال نہیں کیا۔','warning');window.checkoutOrigin='product';window.cartCheckoutItems=[{id:p.id,name:p.name,price:itemPrice(p),image:(p.images||[]).find(Boolean)||p.image_url||'',qty:1}];checkoutData={id:p.id,name:p.name,price:itemPrice(p),image:(p.images||[]).find(Boolean)||p.image_url||'',cartMode:false};productQty=1;window.openCheckoutPage();setTimeout(()=>{if(typeof window.gmRefreshCodPaymentOption==='function')window.gmRefreshCodPaymentOption();const r=document.querySelector('#codPaymentOption input[name="paymentMethod"][value="cod"]');if(r&&!r.closest('#codPaymentOption')?.classList.contains('hidden'))r.checked=true;},180);};
  window.checkoutCart=function(){window.checkoutOrigin='cart';let a=getCart(),items=a.map(x=>{let p=productById(x.id);return p?{id:p.id,name:p.name,price:itemPrice(p),image:(p.images||[]).find(Boolean)||p.image_url||'',qty:Math.max(1,Number(x.qty||1))}:null}).filter(Boolean);if(!items.length)return gmMsg('کارٹ میں کوئی دستیاب پروڈکٹ موجود نہیں۔','warning');if(items.some(x=>productById(x.id)?.active===false))return gmMsg('کارٹ میں ایسی پروڈکٹ ہے جو فی الحال دستیاب نہیں۔','warning');window.cartCheckoutItems=items;checkoutData={id:null,name:`Cart (${items.length} items)`,price:items.reduce((s,x)=>s+x.price*x.qty,0),image:items[0].image,cartMode:true};productQty=1;window.openCheckoutPage();};
  window.toggleCurrentWishlist=function(){if(!checkoutData)return;let id=checkoutData.id;if(!id)return;let a=getWish(),i=a.findIndex(x=>String(x.id)===String(id));if(i>=0){a.splice(i,1);gmMsg('Wishlist سے ہٹا دیا گیا۔','success')}else{a.push({id});gmMsg('Wishlist میں محفوظ ہو گیا۔','success')}setWish(a);};
  window.toggleWishlistItem=function(id){let a=getWish(),i=a.findIndex(x=>String(x.id)===String(id));if(i>=0)a.splice(i,1);else a.push({id});setWish(a);renderWishlist();};

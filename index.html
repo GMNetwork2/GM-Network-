@@ -3200,7 +3200,7 @@ function gmHandleProductImageError(img) {
 function renderProductCards(productsToRender, container) {
     if (!container) return;
     const ratingsMap = window.currentRatingsMap || {};
-    container.innerHTML = productsToRender.map((p) => {
+    container.innerHTML = productsToRender.map((p, cardIndex) => {
         const originalIndex = window.allProductsData.findIndex(prod => prod.id === p.id);
         const isMarkazProduct = p.supplier_source === 'Markaz Pakistan';
         // Supplier catalogue photos may contain supplier watermarks. Markaz items use only the GM-approved image_url; otherwise show a neutral GM placeholder.
@@ -3237,8 +3237,9 @@ function renderProductCards(productsToRender, container) {
         if (hasHalfStar) starsHtml += '⯨';
         for (let i = 0; i < emptyStars; i++) starsHtml += '☆';
         starsHtml += `</span><span style="color:var(--muted); margin-left:5px;">(${finalRating.toFixed(1)})</span></div>`;
+        const prioritizeImage = container.id === 'productList' ? cardIndex < 8 : cardIndex < 2;
         return `<div class="product-card" onclick="openProductView(${originalIndex})" style="cursor:pointer;">
-            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="lazy">
+            <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" data-fallback-images="${esc(JSON.stringify(imgs))}" onerror="gmHandleProductImageError(this)" class="main-img" alt="${esc(p.name)}" loading="${prioritizeImage ? 'eager' : 'lazy'}" decoding="async" ${prioritizeImage ? 'fetchpriority="high"' : 'fetchpriority="low"'}>
             <div class="product-info">
                 <h3>${esc(customerName)}</h3>
                 ${starsHtml}
@@ -3306,12 +3307,18 @@ async function loadProducts(forceRefresh = false) {
     window.globalProductsData = window.allProductsData.filter(p => ['CJ Dropshipping','Markaz Pakistan'].includes(p.supplier_source) && p.active !== false && (p.supplier_source !== 'Markaz Pakistan' || p.markaz_stock_status === 'in_stock'));
     if ($('productPageTitle')) $('productPageTitle').textContent = 'Premium Products';
 
+    // Paint the product catalogue immediately. Ratings/reviews are secondary data
+    // and must never hold the first product cards behind extra network requests.
+    renderProductCards(window.standardProductsData, el);
+
     if (!cacheFresh || !window.currentRatingsMap) {
         const productIds = window.standardProductsData.map(p => p.id);
-        const [, ratings] = await Promise.all([loadHomeCustomerReviews(), fetchProductRatings(productIds)]);
+        const ratingsPromise = Promise.all([loadHomeCustomerReviews(), fetchProductRatings(productIds)]);
+        const [, ratings] = await ratingsPromise;
         window.currentRatingsMap = ratings || {};
     }
 
+    // Refresh cards once ratings are ready; images already started loading above.
     renderProductCards(window.standardProductsData, el);
 
     // Home sections are controlled independently by Admin product selections.

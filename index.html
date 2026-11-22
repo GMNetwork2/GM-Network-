@@ -247,6 +247,8 @@ body { overflow-x: hidden; }
 .pv-slider{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth}
 .pv-slider::-webkit-scrollbar{display:none}
 .pv-slider img{width:100%;height:100%;flex-shrink:0;scroll-snap-align:center;object-fit:contain;cursor:pointer}
+.pv-slider .pv-video-slide{width:100%;height:100%;flex:0 0 100%;min-width:100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;background:#000;border-radius:12px;overflow:hidden}
+.pv-slider .pv-video-slide video{width:100%;height:100%;max-height:100%;object-fit:contain;background:#000}
 .pv-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
 .pv-dot{width:8px;height:8px;border-radius:50%;background:#555;transition:background .3s}
 .pv-dot.active{background:var(--gold)}
@@ -4324,7 +4326,7 @@ async function openMarkazImportForm() {
     const savedImages = suppliedCleanImage ? [suppliedCleanImage] : [...new Set((sourceImages.length ? sourceImages : [primarySourceImage]).filter(Boolean))];
     const cleanImage = savedImages[0] || null;
     const selectedCategory = String(form.category||p.markaz_category_name||'Other Products').trim() || 'Other Products';
-    const row = {name:customerName,description:customerDescription,markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Number(sellUsd.toFixed(8)),price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Number(costUsd.toFixed(8)),images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
+    const row = {name:customerName,description:customerDescription,markaz_video_url:(typeof p.video_url==='string' && /^https:\/\//i.test(p.video_url))?p.video_url:null,markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Number(sellUsd.toFixed(8)),price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Number(costUsd.toFixed(8)),images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
     if (p.sku) { const {data:dupe,error:de}=await sb.from('products').select('id').eq('supplier_source','Markaz Pakistan').eq('markaz_product_sku',p.sku).maybeSingle(); if(de) throw de; if(dupe?.id){await gmPopup('یہ Markaz SKU پہلے سے امپورٹ ہے۔ ڈپلیکیٹ نہیں بنائی گئی۔','Already Imported','info');return;} }
     const {error}=await sb.from('products').insert(row); if(error) throw error;
     await gmPopup('Markaz پروڈکٹ GM Network میں محفوظ ہوگئی۔','Import Complete','success');
@@ -5621,10 +5623,29 @@ function openProductView(index) {
         dot.className = 'pv-dot' + (i === 0 ? ' active' : '');
         dotsContainer.appendChild(dot);
     });
+    const markazVideoUrl = isMarkazCustomerItem && typeof p.markaz_video_url === 'string' && /^https:\/\//i.test(p.markaz_video_url) ? p.markaz_video_url.trim() : '';
+    const galleryCount = imgs.length + (markazVideoUrl ? 1 : 0);
+    if (markazVideoUrl) {
+        const videoSlide = document.createElement('div');
+        videoSlide.className = 'pv-video-slide';
+        const videoEl = document.createElement('video');
+        videoEl.src = markazVideoUrl;
+        videoEl.controls = true;
+        videoEl.playsInline = true;
+        videoEl.preload = 'metadata';
+        videoEl.setAttribute('aria-label', (p.name || 'Product') + ' product video');
+        if (imgs[0]) videoEl.poster = imgs[0];
+        videoSlide.appendChild(videoEl);
+        slider.appendChild(videoSlide);
+        const videoDot = document.createElement('div');
+        videoDot.className = 'pv-dot';
+        videoDot.title = 'Product video';
+        dotsContainer.appendChild(videoDot);
+    }
     slider.scrollLeft = 0;
     slider.onscroll = () => {
         const width = slider.clientWidth || 1;
-        const activeIndex = Math.max(0, Math.min(imgs.length - 1, Math.round(slider.scrollLeft / width)));
+        const activeIndex = Math.max(0, Math.min(galleryCount - 1, Math.round(slider.scrollLeft / width)));
         Array.from(dotsContainer.children).forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
     };
 

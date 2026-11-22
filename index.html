@@ -7723,6 +7723,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 <style id="gm-global-category-page-view">
 .gm-global-category-page{display:none;position:fixed;inset:0;z-index:10050;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#050a08;color:#e5e5e5;padding:calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box}
 .gm-global-category-page-open{overflow:hidden!important}
+/* Keep the product detail screen above the full-screen category collection. The category stays mounted underneath so Back returns to the same collection. */
+#productViewPage{z-index:10060!important}
 .gm-global-category-page-head{display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:2;background:rgba(5,10,8,.97);padding:8px 0 14px;border-bottom:1px solid #1f3a2c;margin-bottom:16px}
 .gm-global-category-back{flex:0 0 auto;border:1px solid #e5b853;border-radius:999px;background:#10251a;color:#e5b853;padding:10px 15px;font-weight:700;font-size:13px}
 .gm-global-category-page-head h2{margin:0;color:#e5b853;font-size:19px;line-height:1.25}

@@ -5598,6 +5598,10 @@ function updateQty(change) {
     if ($('coPrice') && checkoutData) refreshCheckoutTotals();
 }
 
+function gmLooksLikeVideoMediaUrl(url) {
+    return /\.(?:mp4|m4v|webm|mov|m3u8|mpd)(?:[?#]|$)/i.test(String(url || ''));
+}
+
 function gmNormalizeProductImages(product) {
     if (!product) return [];
     let raw = product.images;
@@ -5609,11 +5613,11 @@ function gmNormalizeProductImages(product) {
         if (typeof item === 'string') return item.trim();
         if (item && typeof item === 'object') return String(item.url || item.src || item.image_url || item.original || '').trim();
         return '';
-    }).filter(url => /^https?:\/\//i.test(url));
+    }).filter(url => /^https?:\/\//i.test(url) && !(product.supplier_source === 'Markaz Pakistan' && gmLooksLikeVideoMediaUrl(url)));
     const cover = String(product.image_url || '').trim();
     // The images array is the exact gallery count. Use image_url only as a fallback when no gallery was saved.
     if (urls.length) return [...new Set(urls)];
-    return cover && /^https?:\/\//i.test(cover) ? [cover] : [];
+    return cover && /^https?:\/\//i.test(cover) && !(product.supplier_source === 'Markaz Pakistan' && gmLooksLikeVideoMediaUrl(cover)) ? [cover] : [];
 }
 
 function gmEnsureHlsPlayer() {

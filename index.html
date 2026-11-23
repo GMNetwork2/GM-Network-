@@ -162,9 +162,9 @@ body { overflow-x: hidden; }
 .premium-product-card .old-price{display:block;color:var(--muted,#8b948e);font-size:11px;text-decoration:line-through;font-weight:500;margin-top:4px}
 .premium-product-card:active{transform:scale(.98)}
 /* ===== FULL-SCREEN PRODUCT IMAGE LIGHTBOX ===== */
-.image-lightbox{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center;padding:64px 14px 112px}
+.image-lightbox{position:fixed!important;inset:0!important;z-index:20000!important;isolation:isolate!important;background:rgba(0,0,0,.98)!important;display:flex;align-items:center;justify-content:center;padding:64px 14px 112px;box-sizing:border-box!important;}
 .image-lightbox.hidden{display:none!important}
-.image-lightbox #lightboxImage{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;touch-action:pan-y;user-select:none}
+.image-lightbox #lightboxImage{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;object-position:center;touch-action:pan-y;user-select:none;pointer-events:auto;}
 .close-lightbox{position:absolute;top:14px;right:16px;width:42px;height:42px;border:1px solid var(--gold);border-radius:50%;background:#0d1c14;color:var(--gold);font-size:28px;line-height:1;z-index:3}
 .lightbox-counter{position:absolute;bottom:82px;left:0;right:0;text-align:center;color:#fff;font-size:13px}
 .lightbox-thumbs{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:8px 12px;scrollbar-width:thin}
@@ -1485,6 +1485,27 @@ body.gm-admin-page-open{overflow:hidden!important}
     <div class="vip-progress-bar"><div class="vip-progress-fill" style="width:0%"></div></div>
     <p>Keep growing your network and unlock the next rank.</p>
   </div>
+
+  <section class="gm-member-momentum" aria-label="Member motivation and growth guide">
+    <div class="gm-momentum-heading"><div><span class="gm-eyebrow">YOUR GM NETWORK JOURNEY</span><h2>Grow Step by Step</h2><p>اپنی رفتار برقرار رکھیں، ہر قدم آپ کو اگلی کامیابی کے قریب لے جاتا ہے۔</p></div><span class="gm-momentum-star" aria-hidden="true">✦</span></div>
+    <div class="gm-momentum-cards">
+      <article class="gm-momentum-card"><span>🛍️</span><div><h3>Discover Products</h3><p>پروڈکٹس دیکھیں، تفصیلات سمجھیں اور اپنے گاہکوں کے لیے مناسب چیز منتخب کریں۔</p></div></article>
+      <article class="gm-momentum-card"><span>🤝</span><div><h3>Build Your Network</h3><p>اپنا ریفرل کوڈ شیئر کریں اور نئے ممبرز کو سسٹم سمجھنے میں مدد دیں۔</p></div></article>
+      <article class="gm-momentum-card"><span>📈</span><div><h3>Track Your Progress</h3><p>اپنے کوائنز، سیلز، ٹیم کی سرگرمی اور موجودہ رینک باقاعدگی سے دیکھیں۔</p></div></article>
+      <article class="gm-momentum-card"><span>📦</span><div><h3>Manage Orders</h3><p>اپنے آرڈرز، ادائیگیوں اور والیٹ کی ہسٹری پر نظر رکھیں۔</p></div></article>
+    </div>
+    <div class="gm-rank-roadmap"><div class="gm-rank-roadmap-head"><div><span class="gm-eyebrow">MILESTONES</span><h3>Membership Levels</h3></div><span>🏆</span></div>
+      <div class="gm-rank-roadmap-grid">
+        <div><b>🥉 Bronze</b><small>0+ Coins</small></div>
+        <div><b>🥈 Silver</b><small>3,000+ Coins</small></div>
+        <div><b>🥇 Gold</b><small>12,000+ Coins</small></div>
+        <div><b>💎 Platinum</b><small>50,000+ Coins</small></div>
+        <div><b>👑 Diamond</b><small>200,000+ Coins</small></div>
+        <div><b>💠 Crown Diamond</b><small>1,000,000+ Coins</small></div>
+      </div>
+    </div>
+    <div class="gm-daily-focus"><span>✧ TODAY'S FOCUS</span><p>کامیابی مستقل مزاجی، سیکھنے اور درست قدم اٹھانے سے بنتی ہے۔ آج اپنے ایک مقصد پر ضرور کام کریں۔</p></div>
+  </section>
 
   <div class="gm-dash-section-head"><div><span class="gm-eyebrow">YOUR PERFORMANCE</span><h2>Account Overview</h2></div><button type="button" class="gm-text-link" onclick="tab('my-account')">My Account →</button></div>
   <div class="stats gm-dash-stats">
@@ -3562,6 +3583,14 @@ function moveLightbox(delta) {
 }
 function openImageLightbox(src, allImages) {
     if (!src) return;
+    const lightbox = $('imageLightbox');
+    if (!lightbox) return;
+    // Keep the viewer above the product page's fixed purchase bar (z-index 10000)
+    // and any other full-screen page layer. It is a direct child of body by design.
+    if (lightbox.parentElement !== document.body) document.body.appendChild(lightbox);
+    lightbox.style.setProperty('position', 'fixed', 'important');
+    lightbox.style.setProperty('inset', '0', 'important');
+    lightbox.style.setProperty('z-index', '20000', 'important');
     lightboxImages = Array.isArray(allImages) && allImages.length ? allImages.filter(Boolean) : [src];
     if (!lightboxImages.length) lightboxImages = [src];
     const foundIndex = lightboxImages.indexOf(src);
@@ -3592,7 +3621,9 @@ function closeImageLightbox() {
     if ($('lightboxImage')) $('lightboxImage').src = '';
     if ($('lightboxThumbs')) $('lightboxThumbs').innerHTML = '';
     lightboxImages = []; lightboxIndex = 0;
-    document.body.style.overflow = '';
+    const productPageOpen = $('productViewPage') && !$('productViewPage').classList.contains('hidden');
+    const checkoutPageOpen = $('checkoutPage') && !$('checkoutPage').classList.contains('hidden');
+    document.body.style.overflow = (productPageOpen || checkoutPageOpen) ? 'hidden' : '';
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'ArrowRight' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(1); if (e.key === 'ArrowLeft' && !$('imageLightbox').classList.contains('hidden')) moveLightbox(-1); if (e.key === 'Escape') { closeImageLightbox(); $('orderModal')?.classList.add('hidden'); $('withdrawModal')?.classList.add('hidden'); closeOrderDetailModal(); $('teamViewerModal')?.classList.add('hidden'); } });
@@ -4293,7 +4324,7 @@ async function setMarkazPublish(id,current){
 }
 async function syncMarkazStockNow(){
   if(!isAdmin||!sb)return;markazStatus('تمام محفوظ Markaz لنکس کا اسٹاک دوبارہ چیک ہو رہا ہے…');
-  try{const d=await markazCall('sync');markazStatus(`اسٹاک چیک مکمل: ${d.checked} چیک، ${d.in_stock} دستیاب، ${d.out_of_stock} ختم، ${d.unknown} غیر مصدقہ۔`);await loadMarkazAdminProducts();await loadProducts();}
+  try{const d=await markazCall('sync');markazStatus(`اسٹاک چیک مکمل: ${d.checked} چیک، ${d.in_stock} دستیاب، ${d.out_of_stock} ختم، ${d.unknown} غیر مصدقہ۔ ویڈیوز اپڈیٹ: ${d.videos_updated||0} پروڈکٹس۔`);await loadMarkazAdminProducts();await loadProducts();await loadGlobalProducts();}
   catch(e){markazStatus('اسٹاک چیک مکمل نہیں ہوا: '+(e.message||e),true);}
 }
 async function setMarkazStock(id,status){
@@ -4309,7 +4340,7 @@ async function openMarkazImportForm() {
   const fx = Number(window.GM_PKR_PER_USD || GM_PKR_PER_USD);
   const {value: form} = await Swal.fire({
     title:'Markaz Product — GM Network', width:'min(650px,96vw)', background:'#0b1710', color:'#e8eee9',
-    html:`<div style="text-align:left;display:grid;gap:8px;"><b>${markazEscape(p.name)}</b>${markazAppShareUrl(p)?`<a href="${markazEscape(markazAppShareUrl(p))}" style="display:block;padding:10px;border:1px solid #b88b32;border-radius:9px;color:#f0c66c;text-align:center;text-decoration:none;">↗ Open this product in Markaz App</a>`:''}<div class="muted">Markaz ویب قیمت: ${p.price_pkr?'PKR '+Number(p.price_pkr).toLocaleString('en-PK'):'دستیاب نہیں'} · یہ reseller cost کی ضمانت نہیں۔</div><label>Markaz کی اصل لاگت (PKR)</label><input id="mkCostPkr" type="number" min="1" step="1" value="" placeholder="Markaz پر تصدیق شدہ لاگت درج کریں" class="swal2-input" style="margin:0;width:100%;"><label>GM Network پر فروخت کی قیمت (PKR)</label><input id="mkSellPkr" type="number" min="1" step="1" value="${Number(p.price_pkr||0)||''}" placeholder="اپنی فروخت کی قیمت درج کریں" class="swal2-input" style="margin:0;width:100%;"><div class="muted" style="padding:8px;border:1px solid #b88b32;border-radius:8px;">Live USD/PKR rate: <b>Rs ${fx.toFixed(4)}</b> — automatically managed by GM Network</div><label>GM Network کیٹیگری / خودکار فولڈر</label><select id="mkCategory" class="swal2-select" style="margin:0;width:100%;">${(window.markazCategoriesData||[]).map(c=>`<option value="${markazEscape(c.name)}" ${c.name===(p.markaz_category_name||'')?'selected':''}>${markazEscape(c.name)}</option>`).join('')}<option value="Other Products">Other Products</option></select><label>GM Network کے لیے صاف پروڈکٹ تصویر کا URL (اختیاری)</label><input id="mkCleanImage" type="url" placeholder="اپنی صاف / بغیر سپلائر لوگو والی تصویر کا لنک" class="swal2-input" style="margin:0;width:100%;"><small class="muted">اصل سپلائر تصویر میں Markaz کا واٹرمارک ہو سکتا ہے؛ صاف GM تصویر نہ دیں تو کسٹمر کو GM کا سادہ placeholder نظر آئے گا۔</small><label><input id="mkPublish" type="checkbox"> میں نے اسٹاک چیک کر لیا ہے؛ GM Network پر شائع کریں</label><small style="color:#e5b853;">صرف اپنی تصدیق کے بعد شائع کریں۔ Markaz کا reseller rate آپ کے اکاؤنٹ میں مختلف ہو سکتا ہے۔</small></div>`,
+    html:`<div style="text-align:left;display:grid;gap:8px;"><b>${markazEscape(p.name)}</b><div class="muted" style="padding:8px;border:1px solid #31553e;border-radius:8px;">Markaz سے حاصل ہونے والی ویڈیوز: <b style="color:#e5b853;">${Array.isArray(p.video_urls)?p.video_urls.length:(p.video_url?1:0)}</b></div>${markazAppShareUrl(p)?`<a href="${markazEscape(markazAppShareUrl(p))}" style="display:block;padding:10px;border:1px solid #b88b32;border-radius:9px;color:#f0c66c;text-align:center;text-decoration:none;">↗ Open this product in Markaz App</a>`:''}<div class="muted">Markaz ویب قیمت: ${p.price_pkr?'PKR '+Number(p.price_pkr).toLocaleString('en-PK'):'دستیاب نہیں'} · یہ reseller cost کی ضمانت نہیں۔</div><label>Markaz کی اصل لاگت (PKR)</label><input id="mkCostPkr" type="number" min="1" step="1" value="" placeholder="Markaz پر تصدیق شدہ لاگت درج کریں" class="swal2-input" style="margin:0;width:100%;"><label>GM Network پر فروخت کی قیمت (PKR)</label><input id="mkSellPkr" type="number" min="1" step="1" value="${Number(p.price_pkr||0)||''}" placeholder="اپنی فروخت کی قیمت درج کریں" class="swal2-input" style="margin:0;width:100%;"><div class="muted" style="padding:8px;border:1px solid #b88b32;border-radius:8px;">Live USD/PKR rate: <b>Rs ${fx.toFixed(4)}</b> — automatically managed by GM Network</div><label>GM Network کیٹیگری / خودکار فولڈر</label><select id="mkCategory" class="swal2-select" style="margin:0;width:100%;">${(window.markazCategoriesData||[]).map(c=>`<option value="${markazEscape(c.name)}" ${c.name===(p.markaz_category_name||'')?'selected':''}>${markazEscape(c.name)}</option>`).join('')}<option value="Other Products">Other Products</option></select><label>GM Network کے لیے صاف پروڈکٹ تصویر کا URL (اختیاری)</label><input id="mkCleanImage" type="url" placeholder="اپنی صاف / بغیر سپلائر لوگو والی تصویر کا لنک" class="swal2-input" style="margin:0;width:100%;"><small class="muted">اصل سپلائر تصویر میں Markaz کا واٹرمارک ہو سکتا ہے؛ صاف GM تصویر نہ دیں تو کسٹمر کو GM کا سادہ placeholder نظر آئے گا۔</small><label><input id="mkPublish" type="checkbox"> میں نے اسٹاک چیک کر لیا ہے؛ GM Network پر شائع کریں</label><small style="color:#e5b853;">صرف اپنی تصدیق کے بعد شائع کریں۔ Markaz کا reseller rate آپ کے اکاؤنٹ میں مختلف ہو سکتا ہے۔</small></div>`,
     showCancelButton:true, confirmButtonText:'Import Product', cancelButtonText:'Cancel', confirmButtonColor:'#b88b32', focusConfirm:false,
     preConfirm:()=>{const cost=Number(document.getElementById('mkCostPkr').value),sell=Number(document.getElementById('mkSellPkr').value),rate=Number(window.GM_PKR_PER_USD||GM_PKR_PER_USD);if(!(cost>0&&sell>0&&rate>0)){Swal.showValidationMessage('لاگت اور فروخت کی قیمت درست درج کریں۔');return false;}return {cost,sell,rate,category:document.getElementById('mkCategory').value,cleanImage:String(document.getElementById('mkCleanImage').value||'').trim(),publish:document.getElementById('mkPublish').checked};}
   });
@@ -4326,7 +4357,7 @@ async function openMarkazImportForm() {
     const savedImages = suppliedCleanImage ? [suppliedCleanImage] : [...new Set((sourceImages.length ? sourceImages : [primarySourceImage]).filter(Boolean))];
     const cleanImage = savedImages[0] || null;
     const selectedCategory = String(form.category||p.markaz_category_name||'Other Products').trim() || 'Other Products';
-    const row = {name:customerName,description:customerDescription,markaz_video_url:(typeof p.video_url==='string' && /^https:\/\//i.test(p.video_url))?p.video_url:null,markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Number(sellUsd.toFixed(8)),price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Number(costUsd.toFixed(8)),images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
+    const row = {name:customerName,description:customerDescription,markaz_video_urls:Array.isArray(p.video_urls)?[...new Set(p.video_urls.filter(v=>typeof v==='string' && /^https:\/\//i.test(v.trim())).map(v=>v.trim()))]:((typeof p.video_url==='string' && /^https:\/\//i.test(p.video_url.trim()))?[p.video_url.trim()]:[]),markaz_video_url:(typeof p.video_url==='string' && /^https:\/\//i.test(p.video_url.trim()))?p.video_url.trim():(Array.isArray(p.video_urls)&&p.video_urls[0]?p.video_urls[0]:null),markaz_app_url:p.app_share_url||markazAppShareUrl(p)||null,price_usd:Number(sellUsd.toFixed(8)),price_pkr:Math.round(form.sell*100)/100,discount_percent:0,commission_percent:0,category:selectedCategory,category_folder:selectedCategory,supplier_source:'Markaz Pakistan',markaz_product_sku:p.sku||null,markaz_source_url:p.source_url||'',markaz_stock_status:form.publish?'in_stock':(p.stock_status||'unknown'),markaz_admin_enabled:form.publish,markaz_stock_checked_at:new Date().toISOString(),active:form.publish,markaz_cost_pkr:form.cost,markaz_fx_rate:form.rate,markaz_cost_usd:Number(costUsd.toFixed(8)),images:savedImages,image_url:cleanImage,base_rating:5,base_reviews_count:0,show_in_featured:false,show_in_new_arrivals:false,show_in_premium:false,show_in_best_sellers:false};
     if (p.sku) { const {data:dupe,error:de}=await sb.from('products').select('id').eq('supplier_source','Markaz Pakistan').eq('markaz_product_sku',p.sku).maybeSingle(); if(de) throw de; if(dupe?.id){await gmPopup('یہ Markaz SKU پہلے سے امپورٹ ہے۔ ڈپلیکیٹ نہیں بنائی گئی۔','Already Imported','info');return;} }
     const {error}=await sb.from('products').insert(row); if(error) throw error;
     await gmPopup('Markaz پروڈکٹ GM Network میں محفوظ ہوگئی۔','Import Complete','success');
@@ -5583,10 +5614,36 @@ function gmNormalizeProductImages(product) {
     return cover && /^https?:\/\//i.test(cover) ? [cover] : [];
 }
 
+function gmEnsureHlsPlayer() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (window.gmHlsLoadPromise) return window.gmHlsLoadPromise;
+    window.gmHlsLoadPromise = new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
+        script.async = true;
+        script.onload = () => resolve(window.Hls || null);
+        script.onerror = () => resolve(null);
+        document.head.appendChild(script);
+    });
+    return window.gmHlsLoadPromise;
+}
+
 function openProductView(index) {
     const products = window.allProductsData || [];
     const p = products[index];
     if (!p) return;
+    // Keep product details above the dynamically-created category overlay on mobile.
+    const productPage = $('productViewPage');
+    if (productPage) {
+        if (productPage.parentElement !== document.body) document.body.appendChild(productPage);
+        productPage.classList.remove('hidden');
+        productPage.style.setProperty('position', 'fixed', 'important');
+        productPage.style.setProperty('inset', '0', 'important');
+        productPage.style.setProperty('z-index', '10080', 'important');
+        productPage.style.setProperty('display', 'block');
+        productPage.scrollTop = 0;
+    }
+    document.body.style.overflow = 'hidden';
     history.pushState({ page: 'product' }, '', '#product');
 
     const isMarkazCustomerItem = p.supplier_source === 'Markaz Pakistan';
@@ -5623,25 +5680,85 @@ function openProductView(index) {
         dot.className = 'pv-dot' + (i === 0 ? ' active' : '');
         dotsContainer.appendChild(dot);
     });
-    const markazVideoUrl = isMarkazCustomerItem && typeof p.markaz_video_url === 'string' && /^https:\/\//i.test(p.markaz_video_url) ? p.markaz_video_url.trim() : '';
-    const galleryCount = imgs.length + (markazVideoUrl ? 1 : 0);
-    if (markazVideoUrl) {
+    const rawVideoList = [];
+    if (isMarkazCustomerItem) {
+        if (Array.isArray(p.markaz_video_urls)) rawVideoList.push(...p.markaz_video_urls);
+        if (Array.isArray(p.video_urls)) rawVideoList.push(...p.video_urls);
+        rawVideoList.push(p.markaz_video_url, p.video_url, p.markaz_video);
+    }
+    const markazVideoUrls = [...new Set(rawVideoList
+        .filter(value => typeof value === 'string' && /^https:\/\//i.test(value.trim()))
+        .map(value => value.trim()))];
+    const galleryCount = imgs.length + markazVideoUrls.length;
+    markazVideoUrls.forEach((videoUrl, videoIndex) => {
         const videoSlide = document.createElement('div');
         videoSlide.className = 'pv-video-slide';
+        videoSlide.style.position = 'relative';
+        videoSlide.style.flex = '0 0 100%';
         const videoEl = document.createElement('video');
-        videoEl.src = markazVideoUrl;
         videoEl.controls = true;
         videoEl.playsInline = true;
-        videoEl.preload = 'metadata';
-        videoEl.setAttribute('aria-label', (p.name || 'Product') + ' product video');
+        videoEl.preload = 'none';
+        videoEl.setAttribute('aria-label', (p.name || 'Product') + ' product video ' + (videoIndex + 1));
+        videoEl.setAttribute('controlslist', 'nodownload');
+        videoEl.dataset.videoUrl = videoUrl;
         if (imgs[0]) videoEl.poster = imgs[0];
         videoSlide.appendChild(videoEl);
+        const playHint = document.createElement('button');
+        playHint.type = 'button';
+        playHint.className = 'pv-video-play-hint';
+        playHint.textContent = '▶ ویڈیو ' + (videoIndex + 1) + ' چلائیں';
+        playHint.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;padding:12px 18px;border:1px solid #e5b853;border-radius:999px;background:#07170de8;color:#ffe2a0;font-weight:800;box-shadow:0 5px 20px #0009;';
+        playHint.onclick = async () => {
+            try {
+                if (!videoEl.src) {
+                    if (/\.m3u8(?:[?#]|$)/i.test(videoUrl) && !videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+                        const HlsPlayer = await gmEnsureHlsPlayer();
+                        if (HlsPlayer && HlsPlayer.isSupported()) {
+                            const hls = new HlsPlayer();
+                            videoEl._gmHlsPlayer = hls;
+                            const manifestReady = new Promise((resolve, reject) => {
+                                const timeout = setTimeout(() => reject(new Error('Video stream timed out')), 15000);
+                                hls.on(HlsPlayer.Events.MANIFEST_PARSED, () => { clearTimeout(timeout); resolve(true); });
+                                hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
+                                    if (data && data.fatal) { clearTimeout(timeout); reject(new Error('Video stream could not be loaded')); }
+                                });
+                            });
+                            hls.loadSource(videoUrl);
+                            hls.attachMedia(videoEl);
+                            await manifestReady;
+                        } else {
+                            throw new Error('اس موبائل براؤزر میں یہ ویڈیو فارمیٹ سپورٹ نہیں ہوتا۔');
+                        }
+                    } else {
+                        videoEl.src = videoUrl;
+                    }
+                }
+                await videoEl.play();
+                playHint.hidden = true;
+            } catch (error) {
+                playHint.hidden = false;
+                playHint.textContent = error && error.message && error.message.includes('فارمیٹ')
+                    ? error.message : 'ویڈیو نہیں چل سکی؛ دوبارہ کوشش کریں';
+            }
+        };
+        videoEl.addEventListener('play', () => { playHint.hidden = true; });
+        videoEl.addEventListener('ended', () => { playHint.hidden = false; });
+        videoEl.addEventListener('error', () => {
+            playHint.hidden = false;
+            playHint.textContent = 'ویڈیو لوڈ نہیں ہو سکی؛ دوبارہ کوشش کریں';
+            if (videoEl._gmHlsPlayer) { try { videoEl._gmHlsPlayer.destroy(); } catch (_) {} videoEl._gmHlsPlayer = null; }
+            videoEl.removeAttribute('src');
+            videoEl.load();
+        });
+        videoSlide.appendChild(playHint);
         slider.appendChild(videoSlide);
         const videoDot = document.createElement('div');
         videoDot.className = 'pv-dot';
-        videoDot.title = 'Product video';
+        videoDot.title = 'Product video ' + (videoIndex + 1);
+        videoDot.setAttribute('aria-label', 'Product video ' + (videoIndex + 1));
         dotsContainer.appendChild(videoDot);
-    }
+    });
     slider.scrollLeft = 0;
     slider.onscroll = () => {
         const width = slider.clientWidth || 1;
@@ -6403,13 +6520,23 @@ async function openMemberAuditHistory() {
 
 function restoreHistoryPage(page) {
     const validTabs = ['home', 'dashboard', 'account', 'my-account', 'my-wallet', 'products', 'team', 'about', 'admin'];
-    $('productViewPage').classList.add('hidden');
+    const productPage = $('productViewPage');
+    if (productPage) {
+        productPage.classList.add('hidden');
+        productPage.style.removeProperty('display');
+    }
     $('checkoutPage').classList.add('hidden');
     $('paymentProofPage').classList.add('hidden');
     document.body.style.overflow = '';
 
     if (page === 'product') {
-        $('productViewPage').classList.remove('hidden');
+        const productPage = $('productViewPage');
+        if (productPage) {
+            if (productPage.parentElement !== document.body) document.body.appendChild(productPage);
+            productPage.classList.remove('hidden');
+            productPage.style.setProperty('display', 'block');
+            productPage.style.setProperty('z-index', '10080', 'important');
+        }
         document.body.style.overflow = 'hidden';
         return;
     }
@@ -8320,4 +8447,14 @@ window.saveGMMemberProfile = async function(){
 #products .panel{padding-bottom:28px!important}
 #products #productList{padding-bottom:18px!important}
 #productViewPage>div:first-child button{min-width:44px;min-height:44px;border-radius:10px!important;background:rgba(229,184,83,.12)!important;border:1px solid rgba(229,184,83,.5)!important;color:#f5d47f!important}
+
+/* GM Network — member motivation and rank roadmap */
+.gm-member-momentum{margin:26px 0 30px;padding:clamp(16px,2.8vw,24px);border:1px solid rgba(229,184,83,.32);border-radius:22px;background:linear-gradient(145deg,rgba(12,34,22,.96),rgba(5,15,9,.98));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.gm-momentum-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:17px}.gm-momentum-heading h2{margin:6px 0 5px;color:#f4e4b7;font-size:clamp(20px,2.5vw,27px)}.gm-momentum-heading p{margin:0;color:#b9cabb;font-size:12px;line-height:1.7}.gm-momentum-star{font-size:38px;color:#e5b853;text-shadow:0 0 20px rgba(229,184,83,.3)}
+.gm-momentum-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.gm-momentum-card{display:flex;align-items:flex-start;gap:11px;min-width:0;padding:14px;border:1px solid rgba(229,184,83,.18);border-radius:15px;background:rgba(18,48,31,.58)}.gm-momentum-card>span{flex:0 0 34px;width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:rgba(229,184,83,.12);font-size:19px}.gm-momentum-card h3{margin:1px 0 5px;color:#f0d58e;font-size:13px}.gm-momentum-card p{margin:0;color:#bdcabe;font-size:11px;line-height:1.65}
+.gm-rank-roadmap{margin-top:17px;padding:15px;border:1px solid rgba(229,184,83,.2);border-radius:16px;background:rgba(3,13,7,.48)}.gm-rank-roadmap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.gm-rank-roadmap-head h3{margin:4px 0 0;color:#f4e4b7;font-size:16px}.gm-rank-roadmap-head>span{font-size:24px}.gm-rank-roadmap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.gm-rank-roadmap-grid>div{display:flex;flex-direction:column;gap:5px;padding:10px;border-radius:11px;background:rgba(19,49,31,.72);border:1px solid rgba(229,184,83,.12)}.gm-rank-roadmap-grid b{font-size:12px;color:#f0d58e}.gm-rank-roadmap-grid small{font-size:10px;color:#b8c8ba}.gm-daily-focus{margin-top:14px;padding:13px 15px;border-left:3px solid #e5b853;border-radius:0 12px 12px 0;background:linear-gradient(90deg,rgba(229,184,83,.12),rgba(229,184,83,.025))}.gm-daily-focus span{font-size:9px;font-weight:900;letter-spacing:.16em;color:#e5b853}.gm-daily-focus p{margin:5px 0 0;color:#e3e9df;font-size:12px;line-height:1.7}
+@media(max-width:600px){.gm-momentum-cards{grid-template-columns:1fr}.gm-rank-roadmap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gm-momentum-card{padding:12px}}
+/* Product detail must sit above category sheets; image viewer above product details. */
+#productViewPage{z-index:10080!important;isolation:isolate!important}#imageLightbox{z-index:20000!important;isolation:isolate!important}
+
 </style>

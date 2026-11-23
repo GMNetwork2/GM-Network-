@@ -1508,8 +1508,8 @@ body.gm-admin-page-open{overflow:hidden!important}
   </section>
 
   <section class="gm-inspiration-section" aria-label="36 motivational messages">
-    <div class="gm-inspiration-heading"><div><span class="gm-eyebrow">DAILY INSPIRATION · LEARN · GROW · LEAD</span><h2>حوصلہ، رہنمائی اور کامیابی کے 36 پیغامات</h2><p>ہر پیغام ایک چھوٹا سبق ہے — اسے پڑھیں، سمجھیں اور اپنی روزمرہ کوشش میں شامل کریں۔</p></div><span class="gm-inspiration-badge">36 <small>IDEAS</small></span></div>
-    <div class="gm-inspiration-grid">
+    <div class="gm-inspiration-heading"><div><span class="gm-eyebrow">DAILY INSPIRATION · LEARN · GROW · LEAD</span><h2>حوصلہ، رہنمائی اور کامیابی کے 36 پیغامات</h2><p>ہر پیغام ایک چھوٹا سبق ہے — اسے پڑھیں، سمجھیں اور اپنی روزمرہ کوشش میں شامل کریں۔</p><button type="button" id="gmInspirationToggle" class="gm-inspiration-toggle" aria-expanded="false" aria-controls="gmInspirationContent" onclick="toggleGMInspiration()">✦ VIP — تمام 36 پیغامات دیکھیں <span aria-hidden="true">⌄</span></button></div><span class="gm-inspiration-badge">36 <small>IDEAS</small></span></div>
+    <div id="gmInspirationContent" class="gm-inspiration-content hidden"><div class="gm-inspiration-grid">
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">01</span><div><h3>آغاز آج سے کریں</h3><p>بڑے خواب دیکھنا اچھی بات ہے، مگر کامیابی کا پہلا قدم آج کا ایک درست اور چھوٹا عمل ہے۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">02</span><div><h3>سیکھنا جاری رکھیں</h3><p>ہر نیا دن کچھ نیا سیکھنے کا موقع ہے۔ سوال پوچھیں، سمجھیں اور پھر اعتماد سے آگے بڑھیں۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">03</span><div><h3>صبر بھی طاقت ہے</h3><p>ہر نتیجہ فوراً نہیں ملتا۔ مستقل مزاجی رکھیں اور اپنی رفتار کا موازنہ دوسروں سے نہ کریں۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
@@ -1546,7 +1546,7 @@ body.gm-admin-page-open{overflow:hidden!important}
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">34</span><div><h3>مشکل وقت میں پرسکون رہیں</h3><p>مسئلہ آئے تو پہلے حقائق دیکھیں، پھر حل کے مراحل طے کریں۔ جلد بازی اکثر الجھن بڑھاتی ہے۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">35</span><div><h3>آج کی کوشش اہم ہے</h3><p>کل کی فکر میں آج کا موقع ضائع نہ کریں۔ جو کام آپ کے اختیار میں ہے اسے بہترین انداز میں کریں۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
       <article class="gm-inspiration-card"><span class="gm-inspiration-number">36</span><div><h3>شکر اور مستقل مزاجی</h3><p>جو حاصل ہے اس کی قدر کریں اور جو سیکھنا باقی ہے اس کے لیے عاجزی اور محنت جاری رکھیں۔</p></div><span class="gm-inspiration-mark" aria-hidden="true">✦</span></article>
-    </div>
+    </div></div>
   </section>
 
   <div class="gm-dash-section-head"><div><span class="gm-eyebrow">YOUR PERFORMANCE</span><h2>Account Overview</h2></div><button type="button" class="gm-text-link" onclick="tab('my-account')">My Account →</button></div>
@@ -2427,8 +2427,21 @@ function tab(id, skipHistory = false) {
         } else {
             alert('Please sign in first.');
             id = 'account';
-            if (!skipHistory) history.pushState({ page: id }, '', '#' + id);
-            document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== id));
+            if (!skipHistory) {
+        if (history.state && history.state.page) {
+            history.replaceState({ ...history.state, scrollY: window.scrollY }, '', window.location.href);
+        }
+        history.pushState({ page: id, scrollY: 0 }, '', '#' + id);
+    }
+            document.querySelectorAll('.view').forEach(v => {
+        const isTarget = v.id === id;
+        v.classList.toggle('hidden', !isTarget);
+        if (isTarget) {
+            v.classList.remove('gm-page-enter');
+            void v.offsetWidth;
+            v.classList.add('gm-page-enter');
+        }
+    });
             document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
             const signInForm = document.getElementById('formSignIn');
             const signUpForm = document.getElementById('formSignUp');
@@ -2468,6 +2481,21 @@ function menuTab(id) {
     if (overlay) overlay.classList.remove('open');
     document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === id));
     tab(id);
+}
+
+function toggleGMInspiration() {
+    const content = document.getElementById('gmInspirationContent');
+    const button = document.getElementById('gmInspirationToggle');
+    if (!content || !button) return;
+    const willOpen = content.classList.contains('hidden');
+    content.classList.toggle('hidden', !willOpen);
+    button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    button.innerHTML = willOpen
+        ? '✦ VIP — پیغامات بند کریں <span aria-hidden="true">⌃</span>'
+        : '✦ VIP — تمام 36 پیغامات دیکھیں <span aria-hidden="true">⌄</span>';
+    if (willOpen) {
+        requestAnimationFrame(() => content.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    }
 }
 
 async function init() {
@@ -5685,6 +5713,9 @@ function openProductView(index) {
     if (productPage) {
         if (productPage.parentElement !== document.body) document.body.appendChild(productPage);
         productPage.classList.remove('hidden');
+        productPage.classList.remove('gm-product-enter');
+        void productPage.offsetWidth;
+        productPage.classList.add('gm-product-enter');
         productPage.style.setProperty('position', 'fixed', 'important');
         productPage.style.setProperty('inset', '0', 'important');
         productPage.style.setProperty('z-index', '10080', 'important');
@@ -5692,7 +5723,10 @@ function openProductView(index) {
         productPage.scrollTop = 0;
     }
     document.body.style.overflow = 'hidden';
-    history.pushState({ page: 'product' }, '', '#product');
+    if (history.state && history.state.page) {
+        history.replaceState({ ...history.state, scrollY: window.scrollY }, '', window.location.href);
+    }
+    history.pushState({ page: 'product', scrollY: 0 }, '', '#product');
 
     const isMarkazCustomerItem = p.supplier_source === 'Markaz Pakistan';
     const storedImages = gmNormalizeProductImages(p);
@@ -6603,7 +6637,11 @@ function restoreHistoryPage(page) {
 }
 
 window.addEventListener('popstate', (event) => {
-    restoreHistoryPage(event.state && event.state.page ? event.state.page : 'home');
+    const state = event.state || {};
+    restoreHistoryPage(state.page || 'home');
+    requestAnimationFrame(() => {
+        window.scrollTo({ top: Math.max(0, Number(state.scrollY) || 0), left: 0, behavior: 'auto' });
+    });
 });
 
 // Give the initial page a known history state so Android's Back button
@@ -8028,6 +8066,54 @@ window.saveGMMemberProfile = async function(){
   }finally{if(btn){btn.disabled=false;btn.textContent='Save Profile Changes';}}
 };
 </script>
+
+<style id="gm-vip-polish-2026-11">
+/* VIP accordion for the 36 inspiration cards */
+.gm-inspiration-toggle{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:13px!important;
+ margin-top:13px!important;padding:12px 19px!important;border:1px solid rgba(240,198,100,.78)!important;
+ border-radius:13px!important;background:linear-gradient(115deg,#e8bd61 0%,#bd8b35 42%,#174a34 100%)!important;
+ color:#101b12!important;font-weight:900!important;font-size:13px!important;letter-spacing:.2px!important;
+ box-shadow:0 8px 22px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.38)!important;
+ transition:transform .22s ease,filter .22s ease,box-shadow .22s ease!important;
+}
+.gm-inspiration-toggle span{font-size:18px!important;line-height:1!important}
+.gm-inspiration-toggle:hover{transform:translateY(-2px)!important;filter:brightness(1.08)!important;box-shadow:0 12px 27px rgba(0,0,0,.4),0 0 0 3px rgba(229,184,83,.12)!important}
+.gm-inspiration-content{overflow:hidden;animation:gmInspirationReveal .34s ease both}
+.gm-inspiration-content.hidden{display:none!important}
+@keyframes gmInspirationReveal{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+/* More premium profile title treatment */
+#account .gm-profile-heading-copy h2,
+#account #loggedInProfile .gm-profile-heading-copy h2{
+ font-family:"Trebuchet MS","Noto Sans Arabic","Noto Naskh Arabic",sans-serif!important;
+ font-weight:900!important;letter-spacing:.15px!important;line-height:1.35!important;
+ font-size:clamp(23px,5.4vw,31px)!important;
+ color:#ffe6a6!important;
+ background:linear-gradient(100deg,#fff0c2 0%,#e9bd60 48%,#8fe0bd 100%)!important;
+ -webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;
+ text-shadow:0 7px 20px rgba(229,184,83,.12)!important;
+}
+#account .gm-ref-pagebar>div b,
+#account .gm-ref-pagebar b{
+ color:#f4d58d!important;font-family:"Trebuchet MS","Noto Sans Arabic",sans-serif!important;
+ font-weight:900!important;letter-spacing:.25px!important;
+ text-shadow:0 2px 13px rgba(229,184,83,.22)!important;
+}
+#account .gm-ref-pagebar{border-color:rgba(229,184,83,.35)!important;background:linear-gradient(100deg,rgba(20,66,46,.95),rgba(12,25,18,.98))!important}
+/* Restrained page transitions; no layout or business-logic changes */
+.gm-page-enter{animation:gmPageEnter .24s ease-out both}
+.gm-product-enter{animation:gmProductEnter .25s ease-out both}
+@keyframes gmPageEnter{from{opacity:.72;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gmProductEnter{from{opacity:.65;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){
+ .gm-inspiration-content,.gm-page-enter,.gm-product-enter{animation:none!important}
+ .gm-inspiration-toggle{transition:none!important}
+}
+@media(max-width:600px){
+ .gm-inspiration-toggle{width:100%!important;padding:12px 13px!important;font-size:12px!important}
+}
+</style>
+
 </body>
 </html>
 <style id="gm-v19-layout-fixes">

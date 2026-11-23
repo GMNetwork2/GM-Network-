@@ -1967,6 +1967,7 @@ body.gm-admin-page-open{overflow:hidden!important}
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('orders')">← Orders Menu</button>        <h2>Recent Orders</h2>
         <input id="adminOrderSearchInput" placeholder="Search by Order ID or Phone Number..." oninput="filterAdminOrders()" style="margin-bottom:15px; padding:10px; border-radius:8px; border:1px solid var(--line); background:#050a08; color:#fff;">
         <div id="adminOrders" class="muted">No orders yet.</div>
+          <div class="panel" style="margin-top:18px;border:1px solid var(--gold)"><h3>🛡️ Payment Verification Center</h3><p class="muted">CSV اپلوڈ اختیاری ہے۔ CSV نہ ہو تو رسید اور ٹرانزیکشن دستی طور پر چیک کریں۔</p><label>Bank / Easypaisa / JazzCash CSV</label><input type="file" id="gmPaymentCsvFile" accept=".csv,text/csv"><button class="primary" type="button" onclick="gmImportPaymentCsv()">Import CSV &amp; Match Transactions</button><div id="gmPaymentCsvStatus" class="status hidden"></div><button class="secondary" type="button" onclick="gmLoadPaymentVerifications()" style="margin-top:8px">Refresh Verification Queue</button><div id="gmPaymentVerificationQueue" style="margin-top:12px">Run SQL migration, then refresh queue.</div></div>
 </div>
         <div class="admin-subpage hidden" id="adminSub-orders-reports">
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('orders')">← Orders Menu</button><h2>📈 Reports &amp; Analytics</h2><p class="muted">Total sales, order counts and current order statuses.</p><button class="primary" onclick="loadGMAdminReports()">View Reports</button><div id="gmAdminReportsInline"></div></div>
@@ -1999,7 +2000,7 @@ body.gm-admin-page-open{overflow:hidden!important}
     </div>
 </div>
 
-<div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img referrerpolicy="no-referrer" src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
+<div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img referrerpolicy="no-referrer" src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><label style="display:block;text-align:left;margin:10px 0 5px">Payment Method</label><select id="gmPaymentMethod" style="width:100%;margin-bottom:8px"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank Transfer</option></select><label style="display:block;text-align:left;margin:8px 0 5px">Transaction ID / Reference</label><input id="gmPaymentTxnId" type="text" maxlength="120" autocomplete="off" placeholder="Enter transaction ID" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Paid Amount (PKR)</label><input id="gmPaymentAmount" type="number" min="1" step="0.01" placeholder="Amount paid in PKR" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Payment Date &amp; Time</label><input id="gmPaymentPaidAt" type="datetime-local" style="width:100%;margin-bottom:10px"><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
 <div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><div id="editCodSettingWrap" style="margin:12px 0;padding:12px;border:1px solid #b98b3c;border-radius:10px;background:#0b2116;"><label style="display:flex;align-items:center;gap:9px;color:#f0d18a;font-weight:700;"><input type="checkbox" id="editProductCodEnabled" style="width:auto;accent-color:#e5b853;"> Enable Cash on Delivery for this product</label><small style="display:block;color:#b9c5b6;margin-top:5px;">CJ Dropshipping / Markaz Pakistan only. Turn ON only when this exact product supports Cash on Delivery. Default is OFF.</small></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><img referrerpolicy="no-referrer" id="lightboxImage" alt="Full-size product" src=""><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
@@ -3715,42 +3716,112 @@ async function submitOrder() {
 async function uploadPaymentProof() {
     if (!user || !sb || !window.pendingOrderData) return alert("Order data missing. Please close and try again.");
     const file = $('paymentScreenshot')?.files?.[0];
+    const txnId = String($('gmPaymentTxnId')?.value || '').trim();
+    const method = String($('gmPaymentMethod')?.value || 'easypaisa');
+    const amount = Number($('gmPaymentAmount')?.value || 0);
+    const paidAtRaw = $('gmPaymentPaidAt')?.value || '';
     if (!file) return alert("Please select a screenshot of your payment first.");
+    if (!txnId) return alert('Please enter the Transaction ID / Reference.');
+    if (!Number.isFinite(amount) || amount <= 0) return alert('Please enter the paid amount in PKR.');
+    if (!paidAtRaw) return alert('Please enter the payment date and time.');
     const uploadButton = $('uploadStatus')?.previousElementSibling;
-    status('uploadStatus', 'Uploading proof & placing order...');
+    status('uploadStatus', 'Checking duplicate proof and uploading…');
     if (uploadButton) uploadButton.disabled = true;
-    let orderId = null;
+    let orderId = null, storagePath = null;
     try {
         const pData = window.pendingOrderData;
         const payload = { buyer_id:user.id, buyer_email:user.email || null, product_id:pData.product_id, quantity:1, unit_price_usd:pData.price, phone_number:pData.phone, shipping_address:pData.address, status:'pending', referrer_id:myProfile?.referred_by || null };
         let result = await sb.from('orders').insert(payload).select('id').single();
-        if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) {
-            const fallback = { ...payload }; delete fallback.buyer_email;
-            result = await sb.from('orders').insert(fallback).select('id').single();
-        }
+        if (result.error && /buyer_email|schema cache|column/i.test(result.error.message || '')) { const fallback = { ...payload }; delete fallback.buyer_email; result = await sb.from('orders').insert(fallback).select('id').single(); }
         if (result.error) throw new Error(result.error.message);
         orderId = result.data.id;
+        const receiptHash = await gmSha256File(file);
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-        const path = `payments/${orderId}-${Date.now()}.${ext}`;
-        const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert:false, contentType:file.type || 'image/jpeg' });
+        storagePath = `payments/${orderId}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await sb.storage.from('product-images').upload(storagePath, file, { upsert:false, contentType:file.type || 'image/jpeg' });
         if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
-        const publicUrl = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+        const publicUrl = sb.storage.from('product-images').getPublicUrl(storagePath).data?.publicUrl;
         const { error:updateError } = await sb.from('orders').update({ payment_proof:publicUrl }).eq('id', orderId);
-        if (updateError) throw new Error('Database update failed: ' + updateError.message);
-        status('uploadStatus', '✅ Order placed successfully! Admin will verify your payment.', 'ok');
-        $('orderName').value = ''; $('orderPhone').value = ''; $('orderAddress').value = '';
-        $('paymentScreenshot').value = ''; window.pendingOrderData = null;
-        setTimeout(() => closeModal(), 3000);
-    } catch (error) {
-        if (orderId) {
-            const { error:deleteError } = await sb.from('orders').delete().eq('id', orderId);
-            if (deleteError) console.error('Could not remove incomplete order:', deleteError.message);
+        if (updateError) throw new Error('Order receipt update failed: ' + updateError.message);
+        const verification = await sb.from('gm_payment_verifications').insert({order_id:orderId,user_id:user.id,payment_method:method,transaction_id:txnId,amount_pkr:amount,paid_at:new Date(paidAtRaw).toISOString(),receipt_sha256:receiptHash,receipt_url:publicUrl,verification_status:'pending',csv_match_status:'not_checked'});
+        if (verification.error) {
+            if (/duplicate key|unique constraint/i.test(verification.error.message||'')) throw new Error('یہ Transaction ID یا یہی رسید پہلے کسی دوسرے آرڈر میں جمع ہو چکی ہے۔ ادائیگی کی نئی درست رسید/ٹرانزیکشن استعمال کریں۔');
+            throw new Error('Verification record failed. Run the new SQL migration first. ' + verification.error.message);
         }
+        status('uploadStatus', '✅ رسید جمع ہو گئی۔ Duplicate checks مکمل؛ ادائیگی ایڈمن کی تصدیق کے انتظار میں ہے۔', 'ok');
+        $('orderName').value = ''; $('orderPhone').value = ''; $('orderAddress').value = '';
+        $('paymentScreenshot').value = ''; $('gmPaymentTxnId').value=''; $('gmPaymentAmount').value=''; $('gmPaymentPaidAt').value=''; window.pendingOrderData = null;
+        setTimeout(() => closeModal(), 3500);
+    } catch (error) {
+        if (orderId) { const {error:deleteError} = await sb.from('orders').delete().eq('id', orderId); if (deleteError) console.error('Could not remove incomplete order:', deleteError.message); }
+        if (storagePath) { const {error:removeError}=await sb.storage.from('product-images').remove([storagePath]); if(removeError)console.warn('Could not remove incomplete payment proof:',removeError.message); }
         status('uploadStatus', 'Error: ' + error.message, 'error');
         if (uploadButton) uploadButton.disabled = false;
     }
 }
 
+
+// GM Network dual payment-proof verification (manual + optional CSV statement matching).
+async function gmSha256File(file) {
+    if (!window.crypto?.subtle) throw new Error('Secure file hashing is not supported in this browser.');
+    const bytes = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function gmNormalizeTxn(v) { return String(v || '').trim().replace(/\s+/g,'').toUpperCase(); }
+async function gmLoadPaymentVerifications() {
+    const box = $('gmPaymentVerificationQueue');
+    if (!isAdmin || !sb || !box) return;
+    box.textContent = 'Loading payment verification records…';
+    const {data,error} = await sb.from('gm_payment_verifications').select('id,order_id,user_id,payment_method,transaction_id,amount_pkr,paid_at,receipt_sha256,receipt_url,verification_status,csv_match_status,created_at').order('created_at',{ascending:false}).limit(100);
+    if (error) { box.textContent = 'Queue unavailable: ' + error.message + ' (SQL migration may not have been run).'; return; }
+    if (!data?.length) { box.textContent = 'No payment submissions found.'; return; }
+    box.innerHTML = data.map(r => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;background:#08150f"><b>${esc(r.payment_method)} · ${esc(r.transaction_id)}</b><div style="font-size:12px;color:var(--muted)">Order: ${esc(r.order_id)} · PKR ${Number(r.amount_pkr||0).toFixed(2)} · ${esc(r.verification_status)} · CSV: ${esc(r.csv_match_status||'not checked')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><a href="${esc(r.receipt_url||'#')}" target="_blank" rel="noopener" style="color:var(--gold)">View Receipt</a><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','verified')">Mark Manually Verified</button><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','rejected')">Reject</button></div></div>`).join('');
+}
+async function gmSetPaymentReview(id,nextStatus) {
+    if (!isAdmin || !sb) return;
+    const note = nextStatus === 'rejected' ? (prompt('Reason for rejecting this payment:') || '') : (prompt('Admin verification note (optional):') || '');
+    if (nextStatus === 'rejected' && !note.trim()) return alert('Please enter a rejection reason.');
+    const {error} = await sb.from('gm_payment_verifications').update({verification_status:nextStatus,admin_note:note,reviewed_by:user.id,reviewed_at:new Date().toISOString()}).eq('id',id);
+    if (error) return alert('Could not update verification: '+error.message);
+    await gmLoadPaymentVerifications();
+    if (window.gmMsg) gmMsg('Payment verification record updated. Please use the existing order-management action to confirm/reject the order.','success');
+}
+function gmParseCsv(text) {
+    const rows=[]; let row=[],cell='',quoted=false;
+    for(let i=0;i<text.length;i++){const c=text[i]; if(c==='"' && quoted && text[i+1]==='"'){cell+='"';i++;} else if(c==='"'){quoted=!quoted;} else if(c===','&&!quoted){row.push(cell);cell='';} else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>String(x).trim()))rows.push(row);row=[];cell='';}else cell+=c;}
+    row.push(cell); if(row.some(x=>String(x).trim()))rows.push(row); if(rows.length<2)return [];
+    const norm=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,''); const h=rows[0].map(norm);
+    const pick=names=>h.findIndex(x=>names.some(n=>x.includes(n)));
+    const ti=pick(['transactionid','transactionreference','referenceid','txnid','rrn','trn']);
+    const ai=pick(['amount','creditamount','paidamount','deposit']);
+    const di=pick(['datetime','transactiondate','date','createdat','timestamp']);
+    const mi=pick(['paymentmethod','channel','wallet','bank']);
+    if(ti<0||ai<0)throw new Error('CSV میں Transaction ID/Reference اور Amount کے کالم نہیں ملے۔');
+    return rows.slice(1).map(r=>({transaction_id:gmNormalizeTxn(r[ti]),amount_pkr:Number(String(r[ai]||'').replace(/[^0-9.\-]/g,'')),paid_at:di>=0?String(r[di]||'').trim():null,payment_method:mi>=0?String(r[mi]||'').trim():null})).filter(r=>r.transaction_id&&Number.isFinite(r.amount_pkr)&&r.amount_pkr>0);
+}
+async function gmImportPaymentCsv() {
+    if(!isAdmin||!sb)return alert('Admin access required.');
+    const file=$('gmPaymentCsvFile')?.files?.[0]; if(!file)return alert('Select a CSV statement first.');
+    const statusEl=$('gmPaymentCsvStatus'); statusEl.classList.remove('hidden'); statusEl.textContent='Reading and matching CSV…';
+    try {
+        const rows=gmParseCsv(await file.text()); if(!rows.length)throw new Error('CSV میں قابلِ استعمال transaction rows نہیں ملیں۔');
+        const {data:pending,error}=await sb.from('gm_payment_verifications').select('id,order_id,transaction_id,amount_pkr,payment_method,verification_status').in('verification_status',['pending','csv_matched']).limit(1000);
+        if(error)throw error;
+        let matched=0,unmatched=0,amountMismatch=0;
+        for(const row of rows){
+            const tx=gmNormalizeTxn(row.transaction_id); const candidates=(pending||[]).filter(p=>gmNormalizeTxn(p.transaction_id)===tx);
+            if(!candidates.length){unmatched++;continue;}
+            for(const c of candidates){
+                if(Math.abs(Number(c.amount_pkr)-row.amount_pkr)>0.009){amountMismatch++;continue;}
+                const {error:upErr}=await sb.from('gm_payment_verifications').update({csv_match_status:'matched',verification_status:'csv_matched',csv_amount_pkr:row.amount_pkr,csv_paid_at:row.paid_at,csv_imported_by:user.id,csv_imported_at:new Date().toISOString()}).eq('id',c.id);
+                if(upErr)throw upErr; matched++;
+            }
+        }
+        statusEl.textContent=`CSV checked. Matches: ${matched}; amount mismatches: ${amountMismatch}; no matching Transaction ID: ${unmatched}. CSV match is evidence for admin review, not automatic order confirmation.`;
+        await gmLoadPaymentVerifications();
+    } catch(e){statusEl.textContent='CSV import failed: '+(e.message||e);}
+}
 
 // Withdraw Requests Modal (With Search)
 async function openWithdrawRequestsModal() {
@@ -3981,6 +4052,7 @@ function openAdminSection(sectionId) {
         document.body.classList.add('gm-admin-page-open');
     }
     if (sectionId === 'cj') loadGlobalAdminProducts();
+    if (sectionId === 'orders' && isAdmin) setTimeout(() => gmLoadPaymentVerifications(), 150);
 }
 
 // Home storefront switch: keep the regular and global catalogs visually separate.
@@ -5722,11 +5794,14 @@ function openProductView(index) {
         productPage.style.setProperty('display', 'block');
         productPage.scrollTop = 0;
     }
-    document.body.style.overflow = 'hidden';
+    // Capture the storefront position BEFORE locking body scroll; otherwise some
+    // mobile browsers report 0 after overflow:hidden is applied.
+    const gmReturnScrollY = Math.max(0, Number(window.scrollY) || 0);
     if (history.state && history.state.page) {
-        history.replaceState({ ...history.state, scrollY: window.scrollY }, '', window.location.href);
+        history.replaceState({ ...history.state, scrollY: gmReturnScrollY }, '', window.location.href);
     }
-    history.pushState({ page: 'product', scrollY: 0 }, '', '#product');
+    history.pushState({ page: 'product', scrollY: 0, returnScrollY: gmReturnScrollY }, '', '#product');
+    document.body.style.overflow = 'hidden';
 
     const isMarkazCustomerItem = p.supplier_source === 'Markaz Pakistan';
     const storedImages = gmNormalizeProductImages(p);

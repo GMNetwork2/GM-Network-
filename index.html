@@ -2210,7 +2210,24 @@ body.gm-admin-page-open{overflow:hidden!important}
         <div style="background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:12px;margin-bottom:20px;"><p style="margin:0;font-size:14px;">Total Amount to Pay:</p><h2 id="payTotalAmount" style="color:var(--g);font-size:28px;margin:5px 0 0;"></h2></div>
         <div class="qr-container" style="padding:15px;background:#fff;border:1px solid var(--line);border-radius:12px;"><img referrerpolicy="no-referrer" src="qr.png" class="qr-img" alt="QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p style="font-size:13px;margin-top:10px;">Scan to pay MUHAMMAD HAMID</p></div>
         <a id="payWhatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366;margin:15px 0;">Contact on WhatsApp</a>
-        <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;"><h3 style="font-size:16px;margin-bottom:10px;">Upload Payment Screenshot</h3><input type="file" id="paymentProofInput" accept="image/*" style="padding:10px;border:1px solid var(--line);border-radius:8px;"><button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;">Submit Proof</button><button class="secondary" type="button" onclick="document.getElementById('paymentProofPage').classList.add('hidden'); document.getElementById('checkoutPage').classList.remove('hidden');" style="margin-top:10px;width:100%;">Back to Checkout</button><div id="proofStatus" class="status hidden" style="margin-top:15px;"></div></div>
+        <div style="border-top:1px solid var(--line);margin:20px 0;padding-top:20px;text-align:left;">
+          <h3 style="font-size:16px;margin-bottom:10px;text-align:center;">Upload Payment Receipt</h3>
+          <label for="gmCartPaymentMethod" style="display:block;margin:10px 0 5px;font-weight:700;">Payment Method</label>
+          <select id="gmCartPaymentMethod" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:#07150e;color:#f5f3e9;"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank Transfer</option></select>
+          <label for="gmCartPaymentTxnId" style="display:block;margin:10px 0 5px;font-weight:700;">Transaction ID / Reference</label>
+          <input id="gmCartPaymentTxnId" type="text" maxlength="120" autocomplete="off" placeholder="Enter transaction ID / reference" style="width:100%;padding:12px;box-sizing:border-box;margin-bottom:8px;">
+          <label for="gmCartPaymentAmount" style="display:block;margin:10px 0 5px;font-weight:700;">Paid Amount (PKR)</label>
+          <input id="gmCartPaymentAmount" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Actual amount paid in PKR" style="width:100%;padding:12px;box-sizing:border-box;margin-bottom:8px;">
+          <small id="gmCartPaymentExpected" style="display:block;color:var(--muted);margin:-2px 0 8px;">Enter the exact amount sent.</small>
+          <label for="gmCartPaymentPaidAt" style="display:block;margin:10px 0 5px;font-weight:700;">Payment Date &amp; Time</label>
+          <input id="gmCartPaymentPaidAt" type="datetime-local" style="width:100%;padding:12px;box-sizing:border-box;margin-bottom:10px;">
+          <label for="paymentProofInput" style="display:block;margin:10px 0 5px;font-weight:700;">Payment Receipt Image (JPG, PNG or WEBP)</label>
+          <input type="file" id="paymentProofInput" accept="image/jpeg,image/png,image/webp" style="padding:10px;border:1px solid var(--line);border-radius:8px;width:100%;box-sizing:border-box;">
+          <small style="display:block;color:var(--muted);line-height:1.5;margin-top:7px;">صرف اصل ادائیگی کی رسید اپلوڈ کریں۔ Transaction ID، رقم اور تاریخ لازمی ہیں۔ Admin اصل رسید دیکھ کر ادائیگی کی تصدیق کرے گا۔</small>
+          <button class="primary" type="button" onclick="submitPaymentProof()" id="proofSubmitBtn" style="margin-top:15px;width:100%;">Submit Payment Proof</button>
+          <button class="secondary" type="button" onclick="document.getElementById('paymentProofPage').classList.add('hidden'); document.getElementById('checkoutPage').classList.remove('hidden');" style="margin-top:10px;width:100%;">Back to Checkout</button>
+          <div id="proofStatus" class="status hidden" style="margin-top:15px;"></div>
+        </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3721,6 +3738,7 @@ async function uploadPaymentProof() {
     const amount = Number($('gmPaymentAmount')?.value || 0);
     const paidAtRaw = $('gmPaymentPaidAt')?.value || '';
     if (!file) return alert("Please select a screenshot of your payment first.");
+    try { await gmValidateReceiptImage(file); } catch (imageError) { return alert(imageError.message); }
     if (!txnId) return alert('Please enter the Transaction ID / Reference.');
     if (!Number.isFinite(amount) || amount <= 0) return alert('Please enter the paid amount in PKR.');
     if (!paidAtRaw) return alert('Please enter the payment date and time.');
@@ -3743,7 +3761,7 @@ async function uploadPaymentProof() {
         const publicUrl = sb.storage.from('product-images').getPublicUrl(storagePath).data?.publicUrl;
         const { error:updateError } = await sb.from('orders').update({ payment_proof:publicUrl }).eq('id', orderId);
         if (updateError) throw new Error('Order receipt update failed: ' + updateError.message);
-        const verification = await sb.from('gm_payment_verifications').insert({order_id:orderId,user_id:user.id,payment_method:method,transaction_id:txnId,amount_pkr:amount,paid_at:new Date(paidAtRaw).toISOString(),receipt_sha256:receiptHash,receipt_url:publicUrl,verification_status:'pending',csv_match_status:'not_checked'});
+        const verification = await sb.from('gm_payment_verifications').insert({order_id:orderId,order_ids:[orderId],user_id:user.id,payment_method:method,transaction_id:txnId,amount_pkr:amount,paid_at:new Date(paidAtRaw).toISOString(),receipt_sha256:receiptHash,receipt_url:publicUrl,verification_status:'pending',csv_match_status:'not_checked'});
         if (verification.error) {
             if (/duplicate key|unique constraint/i.test(verification.error.message||'')) throw new Error('یہ Transaction ID یا یہی رسید پہلے کسی دوسرے آرڈر میں جمع ہو چکی ہے۔ ادائیگی کی نئی درست رسید/ٹرانزیکشن استعمال کریں۔');
             throw new Error('Verification record failed. Run the new SQL migration first. ' + verification.error.message);
@@ -3773,10 +3791,10 @@ async function gmLoadPaymentVerifications() {
     const box = $('gmPaymentVerificationQueue');
     if (!isAdmin || !sb || !box) return;
     box.textContent = 'Loading payment verification records…';
-    const {data,error} = await sb.from('gm_payment_verifications').select('id,order_id,user_id,payment_method,transaction_id,amount_pkr,paid_at,receipt_sha256,receipt_url,verification_status,csv_match_status,created_at').order('created_at',{ascending:false}).limit(100);
+    const {data,error} = await sb.from('gm_payment_verifications').select('id,order_id,order_ids,user_id,payment_method,transaction_id,amount_pkr,paid_at,receipt_sha256,receipt_url,verification_status,csv_match_status,created_at').order('created_at',{ascending:false}).limit(100);
     if (error) { box.textContent = 'Queue unavailable: ' + error.message + ' (SQL migration may not have been run).'; return; }
     if (!data?.length) { box.textContent = 'No payment submissions found.'; return; }
-    box.innerHTML = data.map(r => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;background:#08150f"><b>${esc(r.payment_method)} · ${esc(r.transaction_id)}</b><div style="font-size:12px;color:var(--muted)">Order: ${esc(r.order_id)} · PKR ${Number(r.amount_pkr||0).toFixed(2)} · ${esc(r.verification_status)} · CSV: ${esc(r.csv_match_status||'not checked')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><a href="${esc(r.receipt_url||'#')}" target="_blank" rel="noopener" style="color:var(--gold)">View Receipt</a><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','verified')">Mark Manually Verified</button><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','rejected')">Reject</button></div></div>`).join('');
+    box.innerHTML = data.map(r => `<div style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;background:#08150f"><b>${esc(r.payment_method)} · ${esc(r.transaction_id)}</b><div style="font-size:12px;color:var(--muted)">Orders: ${esc((r.order_ids||[r.order_id]).map(x=>String(x).slice(-8)).join(', '))} · PKR ${Number(r.amount_pkr||0).toFixed(2)} · ${esc(r.verification_status)} · CSV: ${esc(r.csv_match_status||'not checked')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><a href="${esc(r.receipt_url||'#')}" target="_blank" rel="noopener" style="color:var(--gold)">View Receipt</a><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','verified')">Mark Manually Verified</button><button class="secondary" type="button" onclick="gmSetPaymentReview('${String(r.id).replace(/'/g,'')}','rejected')">Reject</button></div></div>`).join('');
 }
 async function gmSetPaymentReview(id,nextStatus) {
     if (!isAdmin || !sb) return;
@@ -6158,7 +6176,7 @@ async function submitCheckout() {
         history.pushState({page:'payment'},'','#payment');
         $('checkoutPage').classList.add('hidden');
         $('paymentProofPage').classList.remove('hidden');
-        $('payTotalAmount').textContent=convertMoney(orderTotal);
+        $('payTotalAmount').textContent=convertMoney(orderTotal); gmPreparePaymentFields(orderTotal);
         const msg=encodeURIComponent(`Hi, I want to place an order for ${checkoutData.name}. My Name: ${name}, Phone: ${phone}. Total: ${convertMoney(orderTotal)}. I will send the payment screenshot.`);
         $('payWhatsappBtn').href=`https://wa.me/92${MY_EASYPAISA.replace(/^0/,'')}?text=${msg}`;
         return;
@@ -7793,7 +7811,7 @@ document.addEventListener('DOMContentLoaded', init);
   try{const lock=await checkSystemLockStatus();if(lock)return gmMsg('سسٹم عارضی طور پر لاک ہے۔','warning');if(!systemLockStatusLoaded)return gmMsg('سسٹم لاک اسٹیٹس چیک نہیں ہو سکا۔ دوبارہ کوشش کریں۔','warning');let {data:prof,error:pe}=await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();if(pe)throw pe;if(prof?.is_locked)return gmMsg('آپ کا اکاؤنٹ لاک ہے۔ ایڈمن سے رابطہ کریں۔','error');}catch(e){return gmMsg('اکاؤنٹ سیکیورٹی اسٹیٹس چیک نہیں ہو سکا: '+e.message,'error')}
   let name=document.getElementById('coNameInput').value.trim(),phone=document.getElementById('coPhoneInput').value.trim(),street=document.getElementById('coAddressInput').value.trim(),city=document.getElementById('coCityInput').value.trim(),postal=document.getElementById('coPostalInput').value.trim();if(!name||!phone||!street||!city||!postal)return gmMsg('نام، فون، پتہ، شہر اور پوسٹل کوڈ مکمل کریں۔','warning');let address=`${street}, ${city} - ${postal}`;if(!deliveryChargeLoaded){let ok=await loadDeliveryCharge(false);if(!ok)return gmMsg('ڈیلیوری چارج لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔','error')}
   let subtotal=items.reduce((s,x)=>s+x.price*x.qty,0),delivery=Number(getDeliveryChargeBase()||0),total=subtotal+delivery,method=document.querySelector('input[name="paymentMethod"]:checked')?.value||'manual';let codEligible=items.length>0&&items.every(x=>{let p=productById(x.id);return p&&p.cod_enabled===true&&['cj dropshipping','markaz pakistan'].includes(String(p.supplier_source||'').trim().toLowerCase());});if(method==='cod'&&!codEligible)return gmMsg('Cash on Delivery is not enabled for every product in this cart. Remove other products or choose another payment method.','warning');window.pendingCheckoutData={items,phone_number:phone,shipping_address:address,buyer_name:name,subtotal_usd:subtotal,delivery_charge_usd:delivery,total_usd:total,payment_method:method};
-  if(method==='cod'){const btn=document.getElementById('coSubmitBtn');if(btn){btn.disabled=true;btn.textContent='Submitting COD Order…'}try{for(let i=0;i<items.length;i++){let x=items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?delivery:0,total_usd:line+(i===0?delivery:0),phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'cod'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;}setCart([]);window.cartCheckoutItems=[];window.pendingCheckoutData=null;document.getElementById('checkoutPage').classList.add('hidden');document.body.style.overflow='';gmMsg('COD order submitted. Pay when your parcel arrives.','success');tab('orders');loadMemberOrders();}catch(e){gmMsg('COD order failed: '+e.message,'error')}finally{if(btn){btn.disabled=false;btn.textContent='Confirm & Place Order'}}return;}if(method==='manual'){document.getElementById('checkoutPage').classList.add('hidden');document.getElementById('paymentProofPage').classList.remove('hidden');document.getElementById('payTotalAmount').textContent=money(total);let msg=encodeURIComponent(`GM Network cart order: ${items.map(x=>x.name+' x'+x.qty).join(', ')}. Name: ${name}, Phone: ${phone}, Total: ${money(total)}. I will send payment proof.`);let wa=document.getElementById('payWhatsappBtn');if(wa)wa.href=`https://wa.me/92${String(window.MY_EASYPAISA||'03082276093').replace(/^0/,'')}?text=${msg}`;history.pushState({page:'payment'},'','#payment');return;}
+  if(method==='cod'){const btn=document.getElementById('coSubmitBtn');if(btn){btn.disabled=true;btn.textContent='Submitting COD Order…'}try{for(let i=0;i<items.length;i++){let x=items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?delivery:0,total_usd:line+(i===0?delivery:0),phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'cod'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;}setCart([]);window.cartCheckoutItems=[];window.pendingCheckoutData=null;document.getElementById('checkoutPage').classList.add('hidden');document.body.style.overflow='';gmMsg('COD order submitted. Pay when your parcel arrives.','success');tab('orders');loadMemberOrders();}catch(e){gmMsg('COD order failed: '+e.message,'error')}finally{if(btn){btn.disabled=false;btn.textContent='Confirm & Place Order'}}return;}if(method==='manual'){document.getElementById('checkoutPage').classList.add('hidden');document.getElementById('paymentProofPage').classList.remove('hidden');document.getElementById('payTotalAmount').textContent=money(total);gmPreparePaymentFields(total);let msg=encodeURIComponent(`GM Network cart order: ${items.map(x=>x.name+' x'+x.qty).join(', ')}. Name: ${name}, Phone: ${phone}, Total: ${money(total)}. I will send payment proof.`);let wa=document.getElementById('payWhatsappBtn');if(wa)wa.href=`https://wa.me/92${String(window.MY_EASYPAISA||'03082276093').replace(/^0/,'')}?text=${msg}`;history.pushState({page:'payment'},'','#payment');return;}
   const btn=document.getElementById('coSubmitBtn');if(btn){btn.disabled=true;btn.textContent='Processing…'}let created=[];try{let {data:wallet,error:we}=await sb.from('wallets').select('id,balance').eq('user_id',user.id).maybeSingle();if(we)throw we;if(!wallet||Number(wallet.balance||0)<total)throw new Error('Wallet balance is insufficient.');
    for(let i=0;i<items.length;i++){let x=items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?delivery:0,total_usd:line+(i===0?delivery:0),phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'wallet'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;created.push({id:r.data.id,amount:payload.total_usd});}
    if(await checkSystemLockStatus())throw new Error('System lock changed during checkout.');let old=Number(wallet.balance||0),next=old-total;let upd=await sb.from('wallets').update({balance:next}).eq('id',wallet.id).eq('balance',old).select('balance').maybeSingle();if(upd.error||!upd.data)throw new Error('Wallet balance changed; no debit was completed. Please retry.');walletDebited=true;
@@ -8189,6 +8207,92 @@ window.saveGMMemberProfile = async function(){
 }
 </style>
 
+<script id="gm-payment-verification-cart-fix-v2">
+// Payment-proof repair: shared by the single-product and cart manual-payment flows.
+function gmLocalDateTimeValue(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+function gmPreparePaymentFields(totalUsd){
+  const amount=document.getElementById('gmCartPaymentAmount');
+  const paidAt=document.getElementById('gmCartPaymentPaidAt');
+  const expected=document.getElementById('gmCartPaymentExpected');
+  const rate=Number(window.GM_PKR_PER_USD||280);
+  const estimate=Math.max(0,Number(totalUsd||0)*rate);
+  if(amount&&!amount.value&&estimate>0)amount.value=estimate.toFixed(2);
+  if(paidAt&&!paidAt.value)paidAt.value=gmLocalDateTimeValue();
+  if(expected)expected.textContent=estimate>0?('Estimated total: PKR '+estimate.toLocaleString('en-PK',{minimumFractionDigits:2,maximumFractionDigits:2})+' (current app exchange rate). Edit Paid Amount if you sent a different amount.'): 'Enter the exact amount sent.';
+}
+async function gmValidateReceiptImage(file){
+  if(!file)throw new Error('ادائیگی کی رسید منتخب کریں۔');
+  if(file.size<1024||file.size>8*1024*1024)throw new Error('رسید کی تصویر 1 KB سے 8 MB کے درمیان ہونی چاہیے۔');
+  const head=new Uint8Array(await file.slice(0,16).arrayBuffer());
+  const isPng=head.length>=8&&head[0]===137&&head[1]===80&&head[2]===78&&head[3]===71&&head[4]===13&&head[5]===10&&head[6]===26&&head[7]===10;
+  const isJpeg=head.length>=3&&head[0]===255&&head[1]===216&&head[2]===255;
+  const isWebp=head.length>=12&&String.fromCharCode(...head.slice(0,4))==='RIFF'&&String.fromCharCode(...head.slice(8,12))==='WEBP';
+  if(!(isPng||isJpeg||isWebp))throw new Error('صرف درست JPG، PNG یا WEBP امیج فائل اپلوڈ کریں۔ فائل کی اصل قسم درست نہیں۔');
+  if(file.type&&!['image/jpeg','image/png','image/webp'].includes(file.type.toLowerCase()))throw new Error('صرف JPG، PNG یا WEBP رسید قابلِ قبول ہے۔');
+  if(typeof createImageBitmap==='function'){
+    let bitmap;try{bitmap=await createImageBitmap(file);if(bitmap.width<80||bitmap.height<80)throw new Error('تصویر بہت چھوٹی ہے۔ واضح رسید اپلوڈ کریں۔');}
+    catch(e){throw new Error(e.message||'تصویر خراب ہے یا کھل نہیں رہی۔');}finally{if(bitmap)bitmap.close();}
+  }
+  return true;
+}
+window.submitPaymentProof=async function(){
+  if(!user||!sb||!window.pendingCheckoutData)return gmMsg('آرڈر ڈیٹا دستیاب نہیں۔ دوبارہ چیک آؤٹ کریں۔','error');
+  const file=document.getElementById('paymentProofInput')?.files?.[0];
+  const method=String(document.getElementById('gmCartPaymentMethod')?.value||'');
+  const txnId=String(document.getElementById('gmCartPaymentTxnId')?.value||'').trim();
+  const amount=Number(document.getElementById('gmCartPaymentAmount')?.value||0);
+  const paidAtRaw=document.getElementById('gmCartPaymentPaidAt')?.value||'';
+  const btn=document.getElementById('proofSubmitBtn');
+  const p=window.pendingCheckoutData;
+  if(!file)return gmMsg('ادائیگی کی اصل رسید منتخب کریں۔','warning');
+  if(!['easypaisa','jazzcash','bank_transfer'].includes(method))return gmMsg('ادائیگی کا درست طریقہ منتخب کریں۔','warning');
+  if(!txnId||txnId.length<4)return gmMsg('Transaction ID / Reference لازمی درج کریں۔','warning');
+  if(!Number.isFinite(amount)||amount<=0)return gmMsg('ادا کی گئی درست رقم PKR میں درج کریں۔','warning');
+  if(!paidAtRaw||!Number.isFinite(new Date(paidAtRaw).getTime()))return gmMsg('ادائیگی کی تاریخ اور وقت درج کریں۔','warning');
+  try{await gmValidateReceiptImage(file);}catch(e){return gmMsg(e.message,'warning');}
+  if(file.size>8*1024*1024)return gmMsg('تصویر 8 MB سے کم ہونی چاہیے۔','warning');
+  if(btn){btn.disabled=true;btn.textContent='Submitting…';}
+  status('proofStatus','رسید کی جانچ، Duplicate Check اور آرڈر محفوظ کیا جا رہا ہے…');
+  const created=[];let storagePath=null;
+  try{
+    if(await checkSystemLockStatus())throw new Error('System is currently locked. Please contact support.');
+    if(!systemLockStatusLoaded)throw new Error('System lock status verify نہیں ہو سکا۔ دوبارہ کوشش کریں۔');
+    const {data:proofProfile,error:proofProfileError}=await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();
+    if(proofProfileError)throw proofProfileError;
+    if(proofProfile?.is_locked)throw new Error('Your account is locked. Contact admin.');
+    const items=Array.isArray(p.items)?p.items:null;
+    const orderPayloads=items?items.map((x,i)=>{const line=Number(x.price||0)*Number(x.qty||1);return {buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:Number(x.qty||1),unit_price_usd:Number(x.price||0),subtotal_usd:line,delivery_charge_usd:i===0?Number(p.delivery_charge_usd||0):0,total_usd:line+(i===0?Number(p.delivery_charge_usd||0):0),phone_number:p.phone_number,shipping_address:p.shipping_address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'manual'};})
+      :[{buyer_id:user.id,buyer_email:user.email||null,product_id:p.product_id,product_name:p.product_name||null,quantity:Number(p.quantity||1),unit_price_usd:Number(p.unit_price_usd||0),subtotal_usd:Number(p.subtotal_usd??(Number(p.unit_price_usd||0)*Number(p.quantity||1))),delivery_charge_usd:Number(p.delivery_charge_usd||0),total_usd:Number(p.total_usd??p.subtotal_usd??p.unit_price_usd??0),phone_number:p.phone_number,shipping_address:p.shipping_address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'manual'}];
+    if(!orderPayloads.length)throw new Error('Checkout میں کوئی پروڈکٹ موجود نہیں۔');
+    for(const payload of orderPayloads){
+      let r=await sb.from('orders').insert(payload).select('id').single();
+      if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){const q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single();}
+      if(r.error)throw new Error('Order creation failed: '+r.error.message);
+      created.push(r.data.id);
+    }
+    const receiptHash=await gmSha256File(file);
+    const ext=isReceiptExt(file);
+    storagePath=`payments/${created[0]}-${Date.now()}.${ext}`;
+    const up=await sb.storage.from('product-images').upload(storagePath,file,{upsert:false,contentType:file.type});
+    if(up.error)throw new Error('Receipt upload failed: '+up.error.message);
+    const publicUrl=sb.storage.from('product-images').getPublicUrl(storagePath).data?.publicUrl;
+    if(!publicUrl)throw new Error('Receipt URL unavailable.');
+    const orderUpdate=await sb.from('orders').update({payment_proof:publicUrl}).in('id',created);
+    if(orderUpdate.error)throw new Error('Order receipt link failed: '+orderUpdate.error.message);
+    const verification=await sb.from('gm_payment_verifications').insert({order_id:created[0],order_ids:created,user_id:user.id,payment_method:method,transaction_id:txnId,amount_pkr:amount,paid_at:new Date(paidAtRaw).toISOString(),receipt_sha256:receiptHash,receipt_url:publicUrl,verification_status:'pending',csv_match_status:'not_checked'});
+    if(verification.error){if(/duplicate key|unique constraint/i.test(verification.error.message||''))throw new Error('یہ Transaction ID یا یہی رسید پہلے جمع ہو چکی ہے۔ Duplicate payment قبول نہیں کی گئی۔');throw new Error('Verification record محفوظ نہیں ہوا: '+verification.error.message+' — نئی SQL migration (order_ids) بھی Run کریں۔');}
+    setCart([]);window.cartCheckoutItems=[];window.pendingCheckoutData=null;checkoutData=null;
+    status('proofStatus','✅ ادائیگی کی تفصیلات، رسید اور تمام آرڈرز محفوظ ہو گئے ہیں۔ آرڈرز Pending ہیں اور Admin کی تصدیق کے منتظر ہیں۔','ok');
+    setTimeout(()=>{const page=document.getElementById('paymentProofPage');if(page)page.classList.add('hidden');document.body.style.overflow='';const input=document.getElementById('paymentProofInput');if(input)input.value='';const formIds=['gmCartPaymentTxnId','gmCartPaymentAmount'];formIds.forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const d=document.getElementById('gmCartPaymentPaidAt');if(d)d.value='';if(btn){btn.disabled=false;btn.textContent='Submit Payment Proof';}tab('orders');if(typeof loadMemberOrders==='function')loadMemberOrders();if(isAdmin&&typeof loadAdmin==='function')loadAdmin();},2500);
+  }catch(e){
+    for(const id of created){try{await sb.from('orders').delete().eq('id',id).eq('status','pending');}catch(_){}}
+    if(storagePath){try{await sb.storage.from('product-images').remove([storagePath]);}catch(_){}}
+    status('proofStatus','Error: '+(e.message||'Payment proof could not be saved.'),'error');
+    if(btn){btn.disabled=false;btn.textContent='Submit Payment Proof';}
+  }
+};
+function isReceiptExt(file){const h=file.type.toLowerCase();return h==='image/png'?'png':h==='image/webp'?'webp':'jpg';}
+</script>
 </body>
 </html>
 <style id="gm-v19-layout-fixes">

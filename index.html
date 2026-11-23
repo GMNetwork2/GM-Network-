@@ -2204,7 +2204,7 @@ body.gm-admin-page-open{overflow:hidden!important}
 </div>
 
 <!-- Payment Proof Page -->
-<div id="paymentProofPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:600;overflow-y:auto;">
+<div id="paymentProofPage" class="view hidden" style="position:fixed;inset:0;background:#050a08;color:#e5e5e5;z-index:600;overflow-y:auto;">
     <div style="padding:30px 20px;max-width:500px;margin:0 auto;text-align:center;">
         <h2 style="color:var(--g);font-size:24px;margin-bottom:10px;">Order Placed!</h2><p style="color:var(--muted);margin-bottom:20px;">Please complete the payment to confirm your order.</p>
         <div style="background:#f0f7f2;border:2px dashed var(--g2);padding:15px;border-radius:12px;margin-bottom:20px;"><p style="margin:0;font-size:14px;">Total Amount to Pay:</p><h2 id="payTotalAmount" style="color:var(--g);font-size:28px;margin:5px 0 0;"></h2></div>
@@ -3375,9 +3375,9 @@ function renderProductCards(productsToRender, container) {
                 ${priceHtml}
             </div>
             <div style="display:flex;gap:7px;margin-top:8px;">
-                <button class="primary buy-btn" type="button" ${p.active ? `onclick="event.stopPropagation();openProductView(${originalIndex})"` : 'disabled'} style="flex:1;${p.active ? 'background:var(--g2);color:var(--gold);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active ? 'View Details' : 'SOLD OUT'}</button>
-                <button class="primary buy-btn" type="button" ${p.active ? '' : 'disabled'} onclick="event.stopPropagation();addProductToCartById('${esc(p.id)}')" style="flex:1;${p.active ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">Add to Cart</button>
-                ${gmCodSupplierKind(p.supplier_source)==='markaz' ? `<button class="primary buy-btn gm-product-cod-btn" type="button" ${p.active && p.cod_enabled===true ? '' : 'disabled'} onclick="event.stopPropagation();buyMarkazWithCOD('${esc(p.id)}')" title="${p.cod_enabled===true?'Cash on Delivery':'COD admin setting is OFF'}" style="flex:1;background:${p.active && p.cod_enabled===true?'#174a2e':'#222'};color:${p.active && p.cod_enabled===true?'#f0d27d':'#888'};border:1px solid ${p.active && p.cod_enabled===true?'var(--gold)':'#555'};">COD</button>` : ''}
+                <button class="primary buy-btn" type="button" ${p.active !== false ? `onclick="event.stopPropagation();openProductView(${originalIndex})"` : 'disabled'} style="flex:1;${p.active !== false ? 'background:var(--g2);color:var(--gold);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">${p.active !== false ? 'View Details' : 'SOLD OUT'}</button>
+                <button class="primary buy-btn" type="button" ${p.active !== false ? '' : 'disabled'} onclick="event.stopPropagation();gmSaveCardToCart('${esc(p.id)}',this)" style="flex:1;${p.active !== false ? 'background:var(--gold);color:var(--g);border:1px solid var(--gold);' : 'background:#222;color:#777;border:1px solid #444;'}">Save to Cart</button>
+                ${gmCodSupplierKind(p.supplier_source)==='markaz' ? `<button class="primary buy-btn gm-product-cod-btn" type="button" ${p.active !== false && p.cod_enabled===true ? '' : 'disabled'} onclick="event.stopPropagation();buyMarkazWithCOD('${esc(p.id)}')" title="${p.cod_enabled===true?'Cash on Delivery':'COD admin setting is OFF'}" style="flex:1;background:${p.active !== false && p.cod_enabled===true?'#174a2e':'#222'};color:${p.active !== false && p.cod_enabled===true?'#f0d27d':'#888'};border:1px solid ${p.active !== false && p.cod_enabled===true?'var(--gold)':'#555'};">COD</button>` : ''}
             </div>
         </div>`;
     }).join('') || '<p class="muted">No products found in this category.</p>';
@@ -4160,19 +4160,23 @@ function gmRenderGlobalProductCards(items, container) {
   container.innerHTML = rows.map(p => {
     const originalIndex = (window.allProductsData || []).findIndex(x => String(x.id) === String(p.id));
     const safeIndex = originalIndex >= 0 ? originalIndex : -1;
-    const openCard = `openGlobalProductById('${String(p.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')`;
+    const idArg = String(p.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const openCard = `openGlobalProductById('${idArg}')`;
     const imgs = Array.isArray(p.images) && p.images.filter(Boolean).length ? p.images.filter(Boolean) : (p.image_url ? [p.image_url] : ['https://placehold.co/600x600/0a1f15/e5b853?text=GM+NETWORK']);
     const name = gmCustomerText(p.name) || 'GM Network Product';
     const rating = Math.max(0, Math.min(5, Number(p.base_rating) || 5));
     const reviews = Number(p.base_reviews_count) || 0;
     const price = convertMoney(gmProductUsdPrice(p));
-    return `<article class="product-card gm-global-compact-card" role="button" tabindex="0" aria-label="${esc(name)}" onclick="${openCard}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${openCard}}">
-      <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" class="main-img" alt="${esc(name)}" loading="lazy">
-      <div class="product-info">
-        <h3 title="${esc(name)}">${esc(name)}</h3>
-        <div class="gm-global-card-rating"><span>${'★'.repeat(Math.round(rating))}${'☆'.repeat(5-Math.round(rating))}</span><small>${rating.toFixed(1)}${reviews ? ` · ${reviews}` : ''}</small></div>
-        <div class="price">${price}</div>
+    return `<article class="product-card gm-global-compact-card" aria-label="${esc(name)}">
+      <div class="gm-global-card-open" role="button" tabindex="0" aria-label="View ${esc(name)}" onclick="${openCard}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${openCard}}">
+        <img referrerpolicy="no-referrer" src="${esc(imgs[0])}" class="main-img" alt="${esc(name)}" loading="lazy">
+        <div class="product-info">
+          <h3 title="${esc(name)}">${esc(name)}</h3>
+          <div class="gm-global-card-rating"><span>${'★'.repeat(Math.round(rating))}${'☆'.repeat(5-Math.round(rating))}</span><small>${rating.toFixed(1)}${reviews ? ` · ${reviews}` : ''}</small></div>
+          <div class="price">${price}</div>
+        </div>
       </div>
+      <button type="button" class="gm-global-save-cart" onclick="event.preventDefault();event.stopPropagation();gmSaveCardToCart('${idArg}',this)">Save to Cart</button>
     </article>`;
   }).join('') || '<p class="muted">اس سیکشن میں ابھی کوئی پروڈکٹ دستیاب نہیں۔</p>';
 }
@@ -5991,7 +5995,7 @@ function openProductView(index) {
     // Sold Out Check for Product View Page
     const pvBuyBtn = document.querySelector('#productViewPage .primary[onclick="openCheckoutPage()"]');
     const pvAddBtn = document.querySelector('#productViewPage button[onclick="addToCartFromView()"]');
-    if (!p.active) {
+    if (p.active === false) {
         if (pvBuyBtn) { pvBuyBtn.textContent = 'SOLD OUT'; pvBuyBtn.style.background = '#222'; pvBuyBtn.style.color = '#555'; pvBuyBtn.disabled = true; }
         if (pvAddBtn) { pvAddBtn.textContent = 'UNAVAILABLE'; pvAddBtn.style.borderColor = '#555'; pvAddBtn.style.color = '#555'; pvAddBtn.disabled = true; }
     } else {
@@ -6111,7 +6115,7 @@ function openCheckoutPage() {
     if (!user) return alert('Please sign in to place an order.');
     if (!checkoutData) return;
     const selectedProduct = (window.allProductsData || []).find(item => String(item.id) === String(checkoutData.id));
-    if (selectedProduct && !selectedProduct.active) return alert('This product is sold out and currently unavailable.');
+    if (selectedProduct && selectedProduct.active === false) return alert('This product is sold out and currently unavailable.');
     $('coImage').src = checkoutData.image || $('pvImageSlider').querySelector('img')?.src || '';
     $('coName').textContent = checkoutData.name;
     $('coPrice').textContent = convertMoney(Number(checkoutData.price) * productQty);
@@ -8293,8 +8297,7 @@ window.submitPaymentProof=async function(){
 };
 function isReceiptExt(file){const h=file.type.toLowerCase();return h==='image/png'?'png':h==='image/webp'?'webp':'jpg';}
 </script>
-</body>
-</html>
+
 <style id="gm-v19-layout-fixes">
 /* Admin category filter: keep every label readable and tap-sized */
 #adminManageProducts > div[style*="overflow-x:auto"]{display:flex!important;flex-wrap:nowrap!important;gap:8px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:7px 2px 12px!important;scrollbar-width:thin!important;}
@@ -8799,3 +8802,241 @@ input:focus,select:focus,textarea:focus{border-color:#69d9b7!important;box-shado
 @media(max-width:600px){.gm-inspiration-section{padding:14px!important;border-radius:19px!important}.gm-inspiration-heading{align-items:flex-start}.gm-inspiration-badge{width:53px;height:53px;flex-basis:53px;border-radius:15px;font-size:19px}.gm-inspiration-grid{grid-template-columns:1fr;gap:9px}.gm-inspiration-card{min-height:0;padding:13px 12px 15px}.gm-inspiration-card p{font-size:12px}.gm-inspiration-card h3{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.gm-inspiration-card:hover{transform:none;transition:none}}
 </style>
+
+<style id="gm-payment-proof-readability-final">
+#paymentProofPage{background:#050a08!important;color:#e5e5e5!important}
+#paymentProofPage h2,#paymentProofPage h3,#paymentProofPage label{color:#e5c36a!important}
+#paymentProofPage p,#paymentProofPage small{color:#c8d2ca!important}
+#paymentProofPage input,#paymentProofPage select{background:#07150e!important;color:#f5f3e9!important;border:1px solid #496653!important}
+#paymentProofPage input::placeholder{color:#a3a3a3!important}
+</style>
+
+
+<!-- GM Network: unified full-screen stacking and same-page guest authentication -->
+<style id="gm-final-layering-and-auth-overlay">
+  #gm-global-category-page{z-index:10050!important}
+  #productViewPage{z-index:10080!important;isolation:isolate!important}
+  #checkoutPage{z-index:10090!important;isolation:isolate!important}
+  #paymentProofPage{z-index:10100!important;isolation:isolate!important}
+  .modal{z-index:12000!important}
+  #imageLightbox{z-index:20000!important;isolation:isolate!important}
+  #offlineOverlay{z-index:99999!important}
+  #gmAuthOverlay{position:fixed;inset:0;z-index:11000;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(18px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box;background:rgba(0,0,0,.88);backdrop-filter:blur(8px)}
+  #gmAuthOverlay.gm-auth-open{display:flex}
+  #gmAuthOverlay .gm-auth-shell{position:relative;width:min(100%,520px);margin:auto;max-height:calc(100dvh - 36px);overflow-y:auto;border:1px solid #e5b853;border-radius:20px;background:#050a08;box-shadow:0 24px 80px #000c;padding:14px;box-sizing:border-box}
+  #gmAuthOverlay .gm-auth-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 4px 12px;border-bottom:1px solid #1f3a2c;margin-bottom:12px}
+  #gmAuthOverlay .gm-auth-top strong{color:#e5b853;font-size:15px;letter-spacing:.04em}
+  #gmAuthOverlay .gm-auth-close{width:40px;height:40px;border:1px solid #e5b853;border-radius:11px;background:#10251a;color:#f5d47f;font-size:25px;line-height:1;cursor:pointer}
+  #gmAuthOverlay #authPanel{width:100%;max-width:none;margin:0;padding:14px!important;box-sizing:border-box;background:#08130d!important;border:1px solid #284a36!important;color:#e5e5e5!important;box-shadow:none!important}
+  #gmAuthOverlay #authPanel h2,#gmAuthOverlay #authPanel h3{color:#e5b853!important}
+  #gmAuthOverlay #authPanel label{color:#e5e5e5!important}
+  #gmAuthOverlay #authPanel input{width:100%;max-width:100%;box-sizing:border-box;background:#07150e!important;color:#f5f3e9!important;border:1px solid #31523d!important}
+  #gmAuthOverlay #authPanel .auth-box{position:sticky;top:0;z-index:2;background:#08130d;padding:4px 0}
+  body.gm-auth-lock{overflow:hidden!important}
+  @media(max-width:420px){#gmAuthOverlay{padding:10px 9px}#gmAuthOverlay .gm-auth-shell{padding:10px;border-radius:15px;max-height:calc(100dvh - 20px)}#gmAuthOverlay #authPanel{padding:10px!important}}
+</style>
+<div id="gmAuthOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Sign in or create account">
+  <div class="gm-auth-shell">
+    <div class="gm-auth-top"><strong>GM NETWORK — MEMBER ACCESS</strong><button type="button" class="gm-auth-close" aria-label="Close" onclick="gmCloseAuthOverlay()">×</button></div>
+    <div id="gmAuthPanelMount"></div>
+  </div>
+</div>
+<script id="gm-final-layering-auth-controller">
+(function(){
+  const byId=id=>document.getElementById(id);
+  let authHome=null, authNext=null;
+  function openAuth(mode){
+    if(typeof user!=='undefined' && user) return;
+    const overlay=byId('gmAuthOverlay'), mount=byId('gmAuthPanelMount'), panel=byId('authPanel');
+    if(!overlay||!mount||!panel) return;
+    if(!authHome){authHome=panel.parentNode;authNext=panel.nextSibling;}
+    if(panel.parentNode!==mount) mount.appendChild(panel);
+    overlay.classList.add('gm-auth-open');overlay.setAttribute('aria-hidden','false');document.body.classList.add('gm-auth-lock');
+    if(typeof switchAuth==='function') switchAuth(mode==='signin'?'signin':'signup');
+    const focus=byId(mode==='signin'?'loginEmail':'regFullname');if(focus) setTimeout(()=>focus.focus({preventScroll:true}),80);
+  }
+  function closeAuth(){
+    const overlay=byId('gmAuthOverlay'),panel=byId('authPanel');
+    if(panel&&authHome&&panel.parentNode!==authHome){if(authNext&&authNext.parentNode===authHome)authHome.insertBefore(panel,authNext);else authHome.appendChild(panel);}
+    if(overlay){overlay.classList.remove('gm-auth-open');overlay.setAttribute('aria-hidden','true');}
+    document.body.classList.remove('gm-auth-lock');
+  }
+  window.gmOpenAuthOverlay=openAuth;window.gmCloseAuthOverlay=closeAuth;
+  const oldCheckout=window.openCheckoutPage;
+  if(typeof oldCheckout==='function') window.openCheckoutPage=function(){if(typeof user==='undefined'||!user){openAuth('signup');return;}return oldCheckout.apply(this,arguments)};
+  const oldOrder=window.openOrder;
+  if(typeof oldOrder==='function') window.openOrder=function(){if(typeof user==='undefined'||!user){openAuth('signup');return;}return oldOrder.apply(this,arguments)};
+  const oldTab=window.tab;
+  if(typeof oldTab==='function') window.tab=function(){if(byId('gmAuthOverlay')?.classList.contains('gm-auth-open'))closeAuth();return oldTab.apply(this,arguments)};
+  const oldUpdateAuth=window.updateAuth;
+  if(typeof oldUpdateAuth==='function') window.updateAuth=async function(){const result=await oldUpdateAuth.apply(this,arguments);if(typeof user!=='undefined'&&user)closeAuth();return result};
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&byId('gmAuthOverlay')?.classList.contains('gm-auth-open'))closeAuth()});
+  byId('gmAuthOverlay')?.addEventListener('click',e=>{if(e.target===byId('gmAuthOverlay'))closeAuth()});
+})();
+</script>
+
+
+
+<!-- GM Network: navigation history, category return, WhatsApp visibility and cart feedback -->
+<style id="gm-navigation-cart-whatsapp-fix">
+  .whatsapp-float{z-index:10085!important;display:flex!important}
+  body.gm-product-open .whatsapp-float{bottom:calc(88px + env(safe-area-inset-bottom))!important;right:16px!important;z-index:10085!important;display:flex!important}
+  .gm-global-save-cart{display:block;width:calc(100% - 16px);margin:0 8px 10px;padding:11px 9px;border:1px solid #e5b853;border-radius:10px;background:linear-gradient(110deg,#f7dfa0,#e5b853 55%,#b98737);color:#172116;font-size:13px;font-weight:900;cursor:pointer;min-height:42px}
+  .gm-global-save-cart:active{transform:scale(.98)}
+  .gm-global-card-open{cursor:pointer}
+  .gm-global-compact-card{overflow:hidden}
+  #productViewPage .whatsapp-float{display:flex!important}
+</style>
+<script id="gm-navigation-cart-whatsapp-controller">
+(function(){
+  const $id=id=>document.getElementById(id);
+  const originalTab=window.tab;
+  const originalOpenCategory=window.openGlobalCategoryPage;
+  const originalCloseCategory=window.closeGlobalCategoryPage;
+  const originalRestore=window.restoreHistoryPage;
+  const originalOpenProduct=window.openProductView;
+
+  // Preserve the exact page and scroll position before moving to another main tab.
+  if(typeof originalTab==='function'){
+    window.tab=function(id,skipHistory=false){
+      const categoryPage=$id('gmGlobalCategoryPage');
+      if(categoryPage&&categoryPage.style.display==='block'){
+        categoryPage.style.display='none';document.body.classList.remove('gm-global-category-page-open');
+      }
+      if(!skipHistory&&history.state&&history.state.page){
+        const y=Math.max(0,Number(window.scrollY)||0);
+        history.replaceState({...history.state,scrollY:y},'',window.location.href);
+      }
+      document.body.classList.remove('gm-product-open');
+      return originalTab.apply(this,arguments);
+    };
+  }
+
+  // A category is a real history entry, so product Back returns to that category,
+  // and category Back returns to the page from which it was opened.
+  if(typeof originalOpenCategory==='function'){
+    window.openGlobalCategoryPage=function(category,sourcePane='page'){
+      if(history.state&&history.state.page){
+        const y=Math.max(0,Number(window.scrollY)||0);
+        history.replaceState({...history.state,scrollY:y},'',window.location.href);
+      }
+      history.pushState({page:'category',category:String(category||''),sourcePane:String(sourcePane||'page'),scrollY:0},'','#category');
+      document.body.classList.remove('gm-product-open');
+      return originalOpenCategory.apply(this,arguments);
+    };
+  }
+  window.closeGlobalCategoryPage=function(){
+    if(history.state&&history.state.page==='category'){history.back();return;}
+    if(typeof originalCloseCategory==='function')return originalCloseCategory.apply(this,arguments);
+  };
+
+  // Restore the saved category without creating another history entry.
+  if(typeof originalRestore==='function'){
+    window.restoreHistoryPage=function(page){
+      const state=history.state||{};
+      if(page==='category'){
+        const product=$id('productViewPage');
+        if(product){product.classList.add('hidden');product.style.removeProperty('display');}
+        $id('checkoutPage')?.classList.add('hidden');
+        $id('paymentProofPage')?.classList.add('hidden');
+        document.body.style.overflow='hidden';
+        document.body.classList.remove('gm-product-open');
+        if(typeof originalOpenCategory==='function')originalOpenCategory(state.category||'',state.sourcePane||'page');
+        return;
+      }
+      const result=originalRestore.apply(this,arguments);
+      if(page==='product')document.body.classList.add('gm-product-open');
+      else document.body.classList.remove('gm-product-open');
+      const category=$id('gmGlobalCategoryPage');
+      if(category&&page!=='category'&&page!=='product'){
+        category.style.display='none';document.body.classList.remove('gm-global-category-page-open');
+      }
+      return result;
+    };
+  }
+
+  // Keep WhatsApp support available on product detail pages as well as normal pages.
+  const wa=$id('whatsappFloat')||document.querySelector('.whatsapp-float');
+  if(wa){wa.style.setProperty('display','flex','important');}
+  if(typeof originalOpenProduct==='function'){
+    window.openProductView=function(){const result=originalOpenProduct.apply(this,arguments);document.body.classList.add('gm-product-open');const button=document.querySelector('.whatsapp-float');if(button)button.style.setProperty('display','flex','important');return result;};
+  }
+
+  // Clear, visible confirmation when a product is saved from any product card.
+  window.gmSaveCardToCart=function(id,button){
+    const product=(window.allProductsData||[]).find(p=>String(p.id)===String(id))||(window.globalProductsData||[]).find(p=>String(p.id)===String(id));
+    if(!product||product.active===false){if(window.gmMsg)window.gmMsg('یہ پروڈکٹ فی الحال دستیاب نہیں۔','warning');return;}
+    if(typeof window.addProductToCartById!=='function'){if(window.gmMsg)window.gmMsg('کارٹ ابھی تیار نہیں، دوبارہ کوشش کریں۔','warning');return;}
+    window.addProductToCartById(id);
+    if(button){button.textContent='Added to Cart ✓';button.disabled=true;button.style.background='#174a2e';button.style.color='#f5d47f';button.style.borderColor='#e5b853';}
+    if(typeof window.updateCartBadges==='function')window.updateCartBadges();
+  };
+
+  // On a normal browser Back/Android Back, the existing popstate handler invokes
+  // restoreHistoryPage; the wrapper above restores product/category/tab in order.
+  window.addEventListener('pageshow',()=>{
+    const state=history.state||{};
+    if(state.page==='product')document.body.classList.add('gm-product-open');
+    const button=document.querySelector('.whatsapp-float');if(button)button.style.setProperty('display','flex','important');
+  });
+})();
+</script>
+
+
+<script id="gm-direct-category-navigation-fix">
+(function(){
+  const $=id=>document.getElementById(id);
+  function setCategoryPresentation(category){
+    const input=$('productSearchInput');
+    const label=input?.previousElementSibling;
+    if(input){input.value='';input.style.display=category?'none':'';}
+    if(label&&label.tagName==='LABEL')label.style.display=category?'none':'';
+    const title=$('productPageTitle');
+    if(title)title.textContent=category?String(category)+' Collection':'Premium Products';
+  }
+  window.openCategory=function(categoryName){
+    const category=String(categoryName||'').trim();
+    if(!category)return;
+    if(history.state&&history.state.page){
+      history.replaceState({...history.state,scrollY:Math.max(0,Number(window.scrollY)||0)},'',window.location.href);
+    }
+    history.pushState({page:'products',category,scrollY:0},'','#products-'+encodeURIComponent(category.toLowerCase()));
+    document.body.classList.remove('gm-product-open');
+    if(typeof window.tab==='function')window.tab('products',true);
+    setCategoryPresentation(category);
+    const list=$('productList');
+    if(list)list.innerHTML='<p class="muted">'+(typeof esc==='function'?esc(category):category)+' collection is opening…</p>';
+    const apply=()=>{if(typeof window.filterProductsByCategory==='function')window.filterProductsByCategory(category);};
+    if(Array.isArray(window.allProductsData)&&window.gmProductsCacheLoaded){apply();}
+    else if(typeof window.loadProducts==='function')Promise.resolve(window.loadProducts()).then(apply).catch(()=>{});
+    else apply();
+  };
+  const previousRestore=window.restoreHistoryPage;
+  if(typeof previousRestore==='function'){
+    window.restoreHistoryPage=function(page){
+      const state=history.state||{};
+      const result=previousRestore.apply(this,arguments);
+      if(page==='products'){
+        const category=String(state.category||'');
+        setCategoryPresentation(category);
+        if(category){
+          const apply=()=>window.filterProductsByCategory?.(category);
+          if(Array.isArray(window.allProductsData)&&window.gmProductsCacheLoaded)apply();
+          else if(typeof window.loadProducts==='function')Promise.resolve(window.loadProducts()).then(apply).catch(()=>{});
+        }
+      }
+      return result;
+    };
+  }
+  window.gmShowAllProducts=function(){
+    if(history.state&&history.state.page==='products')history.replaceState({...history.state,category:'',scrollY:0},'',window.location.pathname+window.location.search+'#products');
+    window.gmCurrentProductCategory='';setCategoryPresentation('');
+    if(typeof window.loadProducts==='function')window.loadProducts(true);
+  };
+  const showAll=$('products')?.querySelector('button[onclick="loadProducts()"]');
+  if(showAll)showAll.setAttribute('onclick','gmShowAllProducts()');
+})();
+</script>
+
+</body>
+</html>

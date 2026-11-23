@@ -4277,12 +4277,14 @@ async function refreshMarkazProductDetails(id){
     const raw=Array.isArray(p.images)?p.images:(p.images?[p.images]:[]);
     const images=[...new Set(raw.map(x=>typeof x==='string'?x.trim():(x&&typeof x==='object'?String(x.url||x.src||x.image_url||x.original||'').trim():'')).filter(x=>/^https:\/\//i.test(x)))];
     if(!images.length){await gmPopup('Markaz did not return a product gallery. Existing images were left unchanged.','Refresh Gallery','warning');return;}
-    const patch={name:gmCustomerText(p.name||row.name)||row.name,images,image_url:images[0]};
+    const rawVideos = Array.isArray(p.video_urls) ? p.video_urls : (p.video_url ? [p.video_url] : []);
+    const videos = [...new Set(rawVideos.filter(x => typeof x === 'string' && /^https:\/\//i.test(x.trim())).map(x => x.trim()))];
+    const patch={name:gmCustomerText(p.name||row.name)||row.name,images,image_url:images[0],markaz_video_urls:videos,markaz_video_url:videos[0]||null};
     const appUrl=p.app_share_url||markazAppShareUrl({sku:p.sku||row.markaz_product_sku,source_url:p.source_url||row.markaz_source_url});
     if(appUrl)patch.markaz_app_url=appUrl;
     const {error}=await sb.from('products').update(patch).eq('id',id).eq('supplier_source','Markaz Pakistan');if(error)throw error;
-    await loadProducts();await loadGlobalProducts();await loadMarkazAdminProducts();
-    await gmPopup(`Gallery refreshed: ${images.length} product image(s) saved.`, 'Refresh Complete','success');
+    await loadProducts(true);await loadGlobalProducts();await loadMarkazAdminProducts();
+    await gmPopup(`Gallery refreshed: ${images.length} image(s) and ${videos.length} video(s) saved.`, 'Refresh Complete',videos.length?'success':'warning');
   }catch(e){await gmPopup('Gallery refresh failed: '+(e.message||e),'Refresh Failed','error');}
 }
 

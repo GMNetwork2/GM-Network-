@@ -1211,6 +1211,7 @@ body.gm-admin-page-open{overflow:hidden!important}
     </div>
     <nav>
         <button data-menu="home" class="active" onclick="menuTab('home')">🏠 Home</button>
+        <button data-menu="admin" id="adminMenuBtn" class="admin-only gm-admin-menu-priority" onclick="menuTab('admin')" style="display:none">⚙️ Admin Panel</button>
         <button data-menu="dashboard" onclick="menuTab('dashboard')">📊 VIP Dashboard</button>
         <button data-menu="account" onclick="menuTab('account')">👤 Account / Profile</button>
         <button data-menu="my-account" onclick="menuTab('my-account')">🆔 My Account</button>
@@ -1229,7 +1230,6 @@ body.gm-admin-page-open{overflow:hidden!important}
         <button data-menu="contact" onclick="menuTab('contact')">☎️ Contact Us</button>
         <button data-menu="about" onclick="menuTab('about')">ℹ️ About</button>
         <button data-menu="reports" class="admin-only" onclick="menuTab('reports')">📊 Reports & Analytics</button>
-        <button data-menu="admin" id="adminMenuBtn" class="admin-only" onclick="menuTab('admin')">⚙️ Admin Panel</button>
     </nav>
 </aside>  
 <main>
@@ -1447,6 +1447,7 @@ body.gm-admin-page-open{overflow:hidden!important}
         <img referrerpolicy="no-referrer" src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=85&w=1600&auto=format&fit=crop" alt="Global collection" loading="lazy">
         <div class="shop-hero-content global-hero-copy"><div class="hero-kicker">GM NETWORK <span aria-hidden="true">·</span> GLOBAL COLLECTION</div><h1><span>Discover More.</span><span>Shop Worldwide.</span></h1><p>Explore a world of carefully selected products, with the trusted shopping experience of GM Network.</p><button class="primary global-hero-cta" type="button" onclick="event.stopPropagation();goToAllGlobalProducts()">Explore All Products <span aria-hidden="true">→</span></button></div>
       </div>
+      <div id="globalBannerSlider" class="gm-global-banner-slider" aria-label="Global Products banners"><div class="banner-placeholder">Global Collection</div></div>
       <section class="home-section gm-global-section"><div class="home-section-head"><div><h2>✨ Global New Arrivals</h2><p>Explore the latest additions.</p></div></div><div id="homeGlobalArrivals"><p class="muted">Loading…</p></div></section>
       <div class="gm-global-top-actions" aria-label="Global store search">
         <button type="button" class="gm-global-top-action gm-global-search-only" onclick="focusGlobalSearch()" aria-label="Search products"><span aria-hidden="true">⌕</span><small>Search Products</small></button>
@@ -1782,6 +1783,7 @@ body.gm-admin-page-open{overflow:hidden!important}
         <div class="admin-subnav" data-admin-nav="products">
           <button onclick="openAdminSubpage('products','catalog')"><span>🛍️</span><b>Product Manager</b><small>نئی پروڈکٹ، ترمیم اور لسٹ</small></button>
           <button onclick="openAdminSubpage('products','banners')"><span>🖼️</span><b>Banners</b><small>ہوم پیج بینرز</small></button>
+          <button onclick="openAdminSubpage('products','global-banners')"><span>🌍</span><b>Global Products Banner</b><small>گلوبل اسٹور کے الگ بینرز</small></button>
           <button onclick="openAdminSubpage('products','placement')"><span>✨</span><b>Home Placement</b><small>ہوم پیج پر پروڈکٹ کی جگہ</small></button>
         </div>
         <div class="admin-subpage hidden" id="adminSub-products-catalog">
@@ -1827,10 +1829,22 @@ body.gm-admin-page-open{overflow:hidden!important}
         <div class="admin-subpage hidden" id="adminSub-products-banners">
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('products')">← Products Menu</button>
         <h3 style="margin-top:20px;">Manage Banners</h3>
+        <div id="gmHomeBannerAdminPreview" class="gm-image-manager-grid"></div>
         <label for="bannerImagesInput">Select multiple banner images</label>
         <input type="file" id="bannerImagesInput" accept="image/*" multiple>
         <button class="primary" onclick="saveBanners()">Save Banners</button>
         <div id="bannerStatus" class="status hidden"></div>
+        </div>
+        <div class="admin-subpage hidden" id="adminSub-products-global-banners">
+          <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('products')">← Products Menu</button>
+          <h3 style="margin-top:20px;">Manage Global Products Banners</h3>
+          <div id="gmGlobalBannerAdminPreview" class="gm-image-manager-grid"></div>
+          <p class="muted">یہ بینرز صرف Global Products والے صفحے پر دکھائے جائیں گے۔</p>
+          
+          <label for="globalBannerImagesInput">Select multiple Global banner images</label>
+          <input type="file" id="globalBannerImagesInput" accept="image/*" multiple>
+          <button class="primary" type="button" onclick="saveGlobalBanners()">Save Global Banners</button>
+          <div id="globalBannerStatus" class="status hidden"></div>
         </div>
         <div class="admin-subpage hidden" id="adminSub-products-placement">
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('products')">← Products Menu</button>
@@ -2002,7 +2016,7 @@ body.gm-admin-page-open{overflow:hidden!important}
 
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img referrerpolicy="no-referrer" src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><label style="display:block;text-align:left;margin:10px 0 5px">Payment Method</label><select id="gmPaymentMethod" style="width:100%;margin-bottom:8px"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank Transfer</option></select><label style="display:block;text-align:left;margin:8px 0 5px">Transaction ID / Reference</label><input id="gmPaymentTxnId" type="text" maxlength="120" autocomplete="off" placeholder="Enter transaction ID" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Paid Amount (PKR)</label><input id="gmPaymentAmount" type="number" min="1" step="0.01" placeholder="Amount paid in PKR" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Payment Date &amp; Time</label><input id="gmPaymentPaidAt" type="datetime-local" style="width:100%;margin-bottom:10px"><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
-<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><div id="editCodSettingWrap" style="margin:12px 0;padding:12px;border:1px solid #b98b3c;border-radius:10px;background:#0b2116;"><label style="display:flex;align-items:center;gap:9px;color:#f0d18a;font-weight:700;"><input type="checkbox" id="editProductCodEnabled" style="width:auto;accent-color:#e5b853;"> Enable Cash on Delivery for this product</label><small style="display:block;color:#b9c5b6;margin-top:5px;">CJ Dropshipping / Markaz Pakistan only. Turn ON only when this exact product supports Cash on Delivery. Default is OFF.</small></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Replace product images (select multiple, optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><div id="editCodSettingWrap" style="margin:12px 0;padding:12px;border:1px solid #b98b3c;border-radius:10px;background:#0b2116;"><label style="display:flex;align-items:center;gap:9px;color:#f0d18a;font-weight:700;"><input type="checkbox" id="editProductCodEnabled" style="width:auto;accent-color:#e5b853;"> Enable Cash on Delivery for this product</label><small style="display:block;color:#b9c5b6;margin-top:5px;">CJ Dropshipping / Markaz Pakistan only. Turn ON only when this exact product supports Cash on Delivery. Default is OFF.</small></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Current product images (remove any image you do not want to keep)</label><div id="gmEditProductExistingImages" class="gm-image-manager-grid"></div><label>Add more product images (optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><img referrerpolicy="no-referrer" id="lightboxImage" alt="Full-size product" src=""><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
 <div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="cjOrderSupplierBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
 
@@ -3721,7 +3735,9 @@ function closeModal() { $('orderModal').classList.add('hidden'); }
 async function submitOrder() {
     if (!user || !currentProduct || !sb) return;
     const name = $('orderName').value.trim(), phone = $('orderPhone').value.trim(), address = $('orderAddress').value.trim();
-    if (!name || !phone || !address) return alert('Please fill in all fields.');
+    if (!name) return alert('براہِ کرم آرڈر کے لیے اپنا پورا نام درج کریں۔');
+    if (!phone) return alert('براہِ کرم فعال فون نمبر درج کریں تاکہ ڈیلیوری کے لیے رابطہ ہو سکے۔');
+    if (!address) return alert('براہِ کرم مکمل ڈیلیوری ایڈریس درج کریں۔');
     window.pendingOrderData = { name, phone, address, product_id: currentProduct.id, product_name: currentProduct.name, price: currentProduct.price };
     $('orderFormContent').classList.add('hidden');
     $('paymentContent').classList.remove('hidden');
@@ -4083,7 +4099,7 @@ function setHomeStore(which) {
   if (normalBtn) { normalBtn.classList.toggle('primary', !global); normalBtn.classList.toggle('secondary', global); normalBtn.setAttribute('aria-selected', String(!global)); }
   if (globalBtn) { globalBtn.classList.toggle('primary', global); globalBtn.classList.toggle('secondary', !global); globalBtn.setAttribute('aria-selected', String(global)); }
   document.querySelectorAll('[data-menu]').forEach(b => b.classList.toggle('active', b.dataset.menu === (global ? 'global-products' : 'home')));
-  if (global) loadGlobalProducts();
+  if (global) { loadGlobalProducts(); loadGlobalBanners(); }
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 function goToAllGlobalProducts() {
@@ -5578,6 +5594,8 @@ async function editProduct(id) {
     if ($('editProductCodEnabled')) $('editProductCodEnabled').disabled = !codAllowedSupplier;
     if ($('editProductCodEnabled')) $('editProductCodEnabled').checked = codAllowedSupplier && product.cod_enabled === true;
     $('editProductImages').value = '';
+    window.gmEditProductImagesState = (Array.isArray(product.images) ? product.images : (product.image_url ? [product.image_url] : [])).filter(Boolean);
+    gmRenderEditProductImages();
     $('editProductStatus').classList.add('hidden');
     $('editProductModal').classList.remove('hidden');
 }
@@ -5610,18 +5628,24 @@ async function saveProductEdit() {
         show_in_premium: isCJGlobal ? false : $('editShowPremium').checked,
         show_in_best_sellers: isCJGlobal ? false : $('editShowBestSellers').checked
     };
+    const { data: imageRecord, error: imageReadError } = await sb.from('products').select('images,image_url').eq('id', id).maybeSingle();
+    if (imageReadError) return status('editProductStatus', 'Could not read existing product images: ' + imageReadError.message, 'error');
+    const existingImageList = Array.isArray(imageRecord?.images) ? imageRecord.images.filter(Boolean) : (imageRecord?.image_url ? [imageRecord.image_url] : []);
+    const retainedImages = Array.isArray(window.gmEditProductImagesState) ? window.gmEditProductImagesState.filter(Boolean) : existingImageList;
+    const newImages = [];
     if (files && files.length > 0) {
-        const images = [];
         for (let i = 0; i < files.length; i++) {
             const file = files[i], ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
             const path = `products/${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
             const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
             if (uploadError) return status('editProductStatus', 'Image upload failed: ' + uploadError.message, 'error');
             const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
-            if (url) images.push(url);
+            if (url) newImages.push(url);
         }
-        if (images.length) { update.images = images; update.image_url = images[0]; }
     }
+    const finalImages = [...retainedImages, ...newImages];
+    update.images = finalImages;
+    update.image_url = finalImages[0] || null;
     const { error } = await sb.from('products').update(update).eq('id', id);
     if (error) return status('editProductStatus', 'Update failed: ' + error.message, 'error');
     status('editProductStatus', 'Product updated successfully.', 'ok');
@@ -5698,6 +5722,72 @@ async function saveBanners() {
     if (input) input.value = '';
     status('bannerStatus', `${imageUrls.length} banner image(s) saved successfully.`, 'ok');
     await loadBanners();
+}
+
+async function loadGlobalBanners() {
+    const slider = $('globalBannerSlider');
+    if (!slider || !sb) return;
+    if (window.gmGlobalBannerTimer) { clearInterval(window.gmGlobalBannerTimer); window.gmGlobalBannerTimer = null; }
+    const { data, error } = await sb.from('products').select('images,image_url').eq('name', 'WEBSITE_GLOBAL_BANNERS').maybeSingle();
+    if (error) {
+        console.warn('Could not load Global banners:', error.message);
+        slider.innerHTML = '<div class="banner-placeholder">Global banners could not be loaded. Please try again.</div>';
+        return;
+    }
+    const images = Array.isArray(data?.images) ? data.images.filter(Boolean) : (data?.image_url ? [data.image_url] : []);
+    slider.innerHTML = images.length
+        ? images.map((url, i) => `<img referrerpolicy="no-referrer" src="${esc(url)}" alt="Global banner ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}" decoding="async">`).join('')
+        : '<div class="banner-placeholder">Global Products Collection<br>(Upload via Admin)</div>';
+    const preview = $('globalBannerAdminPreview');
+    if (preview) preview.innerHTML = images.length
+        ? images.map((url, i) => `<img referrerpolicy="no-referrer" src="${esc(url)}" alt="Saved Global banner ${i + 1}" loading="lazy">`).join('')
+        : '<p class="muted">ابھی کوئی Global banner محفوظ نہیں ہے۔</p>';
+    if (images.length > 1) {
+        let index = 0;
+        slider.scrollLeft = 0;
+        window.gmGlobalBannerTimer = setInterval(() => {
+            const node = $('globalBannerSlider');
+            const home = $('home');
+            const globalPane = $('homeGlobalPane');
+            if (!node || document.hidden || !home || home.classList.contains('hidden') || !globalPane || globalPane.classList.contains('hidden')) return;
+            index = (index + 1) % node.children.length;
+            const slideWidth = node.clientWidth;
+            if (slideWidth) node.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
+        }, 4500);
+    }
+}
+
+async function saveGlobalBanners() {
+    if (!isAdmin) return alert('Admin access required.');
+    if (!sb) return status('globalBannerStatus', 'Backend is not connected.', 'error');
+    const input = $('globalBannerImagesInput');
+    const files = Array.from(input?.files || []);
+    if (!files.length) return status('globalBannerStatus', 'Please select one or more Global banner images.', 'error');
+    status('globalBannerStatus', `Uploading ${files.length} Global banner image(s)…`);
+    const uploaded = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = `global-banners/global-banner-${Date.now()}-${i}-${cryptoRandom()}.${ext}`;
+      const { error: uploadError } = await sb.storage.from('product-images').upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
+      if (uploadError) return status('globalBannerStatus', 'Upload failed: ' + uploadError.message, 'error');
+      const url = sb.storage.from('product-images').getPublicUrl(path).data?.publicUrl;
+      if (url) uploaded.push(url);
+    }
+    const { data: existing, error: readError } = await sb.from('products').select('id, images, image_url').eq('name', 'WEBSITE_GLOBAL_BANNERS').maybeSingle();
+    if (readError) return status('globalBannerStatus', 'Could not check existing Global banners: ' + readError.message, 'error');
+    const oldImages = Array.isArray(existing?.images) ? existing.images.filter(Boolean) : (existing?.image_url ? [existing.image_url] : []);
+    const allImages = [...oldImages, ...uploaded];
+    if (existing) {
+      const { error } = await sb.from('products').update({ images: allImages, image_url: allImages[0] || null }).eq('id', existing.id);
+      if (error) return status('globalBannerStatus', 'Save failed: ' + error.message, 'error');
+    } else {
+      const { error } = await sb.from('products').insert({ name: 'WEBSITE_GLOBAL_BANNERS', price_usd: 0, commission_percent: 0, active: false, images: allImages, image_url: allImages[0] || null });
+      if (error) return status('globalBannerStatus', 'Save failed: ' + error.message, 'error');
+    }
+    input.value = '';
+    status('globalBannerStatus', `${uploaded.length} Global banner image(s) saved successfully.`, 'ok');
+    await loadGlobalBanners();
 }
 
 async function addOnlineProduct() {
@@ -6160,7 +6250,12 @@ async function submitCheckout() {
     const name=$('coNameInput').value.trim(), phone=$('coPhoneInput').value.trim();
     const street=$('coAddressInput').value.trim(), city=$('coCityInput').value.trim(), postal=$('coPostalInput').value.trim();
     const address=`${street}, ${city} - ${postal}`;
-    if (!name || !phone || !street || !city || !postal) return alert('Please fill in all shipping details (Name, Phone, Street, City, Postal Code).');
+    if (!name) return alert('براہِ کرم وصول کنندہ کا پورا نام درج کریں۔');
+    if (!phone) return alert('براہِ کرم فعال فون نمبر درج کریں۔');
+    if (!street) return alert('براہِ کرم گھر/گلی کا مکمل پتہ درج کریں۔');
+    if (!city) return alert('براہِ کرم شہر درج کریں۔');
+    if (!postal) return alert('براہِ کرم پوسٹل کوڈ درج کریں۔');
+    if (phone.replace(/\D/g,'').length < 10) return alert('فون نمبر درست نہیں لگ رہا۔ براہِ کرم مکمل نمبر درج کریں۔');
     const methodInput=document.querySelector('input[name="paymentMethod"]:checked');
     const paymentMethod=methodInput?.value==='wallet'?'wallet':'manual';
     if (!deliveryChargeLoaded) {
@@ -9037,6 +9132,149 @@ input:focus,select:focus,textarea:focus{border-color:#69d9b7!important;box-shado
   if(showAll)showAll.setAttribute('onclick','gmShowAllProducts()');
 })();
 </script>
+
+
+<!-- GM Network consolidated UI fixes: 16:9 banners, modal menu scroll lock, global banner manager -->
+<style id="gm-final-ui-fixes">
+#bannerSlider{width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:16/9!important;max-height:none!important;overflow:hidden!important;display:flex!important;}
+#bannerSlider>img,#bannerSlider>.banner-placeholder{flex:0 0 100%!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;aspect-ratio:unset!important;object-fit:contain!important;object-position:center!important;}
+@media(max-width:767px){#bannerSlider{aspect-ratio:16/9!important;max-height:none!important;border-radius:12px!important}}
+body.gm-menu-scroll-lock{position:fixed!important;overflow:hidden!important;width:100%!important;left:0!important;right:0!important}
+@media(max-width:1199px){.menu-overlay.open{position:fixed!important;inset:0!important;z-index:10000!important}.side-menu{z-index:10001!important}.menu-toggle{z-index:10002!important}}
+.gm-global-banner-admin{margin:14px 0;padding:14px;border:1px solid #b68d3f;border-radius:14px;background:#0b1d12}.gm-global-banner-admin img{width:100%;max-width:220px;aspect-ratio:16/9;object-fit:contain;background:#07140c;border-radius:8px}.gm-global-banner-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #34513d}.gm-global-banner-item button{flex:0 0 auto}
+</style>
+<script id="gm-final-ui-fixes-script">
+(function(){
+ const $=id=>document.getElementById(id);let menuY=0;
+ function menuOpen(){return !!$('sideMenu')?.classList.contains('open')}
+ const oldToggle=window.toggleMenu;
+ window.toggleMenu=function(){
+   const menu=$('sideMenu'),overlay=$('menuOverlay');if(!menu||!overlay)return;
+   const opening=!menu.classList.contains('open');
+   if(opening){menuY=window.scrollY||window.pageYOffset||0;document.body.dataset.gmMenuScrollY=String(menuY);document.body.classList.add('gm-menu-scroll-lock');document.body.style.top=(-menuY)+'px';}
+   else{document.body.classList.remove('gm-menu-scroll-lock');document.body.style.removeProperty('top');const y=Number(document.body.dataset.gmMenuScrollY||menuY||0);requestAnimationFrame(()=>window.scrollTo(0,y));}
+   menu.classList.toggle('open',opening);overlay.classList.toggle('open',opening);
+ };
+ const oldMenuTab=window.menuTab;
+ window.menuTab=function(id){if(menuOpen()){const menu=$('sideMenu'),overlay=$('menuOverlay');menu?.classList.remove('open');overlay?.classList.remove('open');document.body.classList.remove('gm-menu-scroll-lock');document.body.style.removeProperty('top');const y=Number(document.body.dataset.gmMenuScrollY||menuY||0);requestAnimationFrame(()=>window.scrollTo(0,y));}return oldMenuTab?.apply(this,arguments)};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menuOpen())window.toggleMenu()});
+
+})();
+</script>
+
+
+<style id="gm-global-banner-styles">
+#globalBannerSlider{display:flex;gap:0;width:100%;aspect-ratio:16/9;max-height:none;overflow:hidden;position:relative;border-radius:12px;margin:14px 0 22px;background:#101a15;scroll-snap-type:x mandatory}
+#globalBannerSlider>img,#globalBannerSlider>.banner-placeholder{flex:0 0 100%;width:100%;height:100%;min-width:100%;object-fit:contain;object-position:center;aspect-ratio:16/9;scroll-snap-align:start;border-radius:12px}
+.gm-global-banner-admin-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:12px 0}
+.gm-global-banner-admin-preview img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#111;border:1px solid #345;border-radius:8px}
+@media(max-width:600px){#globalBannerSlider{border-radius:8px;margin:10px 0 16px}}
+</style>
+
+<style id="gm-six-final-fixes-style">
+.gm-image-manager-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.14)}
+.gm-image-manager-item{position:relative;min-width:0;border:1px solid #8c713b;border-radius:9px;padding:6px;background:#07140c}
+.gm-image-manager-item img{display:block;width:100%;height:100px;object-fit:contain;border-radius:6px;background:#101713}
+.gm-image-manager-item button{display:block;width:100%;margin-top:6px;padding:7px 5px;font-size:12px;background:#642727;color:#fff;border:1px solid #a45a4b;border-radius:7px}
+.gm-image-manager-empty{grid-column:1/-1;padding:10px;color:var(--muted);font-size:13px}
+</style>
+<script id="gm-six-final-fixes">
+(function(){
+ const $=id=>document.getElementById(id);
+ const safeUrl=u=>String(u||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+ window.gmRenderEditProductImages=function(){
+   const box=$('gmEditProductExistingImages'); if(!box)return;
+   const arr=Array.isArray(window.gmEditProductImagesState)?window.gmEditProductImagesState:[];
+   box.innerHTML=arr.length?arr.map((url,i)=>`<div class="gm-image-manager-item"><img src="${safeUrl(url)}" alt="Product image ${i+1}" loading="lazy"><button type="button" onclick="gmRemoveEditProductImage(${i})">Remove image</button></div>`).join(''):'<div class="gm-image-manager-empty">No saved images. Add new images below.</div>';
+ };
+ window.gmRemoveEditProductImage=function(index){
+   if(!Array.isArray(window.gmEditProductImagesState))return;
+   window.gmEditProductImagesState.splice(Number(index),1);window.gmRenderEditProductImages();
+ };
+ async function loadBannerManager(kind){
+   if(typeof sb==='undefined'||!sb)return;
+   const isGlobal=kind==='global', target=$(isGlobal?'gmGlobalBannerAdminPreview':'gmHomeBannerAdminPreview');
+   if(!target)return;
+   const name=isGlobal?'WEBSITE_GLOBAL_BANNERS':'WEBSITE_BANNERS';
+   const {data,error}=await sb.from('products').select('id,images,image_url').eq('name',name).maybeSingle();
+   if(error){target.innerHTML='<div class="gm-image-manager-empty">بینرز لوڈ نہیں ہو سکے: '+(window.esc?esc(error.message):error.message)+'</div>';return;}
+   const images=Array.isArray(data?.images)?data.images.filter(Boolean):(data?.image_url?[data.image_url]:[]);
+   target.innerHTML=images.length?images.map((url,i)=>`<div class="gm-image-manager-item"><img src="${safeUrl(url)}" alt="Saved banner ${i+1}" loading="lazy"><button type="button" onclick="gmRemoveManagedBanner('${kind}',${i})">Remove banner</button></div>`).join(''):'<div class="gm-image-manager-empty">ابھی کوئی بینر محفوظ نہیں ہے۔</div>';
+   target.dataset.productId=data?.id||'';
+ }
+ window.gmRemoveManagedBanner=async function(kind,index){
+   if(!isAdmin||!sb)return alert('Admin access required.');
+   const isGlobal=kind==='global', name=isGlobal?'WEBSITE_GLOBAL_BANNERS':'WEBSITE_BANNERS';
+   const {data,error}=await sb.from('products').select('id,images,image_url').eq('name',name).maybeSingle();
+   if(error||!data)return alert('بینر ریکارڈ نہیں مل سکا: '+(error?.message||''));
+   const images=Array.isArray(data.images)?data.images.filter(Boolean):(data.image_url?[data.image_url]:[]);
+   images.splice(Number(index),1);
+   const {error:updateError}=await sb.from('products').update({images,image_url:images[0]||null}).eq('id',data.id);
+   if(updateError)return alert('بینر حذف نہیں ہوا: '+updateError.message);
+   if(isGlobal)await loadGlobalBanners(); else await loadBanners();
+   await loadBannerManager(kind);
+ };
+ const oldOpenAdminSubpage=window.openAdminSubpage;
+ if(typeof oldOpenAdminSubpage==='function')window.openAdminSubpage=function(sectionId,pageId){
+   const result=oldOpenAdminSubpage.apply(this,arguments);
+   if(sectionId==='products'&&pageId==='global-banners'){loadGlobalBanners();}
+   if(sectionId==='products'&&pageId==='banners'){loadBanners();}
+   return result;
+ };
+ // Existing banner loaders now also refresh their admin image manager when visible.
+ const oldLoadBanners=window.loadBanners;
+ if(typeof oldLoadBanners==='function')window.loadBanners=async function(){const r=await oldLoadBanners.apply(this,arguments);if($('gmHomeBannerAdminPreview')&&!$('adminSub-products-banners')?.classList.contains('hidden'))await loadBannerManager('home');return r;};
+ const oldLoadGlobalBanners=window.loadGlobalBanners;
+ if(typeof oldLoadGlobalBanners==='function')window.loadGlobalBanners=async function(){const r=await oldLoadGlobalBanners.apply(this,arguments);if($('gmGlobalBannerAdminPreview')&&!$('adminSub-products-global-banners')?.classList.contains('hidden'))await loadBannerManager('global');return r;};
+ // Keep the exact Admin page and its scroll position when order details are opened/closed or updated.
+ function captureAdminPosition(){
+   const active=document.querySelector('#admin .admin-category-page.admin-page-active, #admin .admin-subpage.admin-page-active');
+   const section=document.querySelector('#admin .admin-category-page.admin-page-active');
+   const subpage=document.querySelector('#admin .admin-subpage.admin-page-active');
+   return {windowY:window.scrollY||0, activeId:active?.id||'', activeTop:active?.scrollTop||0, sectionId:section?.id||'', sectionTop:section?.scrollTop||0, subpageId:subpage?.id||'', subpageTop:subpage?.scrollTop||0};
+ }
+ function restoreAdminPosition(){
+   const snap=window.gmOrderAdminPosition;if(!snap)return;
+   requestAnimationFrame(()=>{
+     if(snap.activeId&&$(snap.activeId))$(snap.activeId).scrollTop=snap.activeTop;
+     if(snap.sectionId&&$(snap.sectionId))$(snap.sectionId).scrollTop=snap.sectionTop;
+     if(snap.subpageId&&$(snap.subpageId))$(snap.subpageId).scrollTop=snap.subpageTop;
+     window.scrollTo(0,snap.windowY);
+   });
+ }
+ const oldShowOrderDetails=window.showOrderDetails;
+ if(typeof oldShowOrderDetails==='function')window.showOrderDetails=async function(){window.gmOrderAdminPosition=isAdmin?captureAdminPosition():null;return await oldShowOrderDetails.apply(this,arguments);};
+ const oldCloseOrderDetailModal=window.closeOrderDetailModal;
+ if(typeof oldCloseOrderDetailModal==='function')window.closeOrderDetailModal=function(){const r=oldCloseOrderDetailModal.apply(this,arguments);restoreAdminPosition();return r;};
+ for(const fnName of ['updateOrderStatus','adminChangeProof']){
+   const old=window[fnName];if(typeof old==='function')window[fnName]=async function(){const result=await old.apply(this,arguments);restoreAdminPosition();return result;};
+ }
+ // Preserve product list while applying category filters; show a loading note only if no cache exists.
+ const oldOpenCategory=window.openCategory;
+ if(typeof oldOpenCategory==='function')window.openCategory=function(categoryName){
+   const category=String(categoryName||'').trim();
+   if(Array.isArray(window.allProductsData)&&window.gmProductsCacheLoaded){
+     if(history.state&&history.state.page){history.replaceState({...history.state,scrollY:Math.max(0,Number(window.scrollY)||0)},'',window.location.href);}
+     history.pushState({page:'products',category,scrollY:0},'','#products-'+encodeURIComponent(category.toLowerCase()));
+     document.body.classList.remove('gm-product-open');
+     window.gmCurrentProductCategory=category; if(typeof window.tab==='function')window.tab('products',true);
+     const input=$('productSearchInput');if(input)input.value='';
+     const title=$('productPageTitle');if(title)title.textContent=category?category+' Collection':'Premium Products';
+     return window.filterProductsByCategory(category);
+   }
+   return oldOpenCategory.apply(this,arguments);
+ };
+})();
+</script>
+
+
+<style id="gm-global-banner-parity-fix">
+#globalBannerSlider{display:flex!important;gap:0!important;width:100%!important;aspect-ratio:16/9!important;max-height:none!important;height:auto!important;overflow-x:auto!important;overflow-y:hidden!important;padding:0!important;margin:15px 0 25px!important;border:1px solid rgba(229,184,83,.42)!important;border-radius:12px!important;box-shadow:0 10px 25px rgba(0,0,0,.25)!important;scroll-snap-type:x mandatory!important;scrollbar-width:none!important;scroll-behavior:smooth!important;background:#0b2017!important}
+#globalBannerSlider::-webkit-scrollbar{display:none!important}
+#globalBannerSlider>img,#globalBannerSlider>.banner-placeholder{display:block!important;flex:0 0 100%!important;width:100%!important;min-width:100%!important;height:100%!important;aspect-ratio:unset!important;max-height:none!important;object-fit:contain!important;object-position:center center!important;scroll-snap-align:start!important;border-radius:12px!important;background:#0b2017!important}
+#globalBannerSlider>.banner-placeholder{display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:10px!important;color:var(--muted)!important;font-weight:bold!important;border:1px dashed var(--gold)!important;background:var(--g2)!important}
+.side-menu nav button.gm-admin-menu-priority{order:-1;border:1px solid rgba(229,184,83,.65)!important;border-left:4px solid var(--gold)!important;background:linear-gradient(100deg,rgba(229,184,83,.18),rgba(17,54,38,.72))!important;color:var(--gold)!important;font-weight:800!important;margin:4px 8px 10px!important;width:calc(100% - 16px)!important;border-radius:9px!important}
+</style>
 
 </body>
 </html>

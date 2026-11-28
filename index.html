@@ -2047,7 +2047,15 @@ body.gm-admin-page-open{overflow:hidden!important}
   <div class="panel gm-hub-hero"><div class="gm-hub-hero-top"><span class="gm-hub-live-dot"></span><span>GM NETWORK · PRIVATE TEAM CHANNEL</span></div><h2>Team Hub</h2><p>آپ کی ٹیم کی ٹریننگ، ویڈیو اپڈیٹس، وائس نوٹس اور اہم ہدایات — سب ایک جگہ۔</p><div class="gm-hub-hero-bottom"><span>✦ Official Team Feed</span><button class="secondary" type="button" onclick="gmHubLoadPosts()">↻ Refresh</button></div></div>
   <div class="gm-hub-feed-heading"><div><small>YOUR NETWORK</small><h3>تازہ اپڈیٹس</h3></div><span>MEDIA · TASKS · TRAINING</span></div>
   <div id="gmHubMemberFeed"><div class="panel">پیغامات دیکھنے کے لیے سائن اِن کریں۔</div></div>
-  <div class="panel gm-hub-card gm-hub-private-card"><div class="gm-hub-private-title"><span>🔒</span><div><h3>ایڈمن کے ساتھ نجی گفتگو</h3><p>آپ کا جواب صرف ایڈمن دیکھ سکتا ہے۔</p></div></div><p class="muted">آپ کا جواب صرف ایڈمن دیکھ سکے گا۔ دوسرے ممبرز اسے نہیں دیکھ سکتے۔</p><textarea id="gmHubMemberReply" rows="3" maxlength="3000" placeholder="اپنا جواب یا سوال لکھیں…"></textarea><button class="primary" type="button" onclick="gmHubSendMemberReply()">جواب ایڈمن کو بھیجیں</button><div id="gmHubMemberStatus" class="status"></div><div id="gmHubMyConversation" class="gm-hub-conversation"></div></div>
+  <div class="panel gm-hub-card gm-hub-private-card"><div class="gm-hub-private-title"><span>🔒</span><div><h3>ایڈمن کے ساتھ نجی گفتگو</h3><p>آپ کا جواب صرف ایڈمن دیکھ سکتا ہے۔</p></div></div><p class="muted">آپ کا جواب صرف ایڈمن دیکھ سکے گا۔ دوسرے ممبرز اسے نہیں دیکھ سکتے۔</p><textarea id="gmHubMemberReply" rows="3" maxlength="3000" placeholder="اپنا جواب یا سوال لکھیں…"></textarea>
+  <div class="gm-hub-member-media-actions">
+    <label class="gm-hub-member-attach" for="gmHubMemberMediaFile">＋ گیلری / فائل سے منتخب کریں</label>
+    <input id="gmHubMemberMediaFile" type="file" accept="image/*,audio/*,video/*">
+    <button class="gm-hub-member-record" id="gmHubMemberRecordBtn" type="button" onclick="gmHubMemberToggleRecord()">🎙️ وائس ریکارڈ کریں</button>
+  </div>
+  <small class="gm-hub-member-media-note">تصویر، آڈیو یا ویڈیو بھیج سکتے ہیں۔ ریکارڈنگ کے لیے مائیک کی اجازت دیں۔</small>
+  <div id="gmHubMemberMediaPreview" class="gm-hub-member-media-preview"></div>
+  <button class="primary" id="gmHubMemberSendBtn" type="button" onclick="gmHubSendMemberReply()">جواب ایڈمن کو بھیجیں</button><div id="gmHubMemberStatus" class="status"></div><div id="gmHubMyConversation" class="gm-hub-conversation"></div></div>
 </section>
 <footer>GM Network • v12.0</footer></main>
 <nav class="gm-bottom-nav" aria-label="Quick navigation"><button onclick="tab('home')"><b>⌂</b>Home</button><button onclick="tab('products')"><b>▦</b>Shop</button><button onclick="tab('team')"><b>♙</b>Team</button><button onclick="tab('my-wallet')"><b>▣</b>Wallet</button><button onclick="tab('cart')"><b>🛒</b>Cart <span id="bottomCartCount">0</span></button></nav>
@@ -9741,6 +9749,150 @@ if(typeof originalMemberLoad==='function')window.loadMemberOrders=async function
 #account #loggedInProfile .gm-ref-edit-photo span{font-size:9px!important;line-height:1.1!important;}
 @media(max-width:360px){#account #loggedInProfile .gm-ref-member-card{grid-template-columns:62px minmax(0,1fr) 42px!important;gap:7px!important;padding:9px!important;}#account #loggedInProfile .gm-ref-avatar{width:62px!important;height:62px!important;min-width:62px!important;}#account #loggedInProfile .gm-ref-member-info>b{font-size:14px!important;}#account #loggedInProfile .gm-ref-member-info>span{font-size:10px!important;}#account #loggedInProfile .gm-ref-edit-photo{width:40px!important;min-width:40px!important;}}
 </style>
+
+<style id="gm-hub-member-media-style">
+.gm-hub-member-media-actions{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}
+.gm-hub-member-attach,.gm-hub-member-record{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;padding:10px 13px;border-radius:11px;border:1px solid #b98b3c;background:#193525;color:#f3d58e;font-weight:800;font-size:12px;cursor:pointer;box-sizing:border-box}
+#gmHubMemberMediaFile{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;pointer-events:none}
+.gm-hub-member-media-note{display:block;color:#9eb09f;font-size:11px;margin:0 0 8px}
+.gm-hub-member-media-preview{display:none;margin:8px 0 12px;padding:10px;border:1px solid #45634c;border-radius:12px;background:#0d1c14;color:#dce9dd;font-size:12px;overflow-wrap:anywhere}
+.gm-hub-member-media-preview.active{display:block}
+.gm-hub-member-media-preview img,.gm-hub-member-media-preview video,.gm-hub-member-media-preview audio{display:block;width:100%;max-height:220px;object-fit:contain;margin-top:8px;border-radius:8px;background:#000}
+.gm-hub-bubble .gm-hub-message-media img,.gm-hub-bubble .gm-hub-message-media video{display:block;width:100%;max-height:360px;object-fit:contain;margin-top:8px;border-radius:9px;background:#000}
+.gm-hub-bubble .gm-hub-message-media audio{display:block;width:100%;margin-top:8px}
+#gmHubMemberSendBtn{width:100%;min-height:47px}
+</style>
+<script id="gm-hub-member-media-script">
+(function(){
+  const bucket='gm-team-hub';
+  let recorder=null, stream=null, chunks=[], previewUrl=null;
+  const el=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const date=v=>{try{return new Date(v).toLocaleString()}catch(_){return ''}};
+  const status=(msg,type)=>{const box=el('gmHubMemberStatus');if(box){box.textContent=msg;box.className='status'+(type?' '+type:'')}};
+  function showPreview(file){
+    const box=el('gmHubMemberMediaPreview');if(!box)return;
+    if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}
+    box.innerHTML='';if(!file){box.classList.remove('active');return}
+    previewUrl=URL.createObjectURL(file);
+    const label=document.createElement('div');label.textContent=file.name+' · '+(file.size/1024/1024).toFixed(2)+' MB';box.appendChild(label);
+    let node;if(file.type.startsWith('image/')){node=document.createElement('img');node.alt='منتخب تصویر'}
+    else if(file.type.startsWith('audio/')){node=document.createElement('audio');node.controls=true}
+    else if(file.type.startsWith('video/')){node=document.createElement('video');node.controls=true;node.playsInline=true}
+    if(node){node.src=previewUrl;box.appendChild(node)}
+    box.classList.add('active');
+  }
+  const mediaInput=el('gmHubMemberMediaFile');
+  if(mediaInput)mediaInput.addEventListener('change',()=>showPreview(mediaInput.files&&mediaInput.files[0]));
+  window.gmHubMemberToggleRecord=async function(){
+    const btn=el('gmHubMemberRecordBtn');
+    if(recorder&&recorder.state==='recording'){recorder.stop();return}
+    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){status('اس براؤزر میں وائس ریکارڈنگ دستیاب نہیں۔ آپ آڈیو فائل گیلری سے منتخب کر سکتے ہیں۔','error');return}
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      chunks=[];
+      let mime='audio/webm';
+      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))mime='audio/webm;codecs=opus';
+      recorder=new MediaRecorder(stream,{mimeType:mime});
+      recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+      recorder.onerror=()=>status('وائس ریکارڈنگ میں مسئلہ آگیا۔ دوبارہ کوشش کریں۔','error');
+      recorder.onstop=()=>{
+        const type=recorder.mimeType||'audio/webm';
+        const blob=new Blob(chunks,{type});
+        const ext=type.includes('mp4')?'m4a':'webm';
+        const file=new File([blob],'gm-team-voice-'+Date.now()+'.'+ext,{type});
+        const dt=new DataTransfer();dt.items.add(file);if(mediaInput)mediaInput.files=dt.files;
+        showPreview(file);if(btn)btn.textContent='🎙️ دوبارہ ریکارڈ کریں';
+        if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
+        status('وائس ریکارڈ ہوگئی۔ اب جواب ایڈمن کو بھیج دیں۔','ok');
+      };
+      recorder.start();
+      if(btn)btn.textContent='■ ریکارڈنگ روکیں';
+      status('ریکارڈنگ جاری ہے… مکمل ہونے پر ریکارڈنگ روکیں۔','');
+    }catch(e){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;status('مائیک کی اجازت نہیں ملی: '+(e.message||e),'error')}
+  };
+  async function signedMedia(path){
+    const {data,error}=await sb.storage.from(bucket).createSignedUrl(path,3600);
+    if(error)throw error;return data?.signedUrl||'';
+  }
+  async function uploadMedia(file){
+    const allowed=['image/','audio/','video/'];
+    if(!allowed.some(t=>file.type.startsWith(t)))throw new Error('صرف تصویر، آڈیو یا ویڈیو فائل منتخب کریں۔');
+    const max=file.type.startsWith('video/')?100*1024*1024:file.type.startsWith('audio/')?25*1024*1024:12*1024*1024;
+    if(file.size>max)throw new Error('فائل سائز حد سے زیادہ ہے: تصویر 12MB، آڈیو 25MB، ویڈیو 100MB تک۔');
+    const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';
+    const path='member-messages/'+user.id+'/'+crypto.randomUUID()+'.'+ext;
+    const {error}=await sb.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
+    if(error)throw error;
+    return {path,type:file.type.startsWith('image/')?'image':file.type.startsWith('audio/')?'audio':'video'};
+  }
+  function splitMessage(body){
+    const m=String(body||'').match(/\n?\[\[GM_MEDIA:(image|audio|video):([^\]]+)\]\]\s*$/);
+    return m?{text:String(body||'').slice(0,m.index).trim(),type:m[1],path:m[2]}:{text:String(body||''),type:null,path:null};
+  }
+  async function messageHtml(m,memberId){
+    const parsed=splitMessage(m.body);let media='';
+    if(parsed.path){
+      try{
+        const url=await signedMedia(parsed.path);
+        if(parsed.type==='image')media=`<div class="gm-hub-message-media"><img src="${esc(url)}" alt="ممبر کی تصویر" loading="lazy"></div>`;
+        if(parsed.type==='audio')media=`<div class="gm-hub-message-media"><audio controls preload="none" src="${esc(url)}"></audio></div>`;
+        if(parsed.type==='video')media=`<div class="gm-hub-message-media"><video controls playsinline preload="metadata" src="${esc(url)}"></video></div>`;
+      }catch(e){media='<small class="muted">میڈیا فائل لوڈ نہیں ہوسکی۔</small>'}
+    }
+    const sender=m.sender_id===memberId?'آپ':(memberId?'ایڈمن':'ممبر');
+    return `<div class="gm-hub-bubble ${m.sender_id===memberId?'':'admin'}"><small>${sender} · ${date(m.created_at)}</small>${parsed.text?`<div>${esc(parsed.text).replace(/\n/g,'<br>')}</div>`:''}${media}</div>`;
+  }
+  window.gmHubSendMemberReply=async function(){
+    if(typeof user==='undefined'||!user||typeof sb==='undefined'||!sb)return status('پہلے سائن اِن کریں۔','error');
+    const input=el('gmHubMemberReply'),file=mediaInput?.files?.[0]||null;
+    const body=(input?.value||'').trim();
+    if(!body&&!file)return status('پیغام لکھیں یا تصویر، آڈیو یا ویڈیو منتخب کریں۔','error');
+    const btn=el('gmHubMemberSendBtn');if(btn){btn.disabled=true;btn.textContent='بھیجا جا رہا ہے…'}
+    try{
+      let finalBody=body;
+      if(file){const uploaded=await uploadMedia(file);finalBody+=(finalBody?'\n\n':'')+'[[GM_MEDIA:'+uploaded.type+':'+uploaded.path+']]'}
+      const {error}=await sb.from('gm_team_hub_messages').insert({member_id:user.id,sender_id:user.id,body:finalBody});
+      if(error)throw error;
+      if(input)input.value='';if(mediaInput)mediaInput.value='';showPreview(null);
+      status('آپ کا پیغام / میڈیا ایڈمن کو بھیج دیا گیا۔','ok');
+      await window.gmHubLoadMyConversation();
+    }catch(e){status('پیغام نہیں بھیجا جا سکا: '+(e.message||e),'error')}
+    finally{if(btn){btn.disabled=false;btn.textContent='جواب ایڈمن کو بھیجیں'}}
+  };
+  window.gmHubLoadMyConversation=async function(){
+    const box=el('gmHubMyConversation');if(!box||typeof user==='undefined'||!user||typeof sb==='undefined'||!sb)return;
+    const {data,error}=await sb.from('gm_team_hub_messages').select('id,sender_id,body,created_at').eq('member_id',user.id).order('created_at',{ascending:true}).limit(100);
+    if(error){box.textContent='گفتگو لوڈ نہیں ہوئی: '+error.message;return}
+    const rows=data||[];box.innerHTML=rows.length?(await Promise.all(rows.map(m=>messageHtml(m,user.id)))).join(''):'<small class="muted">ابھی کوئی نجی گفتگو نہیں۔</small>';
+  };
+  window.gmHubLoadInbox=async function(){
+    if(typeof isAdmin==='undefined'||!isAdmin||typeof sb==='undefined'||!sb)return;
+    const box=el('gmHubInbox');if(!box)return;box.textContent='نجی جوابات لوڈ ہو رہے ہیں…';
+    const {data,error}=await sb.from('gm_team_hub_messages').select('id,member_id,sender_id,body,created_at').order('created_at',{ascending:false}).limit(150);
+    if(error){box.textContent='جوابات لوڈ نہیں ہوئے: '+error.message;return}
+    const rows=data||[],ids=[...new Set(rows.map(m=>m.member_id))];
+    if(!ids.length){box.textContent='ابھی کوئی نجی جواب موصول نہیں ہوا۔';return}
+    const {data:profiles}=await sb.from('profiles').select('id,full_name,member_code').in('id',ids);
+    const map=new Map((profiles||[]).map(x=>[x.id,x]));
+    const html=[];
+    for(const id of ids){
+      const m=rows.find(x=>x.member_id===id),prof=map.get(id)||{};
+      const parsed=splitMessage(m.body);let media='';
+      if(parsed.path){try{const url=await signedMedia(parsed.path);if(parsed.type==='image')media=`<img src="${esc(url)}" alt="ممبر کی تصویر" style="display:block;max-width:100%;max-height:300px;margin-top:8px">`;if(parsed.type==='audio')media=`<audio controls preload="none" src="${esc(url)}" style="display:block;width:100%;margin-top:8px"></audio>`;if(parsed.type==='video')media=`<video controls playsinline preload="metadata" src="${esc(url)}" style="display:block;width:100%;max-height:300px;margin-top:8px"></video>`}catch(e){media='<small>میڈیا فائل لوڈ نہیں ہوسکی۔</small>'}}
+      html.push(`<div class="gm-hub-reply-row"><b>${esc(prof.full_name||'Member')} · ${esc(prof.member_code||id.slice(0,8))}</b>${parsed.text?`<p>${esc(parsed.text)}</p>`:''}${media}<small>${date(m.created_at)}</small><textarea id="gmHubReply-${id}" rows="2" placeholder="اس ممبر کو نجی جواب دیں…"></textarea><button class="secondary" type="button" onclick="gmHubAdminReply('${id}')">جواب بھیجیں</button><button class="secondary" type="button" onclick="gmHubAdminConversation('${id}')">مکمل گفتگو</button><div id="gmHubThread-${id}"></div></div>`);
+    }
+    box.innerHTML=html.join('');
+  };
+  window.gmHubAdminConversation=async function(memberId){
+    if(typeof isAdmin==='undefined'||!isAdmin||typeof sb==='undefined'||!sb)return;const box=el('gmHubThread-'+memberId);if(!box)return;
+    const {data,error}=await sb.from('gm_team_hub_messages').select('sender_id,body,created_at').eq('member_id',memberId).order('created_at',{ascending:true}).limit(100);
+    if(error){box.textContent=error.message;return}
+    const rows=data||[];box.innerHTML=rows.length?(await Promise.all(rows.map(m=>messageHtml(m,memberId)))).join(''):'<small class="muted">ابھی کوئی گفتگو نہیں۔</small>';
+  };
+})();
+</script>
+
 </body>
 </html>
 

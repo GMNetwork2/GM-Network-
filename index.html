@@ -1203,6 +1203,10 @@ body.gm-admin-page-open{overflow:hidden!important}
 @media(max-width:420px){.swal2-popup.gm-withdraw-message-popup{padding:19px 14px!important}.swal2-popup.gm-withdraw-message-popup .swal2-actions{flex-direction:column-reverse!important}.swal2-popup.gm-withdraw-message-popup .swal2-actions button{width:100%!important}.swal2-popup.gm-withdraw-message-popup textarea.swal2-textarea{height:135px!important}}
 </style>
 
+<style id="gm-admin-payment-method-style">
+.gm-payment-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gm-payment-color) 65%,transparent);background:color-mix(in srgb,var(--gm-payment-color) 13%,transparent);color:var(--gm-payment-color);font-size:11px;font-weight:900;letter-spacing:.35px;line-height:1.3;white-space:normal}
+.gm-payment-method-value{display:inline-block;padding:5px 9px;border-radius:8px;background:rgba(229,184,83,.12);border:1px solid rgba(229,184,83,.35);color:var(--gold);text-align:right;overflow-wrap:anywhere}
+</style>
 </head>
 <body>
 <div id="offlineOverlay">
@@ -1747,7 +1751,13 @@ body.gm-admin-page-open{overflow:hidden!important}
         <div class="panel" style="margin-top:14px;">
           <h3 style="color:var(--gold);margin:0 0 8px;">🌐 Global Products — Admin Manager</h3>
           <p class="muted">CJ اور Markaz سے امپورٹ ہونے والی پروڈکٹس اپنی منتخب کیٹیگری کے Global فولڈر میں رہیں گی۔ یہاں سے ان کا اسٹاک، دستیابی، لنک، ترمیم اور ڈیلیٹ کنٹرول کریں۔</p>
-          <button class="secondary" type="button" onclick="loadGlobalAdminProducts()" style="width:100%;">↻ Refresh Global Products</button>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0;">
+            <button class="primary" type="button" onclick="gmSetAdminSupplierView('cj')">🌐 CJ Products</button>
+            <button class="primary" type="button" onclick="gmSetAdminSupplierView('markaz')">🇵🇰 Markaz Products</button>
+            <button class="primary" type="button" onclick="gmSetAdminSupplierView('manual')">🛍️ Manual Products</button>
+          </div>
+          <div id="gmSupplierCategoryBar" style="margin:8px 0;"></div>
+          <button class="secondary" type="button" onclick="loadGlobalAdminProducts()" style="width:100%;">↻ Refresh Products</button>
           <div id="globalAdminProducts" style="margin-top:12px;">Global products لوڈ ہو رہی ہیں…</div>
         </div>
         <div class="panel" style="margin-top:14px;">
@@ -1910,10 +1920,7 @@ body.gm-admin-page-open{overflow:hidden!important}
         <input id="adminSearchInput" placeholder="Enter Member ID or Name...">
         <button type="button" onclick="searchAdminMember()" class="primary">Search</button>
         <div id="adminSearchResult" class="muted">Search result will appear here.</div>
-        <h2 style="margin-top:20px;">Reset Member Password</h2>
-        <input id="resetEmail" type="email" placeholder="member@example.com">
-        <button class="primary" onclick="sendPasswordReset()">Send Reset Link</button>
-        <div id="resetStatus" class="status hidden"></div>
+        <div class="status" style="margin-top:18px;">ممبر تلاش کرنے کے بعد اسی ممبر کے سامنے Password Reset بٹن دبائیں، نیا پاس ورڈ درج کریں اور Save کریں۔ پاس ورڈ ای میل کے ذریعے نہیں بھیجا جائے گا۔</div>
 </div>
         <div class="admin-subpage hidden" id="adminSub-members-directory">
           <button class="secondary admin-subpage-back" type="button" onclick="openAdminSubmenu('members')">← Members Menu</button>        <h2 style="margin-top:20px;">Recent Members</h2>
@@ -2059,9 +2066,9 @@ body.gm-admin-page-open{overflow:hidden!important}
 
 <div id="orderModal" class="modal hidden"><div class="modal-content" id="orderFormContent"><h2>Place Order</h2><p class="muted" id="orderProductName"></p><label>Full Name</label><input id="orderName" autocomplete="name" placeholder="Your name"><label>Phone Number</label><input id="orderPhone" type="tel" autocomplete="tel" placeholder="+92 300 1234567"><label>Shipping Address</label><textarea id="orderAddress" rows="2" autocomplete="street-address" placeholder="House, street, city"></textarea><button class="primary" onclick="submitOrder()">Confirm Order</button><button class="secondary" onclick="closeModal()" style="margin-top:10px;width:100%">Cancel</button><div id="orderStatus" class="status hidden"></div></div><div class="modal-content hidden" id="paymentContent" style="text-align:center"><h2 style="color:var(--g)">Order Placed!</h2><p>Order total: <b id="payAmount"></b></p><div class="payment-choice"><b>Scan QR Code to Pay</b><p class="pay-note">Open your Easypaisa, JazzCash, or Bank app and scan this QR code to send the exact amount. After payment, send the screenshot on WhatsApp.</p><div class="qr-container"><img referrerpolicy="no-referrer" src="qr.png" class="qr-img" alt="Easypaisa QR Code" onerror="this.src='https://placehold.co/200x200?text=QR+Code'"><p class="muted" style="margin:5px 0 0">Scan to pay MUHAMMAD HAMID</p></div><p class="pay-note">If the QR code does not work, click the button below to contact us on WhatsApp for account details.</p><a id="whatsappBtn" href="#" target="_blank" rel="noopener" class="pay-btn" style="background:#25D366">Contact on WhatsApp</a></div><div class="payment-choice" style="margin-top:15px; border-color: var(--gold);"><b>Upload Payment Proof</b><p class="pay-note">After making the payment, please take a screenshot and upload it here to confirm your order.</p><label style="display:block;text-align:left;margin:10px 0 5px">Payment Method</label><select id="gmPaymentMethod" style="width:100%;margin-bottom:8px"><option value="easypaisa">Easypaisa</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank Transfer</option></select><label style="display:block;text-align:left;margin:8px 0 5px">Transaction ID / Reference</label><input id="gmPaymentTxnId" type="text" maxlength="120" autocomplete="off" placeholder="Enter transaction ID" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Paid Amount (PKR)</label><input id="gmPaymentAmount" type="number" min="1" step="0.01" placeholder="Amount paid in PKR" style="width:100%;margin-bottom:8px"><label style="display:block;text-align:left;margin:8px 0 5px">Payment Date &amp; Time</label><input id="gmPaymentPaidAt" type="datetime-local" style="width:100%;margin-bottom:10px"><input type="file" id="paymentScreenshot" accept="image/*" style="margin-bottom:10px;"><button class="primary" onclick="uploadPaymentProof()">Submit Payment Proof</button><div id="uploadStatus" class="status hidden"></div></div><button class="secondary" onclick="closeModal()" style="margin-top:12px;width:100%">Close</button></div></div>
 <div id="withdrawModal" class="modal hidden"><div class="modal-content"><h2>Withdraw Earnings</h2><p class="muted">Enter your Bank / Easypaisa / JazzCash details.</p><label>Amount to withdraw (USD)</label><input id="wdAmount" type="number" min="10" placeholder="Minimum 10"><label>Account details</label><textarea id="wdAccount" rows="3" placeholder="Bank / account title / IBAN or wallet number"></textarea><button class="primary" onclick="submitWithdraw()">Submit Request</button><button class="secondary" onclick="$('withdrawModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="wdStatus" class="status hidden"></div></div></div>
-<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><div id="editCodSettingWrap" style="margin:12px 0;padding:12px;border:1px solid #b98b3c;border-radius:10px;background:#0b2116;"><label style="display:flex;align-items:center;gap:9px;color:#f0d18a;font-weight:700;"><input type="checkbox" id="editProductCodEnabled" style="width:auto;accent-color:#e5b853;"> Enable Cash on Delivery for this product</label><small style="display:block;color:#b9c5b6;margin-top:5px;">CJ Dropshipping / Markaz Pakistan only. Turn ON only when this exact product supports Cash on Delivery. Default is OFF.</small></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Current product images (remove any image you do not want to keep)</label><div id="gmEditProductExistingImages" class="gm-image-manager-grid"></div><label>Add more product images (optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
+<div id="editProductModal" class="modal hidden"><div class="modal-content"><h2>Edit Product</h2><input id="editProductId" type="hidden"><label>Product name</label><input id="editProductName"><label>Product category</label><select id="editProductCategory" class="category-select"><option value="">Select category</option><option>Perfumes</option><option>Attars</option><option>Watches</option><option>Wallets</option><option>Accessories</option><option>Premium</option><option>Bags</option><option>Shoes</option><option>Jewelry</option><option>Electronics</option><option>Other</option></select><label>Show this product in (select any number)</label><div class="placement-options"><label><input type="checkbox" id="editShowFeatured"> Featured Products</label><label><input type="checkbox" id="editShowArrivals"> New Arrivals</label><label><input type="checkbox" id="editShowPremium"> Premium Collection</label><label><input type="checkbox" id="editShowBestSellers"> Best Sellers</label></div><div id="editCodSettingWrap" style="margin:12px 0;padding:12px;border:1px solid #b98b3c;border-radius:10px;background:#0b2116;"><label style="display:flex;align-items:center;gap:9px;color:#f0d18a;font-weight:700;"><input type="checkbox" id="editProductCodEnabled" style="width:auto;accent-color:#e5b853;"> Enable Cash on Delivery for this product</label><small style="display:block;color:#b9c5b6;margin-top:5px;">CJ Dropshipping / Markaz Pakistan only. Turn ON only when this exact product supports Cash on Delivery. Default is OFF.</small></div><label>Price (USD)</label><input id="editProductPrice" type="number" min="1"><div id="editSupplierCostWrap" style="display:none;margin:10px 0;padding:10px;border:1px solid #b98b3c;border-radius:10px;"><label id="editSupplierCostLabel">Supplier Cost (USD)</label><input id="editSupplierCost" type="number" min="0" step="0.01"><small id="editSupplierMargin" class="muted">Estimated gross margin: —</small><small id="editSupplierOriginalLink" class="muted" style="display:block;margin-top:6px;"></small></div><div id="editMarkazPkrWrap" style="display:none;margin:10px 0;padding:10px;border:1px solid #b98b3c;border-radius:10px;"><label>Markaz Original Cost (PKR)</label><input id="editMarkazCostPkr" type="number" min="0" step="1"><label>GM Network Selling Price (PKR)</label><input id="editMarkazSellPkr" type="number" min="1" step="1"><small id="editMarkazPkrMargin" class="muted">منافع: —</small><small class="muted">PKR قیمت اصل رہے گی؛ USD قیمت موجودہ ایکسچینج ریٹ سے خودکار بنے گی۔</small></div><label>Discount % (0 for no discount)</label><input id="editProductDiscount" type="number" min="0" max="90" value="0"><label>Description</label><textarea id="editProductDescription" rows="3"></textarea><label>Starting Rating</label><input id="editProductBaseRating" type="number" step="0.1" min="0" max="5"><label>Starting Reviews Count</label><input id="editProductBaseReviewsCount" type="number" min="0"><label>Sales commission (%)</label><input id="editProductRate" type="number" min="0" max="50"><label>Current product images (remove any image you do not want to keep)</label><div id="gmEditProductExistingImages" class="gm-image-manager-grid"></div><label>Add more product images (optional)</label><input id="editProductImages" type="file" accept="image/*" multiple><button class="primary" onclick="saveProductEdit()">Save Changes</button><button class="secondary" onclick="$('editProductModal').classList.add('hidden')" style="margin-top:10px;width:100%">Cancel</button><div id="editProductStatus" class="status hidden"></div></div></div>
 <div id="imageLightbox" class="image-lightbox hidden" role="dialog" aria-modal="true" aria-label="Product image viewer" onclick="if(event.target===this)closeImageLightbox()"><button type="button" class="close-lightbox" aria-label="Close image" onclick="closeImageLightbox()">×</button><img referrerpolicy="no-referrer" id="lightboxImage" alt="Full-size product" src=""><div id="lightboxCounter" class="lightbox-counter"></div><div class="lightbox-thumbs" id="lightboxThumbs" aria-label="Product image thumbnails"></div></div>
-<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="cjOrderSupplierBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
+<div id="orderDetailModal" class="modal hidden"><div class="modal-content"><h2>Order Details</h2><div id="orderProductImageContainer" style="text-align:center; margin-bottom:10px;"></div><div class="item"><span>Order</span><b id="orderDetailName"></b></div><div class="item"><span>Member ID</span><b id="orderDetailMemberCode">Loading…</b></div><div class="item"><span>Account UUID</span><b id="orderDetailUserId">—</b></div><div class="item"><span>Phone</span><b id="orderDetailPhone"></b></div><div class="item"><span>Payment Method</span><b id="orderDetailPaymentMethod" class="gm-payment-method-value">—</b></div><div class="item"><span>Address</span><b id="orderDetailAddress"></b></div><div class="item"><span>Amount</span><b id="orderDetailPrice"></b></div><div class="item"><span>Status</span><b id="orderDetailStatus"></b></div><div id="paymentProofBox"></div><div id="cjOrderSupplierBox"></div><div id="orderActionButtons"></div><button type="button" class="secondary" onclick="closeOrderDetailModal()" style="margin-top:10px;width:100%">Close</button></div></div>
 
 <!-- Product View Page (Full Screen) -->
 <div id="productViewPage" class="view hidden" style="position:fixed;inset:0;background:#fff;z-index:400;overflow-y:auto;">
@@ -3086,18 +3093,22 @@ async function uploadGMProfilePhoto(input) {
     } finally { input.value = ''; }
 }
 
-// Bank details are kept in the existing profiles.account_details column (no SQL change).
+// Payout details remain in the existing profiles.account_details column (no SQL change).
+// Backward-compatible parser supports old Bank/Account records and the new Type/Title/Account format.
 function gmParseBankDetails(raw) {
     const value = String(raw || '').trim();
+    const typeMatch = value.match(/(?:^|\|)\s*Type\s*:\s*([^|]+)/i);
+    const titleMatch = value.match(/(?:^|\|)\s*Title\s*:\s*([^|]+)/i);
     const bankMatch = value.match(/(?:^|\|)\s*Bank\s*:\s*([^|]+)/i);
     const accountMatch = value.match(/(?:^|\|)\s*Account\s*:\s*([^|]+)/i);
-    if (bankMatch || accountMatch) {
-        return { bank: (bankMatch?.[1] || '').trim(), account: (accountMatch?.[1] || '').trim(), legacy: false };
+    if (typeMatch || titleMatch || bankMatch || accountMatch) {
+        const bank = (typeMatch?.[1] || bankMatch?.[1] || '').trim();
+        return { bank, type: bank, title: (titleMatch?.[1] || '').trim(), account: (accountMatch?.[1] || '').trim(), legacy: false };
     }
-    return { bank: '', account: value, legacy: !!value };
+    return { bank: '', type: '', title: '', account: value, legacy: !!value };
 }
-function gmFormatBankDetails(bank, account) {
-    return `Bank: ${String(bank || '').trim()} | Account: ${String(account || '').trim()}`;
+function gmFormatBankDetails(type, title, account) {
+    return `Type: ${String(type || '').trim()} | Title: ${String(title || '').trim()} | Account: ${String(account || '').trim()}`;
 }
 
 async function loadMyAccountPage() {
@@ -3112,7 +3123,7 @@ async function loadMyAccountPage() {
     if($('accMemberId')) $('accMemberId').textContent = myProfile?.member_code || '—';
     if($('accUuid')) $('accUuid').textContent = user.id;
     if($('accRefCode')) $('accRefCode').textContent = $('profRefCode').textContent || '—';
-    if($('accBankDetails')) { const bd = gmParseBankDetails(myProfile?.account_details || ''); $('accBankDetails').textContent = myProfile?.account_details ? (bd.bank ? `${bd.bank} — ${bd.account}` : myProfile.account_details) : 'Not Set'; }
+    if($('accBankDetails')) { const bd = gmParseBankDetails(myProfile?.account_details || ''); $('accBankDetails').textContent = myProfile?.account_details ? (bd.bank ? `${bd.bank}${bd.title ? ' — ' + bd.title : ''} — ${bd.account}` : myProfile.account_details) : 'Not Set'; }
     if($('accBalance')) $('accBalance').textContent = convertMoney(Number(totalComm).toFixed(2));
     
     // تازہ Self + Team Coins لوڈ کریں؛ یہ loadProfile کے ذریعے accCoins میں آتے ہیں
@@ -3194,34 +3205,50 @@ async function loadMyAccountPage() {
 async function editBankDetails() {
     if (!user || !sb) return Swal.fire({ icon:'error', title:'Sign in required', text:'Please sign in first.', background:'#0d1c14', color:'#e5b853' });
     const parsed = gmParseBankDetails(myProfile?.account_details || '');
+    const savedType = /jazz/i.test(parsed.bank) ? 'JazzCash' : (/bank|hbl|meezan|ubl|mcb|alfalah|faysal|askari|standard chartered|nbp/i.test(parsed.bank) ? 'Bank Account' : 'Easypaisa');
     const result = await Swal.fire({
-        title: 'Bank / Wallet Details',
+        title: 'Withdrawal Account Details',
         html: `
             <div style="text-align:left;color:#e5e5e5;">
-                <label for="gm-bank-name" style="display:block;margin:0 0 6px;font-weight:700;">Bank / Wallet Name</label>
-                <input id="gm-bank-name" class="swal2-input" value="${esc(parsed.bank)}" placeholder="e.g. HBL, Meezan, Easypaisa, JazzCash" style="width:100%;margin:0 0 14px;box-sizing:border-box;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
-                <label for="gm-bank-account" style="display:block;margin:0 0 6px;font-weight:700;">Account Number / IBAN</label>
-                <input id="gm-bank-account" class="swal2-input" value="${esc(parsed.account)}" placeholder="Enter account number or IBAN" style="width:100%;margin:0;box-sizing:border-box;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
-                ${parsed.legacy ? '<p style="font-size:12px;color:#e5b853;margin:10px 0 0;">Your previous account details were loaded in the account field. Please add the bank name above.</p>' : ''}
+                <label for="gm-payout-type" style="display:block;margin:0 0 6px;font-weight:700;">Select Account Type</label>
+                <select id="gm-payout-type" class="swal2-input" style="width:100%;margin:0 0 14px;box-sizing:border-box;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
+                    <option value="Easypaisa" ${savedType==='Easypaisa'?'selected':''}>Easypaisa</option>
+                    <option value="JazzCash" ${savedType==='JazzCash'?'selected':''}>JazzCash</option>
+                    <option value="Bank Account" ${savedType==='Bank Account'?'selected':''}>Bank Account</option>
+                </select>
+                <label for="gm-bank-title" style="display:block;margin:0 0 6px;font-weight:700;">Account Title / Name</label>
+                <input id="gm-bank-title" class="swal2-input" value="${esc(parsed.title)}" placeholder="Name on account" style="width:100%;margin:0 0 14px;box-sizing:border-box;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
+                <label for="gm-bank-account" id="gm-payout-number-label" style="display:block;margin:0 0 6px;font-weight:700;">Account Number</label>
+                <input id="gm-bank-account" class="swal2-input" value="${esc(parsed.account)}" placeholder="Enter wallet / account number or IBAN" style="width:100%;margin:0;box-sizing:border-box;background:#050a08;color:#fff;border:1px solid #1f3a2c;">
+                ${parsed.legacy ? '<p style="font-size:12px;color:#e5b853;margin:10px 0 0;">Your previous account number has been retained. Please select the correct account type and enter the account title.</p>' : ''}
             </div>`,
         showCancelButton:true, confirmButtonText:'Save Details', cancelButtonText:'Cancel',
         confirmButtonColor:'#e5b853', cancelButtonColor:'#555', background:'#0d1c14', color:'#e5b853', width:'95%',
+        didOpen:() => {
+            const type = document.getElementById('gm-payout-type');
+            const label = document.getElementById('gm-payout-number-label');
+            const number = document.getElementById('gm-bank-account');
+            const refresh = () => { const isBank = type.value === 'Bank Account'; label.textContent = isBank ? 'Bank Account Number / IBAN' : type.value + ' Number'; number.placeholder = isBank ? 'Enter bank account number or IBAN' : 'Enter ' + type.value + ' mobile number'; };
+            type.addEventListener('change', refresh); refresh();
+        },
         preConfirm:() => {
-            const bank = document.getElementById('gm-bank-name')?.value.trim() || '';
+            const type = document.getElementById('gm-payout-type')?.value || '';
+            const title = document.getElementById('gm-bank-title')?.value.trim() || '';
             const account = document.getElementById('gm-bank-account')?.value.trim() || '';
-            if (!bank) { Swal.showValidationMessage('Please enter your bank or wallet name.'); return false; }
-            if (!account) { Swal.showValidationMessage('Please enter your account number or IBAN.'); return false; }
-            return { bank, account };
+            if (!type) { Swal.showValidationMessage('Please select Easypaisa, JazzCash or Bank Account.'); return false; }
+            if (!title) { Swal.showValidationMessage('Please enter the account title / name.'); return false; }
+            if (!account) { Swal.showValidationMessage('Please enter the account number or IBAN.'); return false; }
+            return { type, title, account };
         }
     });
     if (!result.isConfirmed || !result.value) return;
-    const saved = gmFormatBankDetails(result.value.bank, result.value.account);
+    const saved = gmFormatBankDetails(result.value.type, result.value.title, result.value.account);
     try {
         const { error } = await sb.from('profiles').update({ account_details:saved }).eq('id', user.id);
         if (error) throw error;
         myProfile.account_details = saved;
-        if ($('accBankDetails')) $('accBankDetails').textContent = `${result.value.bank} — ${result.value.account}`;
-        await Swal.fire({ icon:'success', title:'Saved', text:'Bank name and account number saved successfully.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
+        if ($('accBankDetails')) $('accBankDetails').textContent = `${result.value.type} — ${result.value.title} — ${result.value.account}`;
+        await Swal.fire({ icon:'success', title:'Saved', text:'Withdrawal account details saved successfully.', background:'#0d1c14', color:'#e5b853', confirmButtonColor:'#e5b853' });
     } catch (e) {
         await Swal.fire({ icon:'error', title:'Could not save', text:e.message || 'Please try again.', background:'#0d1c14', color:'#e5b853' });
     }
@@ -3294,23 +3321,6 @@ async function submitWithdraw() {
     }
 }
 
-async function sendPasswordReset() {
-    if (!isAdmin || !sb) return status('resetStatus', 'Admin access required.', 'error');
-    const email = $('resetEmail').value.trim();
-    if (!email) return status('resetStatus', 'Enter the member email address.', 'error');
-    const btn = $('resetStatus').previousElementSibling;
-    if (btn) btn.disabled = true;
-    status('resetStatus', 'Sending password reset link…');
-    try {
-        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href.split('#')[0] });
-        if (error) throw error;
-        status('resetStatus', 'Password reset email requested.', 'ok');
-    } catch (e) {
-        status('resetStatus', 'Could not send reset email: ' + (e.message || 'Unknown error'), 'error');
-    } finally {
-        if (btn) btn.disabled = false;
-    }
-}
 
 async function fetchProductRatings(productIds) {
     if (!productIds.length) return {};
@@ -3937,7 +3947,8 @@ async function openWithdrawRequestsModal() {
                         </div>
                         <div style="font-size:13px;color:#aaa;margin-bottom:8px;line-height:1.5;">
                             <b>Amount:</b> <span style="color:#e5b853;font-size:16px;">${esc(convertMoney(w.amount ?? 0))}</span><br>
-                            <b>Bank:</b> ${esc(bankInfo.bank || 'Not specified')}<br>
+                            <b>Payment Type:</b> ${esc(bankInfo.bank || 'Not specified')}<br>
+                            <b>Account Title:</b> ${esc(bankInfo.title || '—')}<br>
                             <b>Account Number:</b> ${esc(bankInfo.account || w.account_details || '—')}<br>
                             <b>Date:</b> ${esc(w.created_at ? new Date(w.created_at).toLocaleString() : '—')}
                         </div>
@@ -4380,17 +4391,40 @@ function gmCodSupplierKind(value) {
 async function loadGlobalAdminProducts() {
   const el = $('globalAdminProducts');
   if (!el || !sb || !isAdmin) return;
-  el.innerHTML = '<p class="muted">Loading Global Products…</p>';
-  // Use case-insensitive partial matching so legacy supplier labels / extra spaces do not hide COD controls.
-  const { data, error } = await sb.from('products').select('id,name,category,category_folder,active,price_usd,cod_enabled,cj_cost_usd,cj_product_id,cj_product_sku,cj_source_url,cj_stock_quantity,markaz_cost_usd,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,supplier_source,images,image_url').or('supplier_source.ilike.%cj%,supplier_source.ilike.%markaz%').order('created_at',{ascending:false});
+  el.innerHTML = '<p class="muted">Loading Products…</p>';
+  const { data, error } = await sb.from('products').select('id,name,category,category_folder,active,price_usd,price_pkr,cod_enabled,cj_cost_usd,cj_product_id,cj_product_sku,cj_source_url,cj_stock_quantity,markaz_cost_usd,markaz_cost_pkr,markaz_product_sku,markaz_source_url,markaz_app_url,markaz_stock_status,supplier_source,images,image_url,created_at').order('created_at',{ascending:false});
   if (error) { el.innerHTML = '<p class="status error">' + esc(error.message) + '</p>'; return; }
-  window.globalAdminProductsData = (data || []).filter(p => !!gmCodSupplierKind(p.supplier_source));
-  el.innerHTML = window.globalAdminProductsData.map(p => {
-    const img = (Array.isArray(p.images) && p.images[0]) || p.image_url || 'https://placehold.co/90x90?text=CJ';
-    const isMarkaz=gmCodSupplierKind(p.supplier_source)==='markaz';
-    const url = isMarkaz ? (markazAppShareUrl({markaz_app_url:p.markaz_app_url,sku:p.markaz_product_sku,source_url:p.markaz_source_url}) || '') : (p.cj_source_url || (p.cj_product_id ? `https://www.cjdropshipping.com/product/${encodeURIComponent(p.cj_product_id)}.html` : 'https://www.cjdropshipping.com/'));
-    return `<div class="item" style="align-items:flex-start;gap:9px;"><img referrerpolicy="no-referrer" src="${esc(img)}" onerror="this.onerror=null;this.src='https://placehold.co/90x90/0a1f15/e5b853?text=GM';" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;"><div style="flex:1;min-width:0;"><b>${esc(p.name || 'CJ Product')}</b><div class="muted">${esc(p.category_folder||p.category||'Other')} · ${esc(p.supplier_source||'')} · SKU ${esc(isMarkaz?p.markaz_product_sku:p.cj_product_sku||'—')}</div><div class="muted">Cost $${Number(isMarkaz?p.markaz_cost_usd:p.cj_cost_usd||0).toFixed(2)} · Sell $${Number(p.price_usd||0).toFixed(2)} · Stock ${isMarkaz?esc(p.markaz_stock_status||'unknown'):Number(p.cj_stock_quantity||0)}</div><div class="muted">${p.active ? 'Published' : 'Draft / Unpublished'}</div>${url?`<a href="${esc(url)}" ${isMarkaz?'':'target="_blank" rel="noopener noreferrer"'} style="color:var(--gold);font-size:12px;">↗ ${isMarkaz?'Open in Markaz App':'Open supplier product'}</a>`:(isMarkaz?'<small class="muted">Markaz app link unavailable</small>':'')}</div><div style="display:flex;flex-direction:column;gap:5px;min-width:92px;"><button class="secondary small-btn" onclick="editProduct('${esc(p.id)}')">Edit Product</button>${gmCodSupplierKind(p.supplier_source)?`<button class="secondary small-btn" style="border-color:${p.cod_enabled?'#28a765':'#b98b3c'}!important;color:${p.cod_enabled?'#68e39a':'#f0d18a'}!important;" onclick="toggleProductCod('${esc(p.id)}',${p.cod_enabled===true?'true':'false'})">🚚 COD ${p.cod_enabled?'ON':'OFF'}</button>`:''}<button class="secondary small-btn" onclick="toggleProduct('${esc(p.id)}',${p.active ? 'true':'false'})">${p.active ? 'Unpublish':'Publish'}</button><button class="secondary small-btn" style="color:#f77" onclick="deleteProduct('${esc(p.id)}')">Delete</button></div></div>`;
-  }).join('') || '<p class="muted">ابھی کوئی Global Product امپورٹ نہیں ہوئی۔</p>';
+  window.globalAdminProductsData = data || [];
+  window.gmAdminSupplierView = window.gmAdminSupplierView || 'cj';
+  window.gmAdminSupplierCategory = window.gmAdminSupplierCategory || '';
+  gmRenderAdminSupplierProducts();
+}
+window.gmSetAdminSupplierView = function(kind){
+  window.gmAdminSupplierView=kind; window.gmAdminSupplierCategory=''; gmRenderAdminSupplierProducts();
+};
+window.gmSetAdminSupplierCategory = function(category){ window.gmAdminSupplierCategory=category; gmRenderAdminSupplierProducts(); };
+function gmRenderAdminSupplierProducts(){
+  const el=$('globalAdminProducts'), bar=$('gmSupplierCategoryBar'); if(!el)return;
+  const all=window.globalAdminProductsData||[], view=window.gmAdminSupplierView||'cj';
+  let rows=all.filter(p=>{const kind=gmCodSupplierKind(p.supplier_source);return view==='manual'?!kind:kind===view;});
+  const chosen=window.gmAdminSupplierCategory||'';
+  const cats=[...new Set(rows.map(p=>String(p.category_folder||p.category||'Other').trim()||'Other'))].sort((a,b)=>a.localeCompare(b));
+  const viewLabel=view==='cj'?'CJ':view==='markaz'?'Markaz':'Manual / Homepage';
+  if(bar) bar.innerHTML='<div style="font-weight:800;color:var(--gold);margin:8px 0;">'+viewLabel+' Categories — پہلے کیٹیگری منتخب کریں</div><div style="display:flex;flex-wrap:wrap;gap:7px;"><button class="'+(!chosen?'primary':'secondary')+' small-btn" onclick="gmSetAdminSupplierCategory(\'\')">All Categories ('+rows.length+')</button>'+cats.map(c=>'<button class="'+(chosen===c?'primary':'secondary')+' small-btn" onclick="gmSetAdminSupplierCategory(decodeURIComponent(\''+encodeURIComponent(c)+'\'))">'+esc(c)+' ('+rows.filter(p=>String(p.category_folder||p.category||'Other').trim()===c).length+')</button>').join('')+'</div>';
+  if(chosen) rows=rows.filter(p=>String(p.category_folder||p.category||'Other').trim()===chosen);
+  el.innerHTML=rows.map(p=>{
+    const isMarkaz=view==='markaz', isCJ=view==='cj';
+    const rawImg=(Array.isArray(p.images)&&p.images[0])||p.image_url||'';
+    const img=typeof rawImg==='string'?rawImg:(rawImg&&typeof rawImg==='object'?(rawImg.url||rawImg.src||rawImg.image_url||''):'');
+    const safeImg=/^https?:\/\//i.test(String(img))?String(img):'https://placehold.co/90x90/0a1f15/e5b853?text=GM';
+    const url=isMarkaz?(markazAppShareUrl({markaz_app_url:p.markaz_app_url,sku:p.markaz_product_sku,source_url:p.markaz_source_url})||p.markaz_source_url||''):(isCJ?(p.cj_source_url||(p.cj_product_id?`https://www.cjdropshipping.com/product/${encodeURIComponent(p.cj_product_id)}.html`:'https://www.cjdropshipping.com/')):'');
+    const cost=Number(isMarkaz?(p.markaz_cost_pkr||0):(p.cj_cost_usd||0));
+    const sell=Number(isMarkaz?(p.price_pkr||0):(p.price_usd||0));
+    const margin=sell-cost;
+    const sku=isMarkaz?p.markaz_product_sku:(isCJ?p.cj_product_sku:'—');
+    const moneyLine=isMarkaz?`Markaz Cost Rs ${cost.toLocaleString('en-PK')} · GM Sell Rs ${sell.toLocaleString('en-PK')} · Profit Rs ${margin.toLocaleString('en-PK')}`:isCJ?`CJ Cost $${cost.toFixed(2)} · Sell $${sell.toFixed(2)} · Profit $${margin.toFixed(2)}`:`Selling Price $${Number(p.price_usd||0).toFixed(2)}`;
+    return `<div class="item" style="align-items:flex-start;gap:9px;"><img referrerpolicy="no-referrer" src="${esc(safeImg)}" onerror="this.onerror=null;this.src='https://placehold.co/90x90/0a1f15/e5b853?text=GM';" style="width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;"><div style="flex:1;min-width:0;"><b>${esc(p.name||'Product')}</b><div class="muted">${esc(p.category_folder||p.category||'Other')} · ${esc(p.supplier_source||'Manual')} · SKU ${esc(sku||'—')}</div><div class="muted">${moneyLine}</div><div class="muted">${p.active?'Published':'Draft / Unpublished'}</div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--gold);font-size:12px;">↗ ${isMarkaz?'اصل Markaz پروڈکٹ کھولیں':isCJ?'اصل CJ پروڈکٹ کھولیں':'Product Link'}</a>`:''}</div><div style="display:flex;flex-direction:column;gap:5px;min-width:92px;"><button class="secondary small-btn" onclick="editProduct('${esc(p.id)}')">Edit Product</button>${(isCJ||isMarkaz)?`<button class="secondary small-btn" style="border-color:${p.cod_enabled?'#28a765':'#b98b3c'}!important;color:${p.cod_enabled?'#68e39a':'#f0d18a'}!important;" onclick="toggleProductCod('${esc(p.id)}',${p.cod_enabled===true?'true':'false'})">🚚 COD ${p.cod_enabled?'ON':'OFF'}</button>`:''}<button class="secondary small-btn" onclick="toggleProduct('${esc(p.id)}',${p.active?'true':'false'})">${p.active?'Unpublish':'Publish'}</button><button class="secondary small-btn" style="color:#f77" onclick="deleteProduct('${esc(p.id)}')">Delete</button></div></div>`;
+  }).join('')||'<p class="muted">اس کیٹیگری میں ابھی کوئی پروڈکٹ موجود نہیں۔ پہلے دوسری کیٹیگری منتخب کریں۔</p>';
 }
 
 // Markaz Pakistan catalogue browser. Separate from CJ; reads public Markaz pages through its Edge Function.
@@ -5180,11 +5214,18 @@ async function loadAdmin() {
             const statusText = String(x.status || 'pending');
             const searchTxt = `${String(x.id || '').toLowerCase()} ${String(x.phone_number || '').toLowerCase()} ${buyerName.toLowerCase()} ${statusText.toLowerCase()}`;
             const isPending = statusText.toLowerCase() === 'pending';
-            return `<div class="item admin-order-item" data-search="${esc(searchTxt)}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;${isPending ? 'border:1px solid var(--gold)!important;' : ''}">
-                <div style="width:100%; display:flex; justify-content:space-between;">
+            const paymentKey = String(x.payment_method || '').trim().toLowerCase();
+            const paymentInfo = paymentKey === 'wallet' ? {label:'WALLET PAYMENT',icon:'👛',color:'#55d6a0'}
+                : paymentKey === 'cod' ? {label:'CASH ON DELIVERY',icon:'🚚',color:'#f0bd55'}
+                : ['manual','easypaisa','jazzcash','bank','bank_transfer'].includes(paymentKey) ? {label:'MANUAL PAYMENT',icon:'🧾',color:'#78b7ff'}
+                : {label: paymentKey ? paymentKey.replaceAll('_',' ').toUpperCase() : 'PAYMENT METHOD NOT RECORDED',icon:'💳',color:'#c4b5fd'};
+            const paymentBadge = `<span class="gm-payment-badge" style="--gm-payment-color:${paymentInfo.color}">${paymentInfo.icon} ${paymentInfo.label}</span>`;
+            return `<div class="item admin-order-item" data-search="${esc(searchTxt + ' ' + paymentInfo.label.toLowerCase())}" data-order="${esc(x.id)}" style="cursor:pointer; flex-direction:column; align-items:flex-start;${isPending ? 'border:1px solid var(--gold)!important;' : ''}">
+                <div style="width:100%; display:flex; justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                     <b>Order …${esc(String(x.id).slice(-4))}${isPending ? ' • NEEDS ACTION' : ''}</b>
                     <span class="pill">${esc(statusText)}</span>
                 </div>
+                <div style="margin-top:8px">${paymentBadge}</div>
                 <div style="font-size:12px; color:var(--muted); margin-top:5px; width:100%;">
                     <b>Buyer Name:</b> <span style="color:var(--gold);">${esc(buyerName)}</span><br>
                     <b>Phone:</b> ${esc(x.phone_number || '—')}<br>
@@ -5211,7 +5252,7 @@ async function loadAdmin() {
                     } catch (buyerNameError) {
                         console.warn('Order detail buyer-name lookup failed:', buyerNameError);
                     }
-                    await showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName, order.product_id);
+                    await showOrderDetails(order.id, order.phone_number, order.shipping_address, order.status, prodName, order.unit_price_usd, order.buyer_id, order.payment_proof || null, order.quantity, order.subtotal_usd, order.delivery_charge_usd, order.delivery_amount_usd, order.total_usd, prodImg, buyerName, order.product_id, order.payment_method);
                 };
             }
         });
@@ -5374,28 +5415,86 @@ async function searchAdminMember() {
     const { data, error } = await sb.from('profiles').select('*').or(`member_code.ilike.%${query}%,full_name.ilike.%${query}%`);
     if (error) { $('adminSearchResult').textContent = 'Error: ' + error.message; return; }
     if (!data || data.length === 0) { $('adminSearchResult').textContent = 'No member found.'; return; }
-    $('adminSearchResult').innerHTML = data.map(x => `<div class="item"><div><b>${esc(x.full_name)}</b><br><small>${esc(x.member_code)}</small><br><small class="muted">Coins: <b>${Number(x.points || 0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission || 0)}</b></small></div><div><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${x.points || 0})">Edit Coins/Comm</button></div></div>`).join('');
+    $('adminSearchResult').innerHTML = data.map(x => `<div class="item"><div><b>${esc(x.full_name || 'Member')}</b><br><small>${esc(x.member_code || '')}</small><br><small class="muted">Coins: <b>${Number(x.points || 0).toLocaleString()}</b> | Comm: <b>$${Number(x.total_commission || 0)}</b></small></div><div style="display:flex;flex-direction:column;gap:7px;min-width:125px;"><button class="secondary small-btn" onclick="editMemberPoints('${x.id}',${Number(x.points || 0)})">Edit Coins/Comm</button><button class="primary small-btn" type="button" onclick="adminResetMemberPassword('${x.id}')">🔐 Reset Password</button></div></div>`).join('');
 }
 
-// Admin-triggered secure password reset: send the member a Supabase recovery email.
-// Admin clients never receive or set another member's password directly.
+// Admin-triggered password reset through the protected Supabase Edge Function.
+// The Service Role Key stays on the server; it is never exposed in this HTML file.
 async function adminResetMemberPassword(userId) {
     if (!isAdmin || !sb) return alert('Admin access required.');
-    const approved = window.Swal
-        ? (await Swal.fire({ title: 'Send Password Reset Email?', text: 'The member will receive a secure password-reset link at their registered email address.', icon: 'question', showCancelButton: true, confirmButtonText: 'Send Reset Email', cancelButtonText: 'Cancel', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' })).isConfirmed
-        : confirm('Send a secure password reset email to this member?');
-    if (!approved) return;
+    if (!userId) return alert('Member account ID is missing.');
+
+    let newPassword = '';
+    if (window.Swal) {
+        const result = await Swal.fire({
+            title: 'Reset Member Password',
+            html: '<input id="gmAdminNewPassword" type="password" class="swal2-input" autocomplete="new-password" placeholder="نیا پاس ورڈ (کم از کم 8 حروف)">' +
+                  '<input id="gmAdminConfirmPassword" type="password" class="swal2-input" autocomplete="new-password" placeholder="نیا پاس ورڈ دوبارہ درج کریں">',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Save Password',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#e5b853',
+            cancelButtonColor: '#4a1a1a',
+            background: '#0d1c14',
+            color: '#e5b853',
+            preConfirm: () => {
+                const password = document.getElementById('gmAdminNewPassword')?.value || '';
+                const confirmation = document.getElementById('gmAdminConfirmPassword')?.value || '';
+                if (password.length < 8) {
+                    Swal.showValidationMessage('پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔');
+                    return false;
+                }
+                if (password.length > 128) {
+                    Swal.showValidationMessage('پاس ورڈ 128 حروف سے زیادہ نہیں ہو سکتا۔');
+                    return false;
+                }
+                if (password !== confirmation) {
+                    Swal.showValidationMessage('دونوں پاس ورڈ ایک جیسے نہیں ہیں۔');
+                    return false;
+                }
+                return password;
+            }
+        });
+        if (!result.isConfirmed) return;
+        newPassword = result.value || '';
+    } else {
+        newPassword = prompt('Enter the new password (at least 8 characters):') || '';
+        if (!newPassword) return;
+        const confirmation = prompt('Re-enter the new password:') || '';
+        if (newPassword !== confirmation) return alert('Passwords do not match.');
+        if (newPassword.length < 8 || newPassword.length > 128) return alert('Password must be between 8 and 128 characters.');
+    }
+
     try {
-        const { data: memberEmail, error: emailError } = await sb.rpc('admin_get_member_email', { target_user_id: userId });
-        if (emailError) throw emailError;
-        if (!memberEmail) throw new Error('No registered email address was found for this member.');
-        const { error: resetError } = await sb.auth.resetPasswordForEmail(memberEmail);
-        if (resetError) throw resetError;
-        if (window.Swal) await Swal.fire({ icon: 'success', title: 'Reset Email Sent', text: 'A secure password-reset link has been sent to the member.', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
-        else alert('A secure password-reset email has been sent to the member.');
+        const { data, error } = await sb.functions.invoke('admin-reset-member-password', {
+            body: { target_user_id: userId, new_password: newPassword }
+        });
+        newPassword = '';
+        if (error) {
+            let detail = error.message || 'Edge Function request failed.';
+            try {
+                const response = error.context;
+                if (response && typeof response.json === 'function') {
+                    const body = await response.json();
+                    if (body?.error) detail = body.error;
+                }
+            } catch (_) {}
+            throw new Error(detail);
+        }
+        if (!data?.ok) throw new Error(data?.error || 'Password reset was not confirmed by the server.');
+        if (window.Swal) {
+            await Swal.fire({ icon: 'success', title: 'Password Updated', text: 'اس ممبر کا نیا پاس ورڈ کامیابی سے محفوظ ہو گیا ہے۔', background: '#0d1c14', color: '#e5b853', confirmButtonColor: '#e5b853' });
+        } else {
+            alert('Member password updated successfully.');
+        }
     } catch (err) {
-        if (window.Swal) await Swal.fire({ icon: 'error', title: 'Reset Failed', text: err.message || String(err), background: '#0d1c14', color: '#e5b853' });
-        else alert('Reset failed: ' + (err.message || String(err)));
+        newPassword = '';
+        if (window.Swal) {
+            await Swal.fire({ icon: 'error', title: 'Password Reset Failed', text: err.message || String(err), background: '#0d1c14', color: '#e5b853' });
+        } else {
+            alert('Password reset failed: ' + (err.message || String(err)));
+        }
     }
 }
 
@@ -5423,7 +5522,7 @@ async function editMemberPoints(userId, currentPoints) {
     }
 }
 
-async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null, buyerNameFallback = null, productId = null) {
+async function showOrderDetails(id, phone, address, orderStatus, name, price, buyerId, paymentProof, quantity = 1, savedSubtotal = null, savedDeliveryUsd = null, savedDeliveryAmount = null, savedGrandTotal = null, productImage = null, buyerNameFallback = null, productId = null, paymentMethod = null) {
     $('orderDetailName').textContent = (name || 'Unknown Product') + ' • ' + (buyerNameFallback || 'Loading buyer…') + ' • Order …' + String(id).slice(-6);
     const imgContainer = document.getElementById('orderProductImageContainer');
     if (imgContainer) {
@@ -5433,7 +5532,11 @@ async function showOrderDetails(id, phone, address, orderStatus, name, price, bu
             imgContainer.innerHTML = '';
         }
     }
-    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—'; const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(savedGrandTotal ?? (Number(price || 0) * orderQty + Number(savedDeliveryAmount || 0))); $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')' + (savedDeliveryUsd !== null && savedDeliveryUsd !== undefined ? ' • Delivery: ' + convertMoney(savedDeliveryUsd) : '');
+    $('orderDetailPhone').textContent = phone || '—'; $('orderDetailAddress').textContent = address || '—';
+    const paymentKey = String(paymentMethod || '').trim().toLowerCase();
+    const paymentLabels = {wallet:'👛 Wallet Payment',cod:'🚚 Cash on Delivery',manual:'🧾 Manual Payment',easypaisa:'🧾 Easypaisa (Manual)',jazzcash:'🧾 JazzCash (Manual)',bank:'🏦 Bank Transfer'};
+    $('orderDetailPaymentMethod').textContent = paymentLabels[paymentKey] || (paymentKey ? paymentKey.replaceAll('_',' ').toUpperCase() : 'Not recorded in this order');
+    const orderQty = Math.max(1, Number(quantity) || 1); const totalPrice = Number(savedGrandTotal ?? (Number(price || 0) * orderQty + Number(savedDeliveryAmount || 0))); $('orderDetailPrice').textContent = convertMoney(totalPrice) + ' (Qty: ' + orderQty + ')' + (savedDeliveryUsd !== null && savedDeliveryUsd !== undefined ? ' • Delivery: ' + convertMoney(savedDeliveryUsd) : '');
     $('orderDetailStatus').textContent = String(orderStatus || 'unknown').toUpperCase(); $('orderDetailUserId').textContent = buyerId ? '...' + String(buyerId).slice(-8) : '—'; $('orderDetailMemberCode').textContent = 'Loading…';
     
     if (buyerId) {
@@ -5551,7 +5654,12 @@ async function updateOrderStatus(orderId, newStatus) {
         .eq('id', orderId).single();
     if (readError || !currentOrder) return alert('Order not found: ' + (readError?.message || ''));
     const previousStatus = String(currentOrder.status || '').toLowerCase();
-    if (newStatus === 'confirmed' && !currentOrder.payment_proof) {
+    // Wallet purchases are paid from the member's internal balance.
+    // COD must ALWAYS have delivery/payment proof uploaded by the member
+    // and reviewed by Admin before confirmation.
+    const paymentMethod = String(currentOrder.payment_method || '').toLowerCase();
+    const proofRequired = paymentMethod !== 'wallet';
+    if (newStatus === 'confirmed' && proofRequired && !currentOrder.payment_proof) {
         const msg = 'پیمنٹ پروف اپلوڈ نہیں ہوا۔ براہ کرم پہلے پیمنٹ پروف اپلوڈ کریں، پھر آرڈر کنفرم کریں۔';
         if (window.Swal) await Swal.fire({ icon:'warning', title:'پیمنٹ پروف درکار ہے', text:msg, background:'#0d1c14', color:'#e5b853' });
         else alert(msg);
@@ -5584,7 +5692,7 @@ async function updateOrderStatus(orderId, newStatus) {
         else alert(msg);
         return;
     }
-    if (newStatus === 'confirmed' && currentOrder.payment_method === 'cod') {
+    if (newStatus === 'confirmed' && paymentMethod === 'cod') {
         const { error: codVerifyError } = await sb.from('orders').update({ cod_verified_at: new Date().toISOString(), cod_verified_by: user?.id || null }).eq('id', orderId).eq('payment_method', 'cod');
         if (codVerifyError) console.warn('COD verification audit timestamp could not be saved:', codVerifyError.message);
     }
@@ -5647,6 +5755,21 @@ async function editProduct(id) {
     $('editProductName').value = product.name || '';
     $('editProductCategory').value = product.category || '';
     $('editProductPrice').value = Number(product.price_usd || 0).toFixed(2);
+    const editKind = gmCodSupplierKind(product.supplier_source);
+    const costWrap=$('editSupplierCostWrap'); if(costWrap){costWrap.style.display=editKind==='cj'?'block':'none';}
+    const costInput=$('editSupplierCost'); if(costInput){costInput.value=Number(product.cj_cost_usd||0).toFixed(2);costInput.dataset.kind=editKind;}
+    const costLabel=$('editSupplierCostLabel'); if(costLabel)costLabel.textContent='CJ Original Cost (USD)';
+    const originalLink=$('editSupplierOriginalLink'); if(originalLink){const link=editKind==='markaz'?(product.markaz_source_url||product.markaz_app_url||''):(product.cj_source_url||'');originalLink.innerHTML=link?'Original supplier link: <a target="_blank" rel="noopener noreferrer" href="'+esc(link)+'">Open source product ↗</a>':'';}
+    const markazPkrWrap=$('editMarkazPkrWrap'); if(markazPkrWrap)markazPkrWrap.style.display=editKind==='markaz'?'block':'none';
+    const mkCost=$('editMarkazCostPkr'), mkSell=$('editMarkazSellPkr');
+    if(mkCost)mkCost.value=Number(product.markaz_cost_pkr||((Number(product.markaz_cost_usd||0))*Number(window.GM_PKR_PER_USD||280))).toFixed(0);
+    if(mkSell)mkSell.value=Number(product.price_pkr||((Number(product.price_usd||0))*Number(window.GM_PKR_PER_USD||280))).toFixed(0);
+    const updateMkMargin=()=>{const box=$('editMarkazPkrMargin');if(box)box.textContent='اندازاً منافع: Rs '+(Number(mkSell?.value||0)-Number(mkCost?.value||0)).toLocaleString('en-PK');};
+    if(mkCost&&!mkCost.dataset.bound){mkCost.addEventListener('input',updateMkMargin);mkCost.dataset.bound='1';}
+    if(mkSell&&!mkSell.dataset.bound){mkSell.addEventListener('input',updateMkMargin);mkSell.dataset.bound='1';}
+    updateMkMargin();
+    const marginBox=$('editSupplierMargin'); if(marginBox){const c=Number(costInput?.value||0);marginBox.textContent='Estimated gross margin: $'+(Number(product.price_usd||0)-c).toFixed(2);}
+    if(costInput&&!costInput.dataset.bound){costInput.addEventListener('input',()=>{const m=$('editSupplierMargin');if(m)m.textContent='Estimated gross margin: $'+(Number($('editProductPrice')?.value||0)-Number(costInput.value||0)).toFixed(2);});costInput.dataset.bound='1';}
     $('editProductDiscount').value = Number(product.discount_percent || 0);
     $('editProductRate').value = Number(product.commission_percent || 0);
     $('editProductDescription').value = product.description || '';
@@ -5666,7 +5789,7 @@ async function editProduct(id) {
     if ($('editProductCodEnabled')) $('editProductCodEnabled').disabled = !codAllowedSupplier;
     if ($('editProductCodEnabled')) $('editProductCodEnabled').checked = codAllowedSupplier && product.cod_enabled === true;
     $('editProductImages').value = '';
-    window.gmEditProductImagesState = (Array.isArray(product.images) ? product.images : (product.image_url ? [product.image_url] : [])).filter(Boolean);
+    window.gmEditProductImagesState = (Array.isArray(product.images) ? product.images : []).map(v=>typeof v==='string'?v:(v&&typeof v==='object'?(v.url||v.src||v.image_url||v.original||''): '')).map(v=>String(v||'').trim()).filter(v=>/^https?:\/\//i.test(v)); if(!window.gmEditProductImagesState.length&&typeof product.image_url==='string'&&/^https?:\/\//i.test(product.image_url))window.gmEditProductImagesState=[product.image_url];
     gmRenderEditProductImages();
     $('editProductStatus').classList.add('hidden');
     $('editProductModal').classList.remove('hidden');
@@ -5700,6 +5823,18 @@ async function saveProductEdit() {
         show_in_premium: isCJGlobal ? false : $('editShowPremium').checked,
         show_in_best_sellers: isCJGlobal ? false : $('editShowBestSellers').checked
     };
+    const supplierCost=Number($('editSupplierCost')?.value);
+    if(supplierKey==='cj dropshipping'&&Number.isFinite(supplierCost)&&supplierCost>=0) update.cj_cost_usd=Math.round(supplierCost*100)/100;
+    if(supplierKey==='markaz pakistan'){
+      const fx=Number(window.GM_PKR_PER_USD||GM_PKR_PER_USD||280);
+      const mkCostPkr=Number($('editMarkazCostPkr')?.value), mkSellPkr=Number($('editMarkazSellPkr')?.value);
+      if(!(fx>0&&Number.isFinite(mkCostPkr)&&mkCostPkr>=0&&Number.isFinite(mkSellPkr)&&mkSellPkr>=1)) return status('editProductStatus','Markaz کی PKR لاگت اور سیل پرائس درست درج کریں۔','error');
+      update.markaz_cost_pkr=Math.round(mkCostPkr*100)/100;
+      update.markaz_fx_rate=fx;
+      update.markaz_cost_usd=Number((mkCostPkr/fx).toFixed(8));
+      update.price_pkr=Math.round(mkSellPkr*100)/100;
+      update.price_usd=Number((mkSellPkr/fx).toFixed(8));
+    }
     const { data: imageRecord, error: imageReadError } = await sb.from('products').select('images,image_url').eq('id', id).maybeSingle();
     if (imageReadError) return status('editProductStatus', 'Could not read existing product images: ' + imageReadError.message, 'error');
     const existingImageList = Array.isArray(imageRecord?.images) ? imageRecord.images.filter(Boolean) : (imageRecord?.image_url ? [imageRecord.image_url] : []);
@@ -6022,10 +6157,10 @@ function openProductView(index) {
         dotsContainer.appendChild(dot);
     });
     const rawVideoList = [];
-    if (isMarkazCustomerItem) {
+    if (isMarkazCustomerItem || gmCodSupplierKind(p.supplier_source)==='cj') {
         if (Array.isArray(p.markaz_video_urls)) rawVideoList.push(...p.markaz_video_urls);
         if (Array.isArray(p.video_urls)) rawVideoList.push(...p.video_urls);
-        rawVideoList.push(p.markaz_video_url, p.video_url, p.markaz_video);
+        rawVideoList.push(p.markaz_video_url, p.video_url, p.markaz_video, p.cj_video_url);
     }
     const markazVideoUrls = [...new Set(rawVideoList
         .filter(value => typeof value === 'string' && /^https:\/\//i.test(value.trim()))
@@ -6083,6 +6218,8 @@ function openProductView(index) {
                     ? error.message : 'ویڈیو نہیں چل سکی؛ دوبارہ کوشش کریں';
             }
         };
+        videoEl.addEventListener('error', () => { playHint.hidden=false; playHint.textContent='ویڈیو لوڈ نہیں ہوئی — دوبارہ چلانے کے لیے دبائیں'; videoEl.removeAttribute('src'); videoEl.load(); });
+        videoEl.addEventListener('stalled', () => { playHint.hidden=false; playHint.textContent='انٹرنیٹ/ویڈیو سرور سست ہے — دوبارہ کوشش کریں'; });
         videoEl.addEventListener('play', () => { playHint.hidden = true; });
         videoEl.addEventListener('ended', () => { playHint.hidden = false; });
         videoEl.addEventListener('error', () => {
@@ -6383,12 +6520,9 @@ async function submitCheckout() {
             order_id:orderId,balance_before:oldBalance,balance_after:newBalance
         });
         if (txnError) console.error('Wallet transaction log failed:',txnError.message);
-        const {error:confirmError}=await sb.from('orders').update({status:'confirmed'}).eq('id',orderId);
-        if (confirmError) throw new Error('Wallet charged but order confirmation failed. Contact admin with Order ID: '+orderId);
-        if (typeof processOrderRewards==='function') {
-            try { await processOrderRewards(orderId,false); } catch(e) { console.error('Wallet rewards failed:',e); }
-        }
-        alert('Order placed successfully via Wallet.');
+        // Wallet payment is recorded, but the order must remain pending until Admin confirms it.
+        // Rewards/commissions are issued only by the Admin status-change settlement flow.
+        alert('Wallet payment received. Your order is Pending and will be confirmed after Admin review.');
         $('checkoutPage').classList.add('hidden'); $('productViewPage').classList.add('hidden');
         document.body.style.overflow=''; checkoutData=null;
         await loadMyWallet(); tab('my-wallet');
@@ -7988,8 +8122,10 @@ document.addEventListener('DOMContentLoaded', init);
   const btn=document.getElementById('coSubmitBtn');if(btn){btn.disabled=true;btn.textContent='Processing…'}let created=[];try{let {data:wallet,error:we}=await sb.from('wallets').select('id,balance').eq('user_id',user.id).maybeSingle();if(we)throw we;if(!wallet||Number(wallet.balance||0)<total)throw new Error('Wallet balance is insufficient.');
    for(let i=0;i<items.length;i++){let x=items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?delivery:0,total_usd:line+(i===0?delivery:0),phone_number:phone,shipping_address:address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'wallet'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;created.push({id:r.data.id,amount:payload.total_usd});}
    if(await checkSystemLockStatus())throw new Error('System lock changed during checkout.');let old=Number(wallet.balance||0),next=old-total;let upd=await sb.from('wallets').update({balance:next}).eq('id',wallet.id).eq('balance',old).select('balance').maybeSingle();if(upd.error||!upd.data)throw new Error('Wallet balance changed; no debit was completed. Please retry.');walletDebited=true;
-   let tx=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:user.id,amount:total,type:'purchase',status:'completed',order_id:created[0].id,balance_before:old,balance_after:next});if(tx.error)console.warn('Wallet audit transaction:',tx.error.message);for(let i=0;i<created.length;i++){let id=created[i].id;let c=await sb.from('orders').update({status:'confirmed'}).eq('id',id);if(c.error)throw new Error('Payment deducted, order confirmation needs admin attention. Order '+id);if(typeof processOrderRewards==='function'){try{await processOrderRewards(id,false)}catch(e){console.error(e)}}}
-   gmRemovePurchasedCartItems(items);window.cartCheckoutItems=[];window.pendingCheckoutData=null;document.getElementById('checkoutPage').classList.add('hidden');document.body.style.overflow='';gmMsg('آپ کا آرڈر کامیابی سے جمع ہو گیا۔','success');tab('orders');loadMemberOrders();if(typeof loadMyWallet==='function')loadMyWallet();
+   let tx=await sb.from('wallet_transactions').insert({wallet_id:wallet.id,user_id:user.id,amount:total,type:'purchase',status:'completed',order_id:created[0].id,balance_before:old,balance_after:next});if(tx.error)console.warn('Wallet audit transaction:',tx.error.message);
+   // Do not confirm wallet orders here. Keep every order Pending until Admin confirms it.
+   // Coin and commission settlement runs through the existing Admin status-change RPC only.
+   gmRemovePurchasedCartItems(items);window.cartCheckoutItems=[];window.pendingCheckoutData=null;document.getElementById('checkoutPage').classList.add('hidden');document.body.style.overflow='';gmMsg('والٹ سے ادائیگی موصول ہو گئی۔ آپ کے تمام آرڈرز ایڈمن کی تصدیق تک Pending رہیں گے۔','success');tab('orders');loadMemberOrders();if(typeof loadMyWallet==='function')loadMyWallet();
   }catch(e){if(!walletDebited){for(let x of created){try{await sb.from('orders').delete().eq('id',x.id).eq('status','pending')}catch(_){}}gmMsg('آرڈر مکمل نہیں ہو سکا: '+e.message,'error')}else{gmMsg('والٹ سے رقم کٹ گئی ہے مگر آرڈر کی تصدیق مکمل نہیں ہوئی۔ آرڈرز Pending محفوظ ہیں؛ براہِ کرم ایڈمن سے رابطہ کریں۔ '+e.message,'warning')}}finally{if(btn){btn.disabled=false;btn.textContent='Confirm & Place Order'}}
  };
  window.submitPaymentProof=async function(){if(!user||!sb||!window.pendingCheckoutData)return gmMsg('آرڈر ڈیٹا دستیاب نہیں۔ دوبارہ چیک آؤٹ کریں۔','error');let file=document.getElementById('paymentProofInput').files?.[0];if(!file)return gmMsg('ادائیگی کا اسکرین شاٹ منتخب کریں۔','warning');if(file.size>8*1024*1024)return gmMsg('تصویر 8 MB سے کم ہونی چاہیے۔','warning');let btn=document.getElementById('proofSubmitBtn'),p=window.pendingCheckoutData,created=[];btn.disabled=true;status('proofStatus','آرڈر اور ادائیگی کا ثبوت محفوظ کیا جا رہا ہے…');try{if(await checkSystemLockStatus())throw new Error('System is currently locked. Please contact support.');if(!systemLockStatusLoaded)throw new Error('Could not verify system lock status. Please retry.');let {data:proofProfile,error:proofProfileError}=await sb.from('profiles').select('is_locked').eq('id',user.id).maybeSingle();if(proofProfileError)throw proofProfileError;if(proofProfile?.is_locked)throw new Error('Your account is locked. Contact admin.');for(let i=0;i<p.items.length;i++){let x=p.items[i],line=x.price*x.qty,payload={buyer_id:user.id,buyer_email:user.email||null,product_id:x.id,product_name:x.name,quantity:x.qty,unit_price_usd:x.price,subtotal_usd:line,delivery_charge_usd:i===0?p.delivery_charge_usd:0,total_usd:line+(i===0?p.delivery_charge_usd:0),phone_number:p.phone_number,shipping_address:p.shipping_address,status:'pending',referrer_id:myProfile?.referred_by||null,payment_method:'manual'};let r=await sb.from('orders').insert(payload).select('id').single();if(r.error&&/buyer_email|payment_method|column|schema cache/i.test(r.error.message||'')){let q={...payload};if(/buyer_email|column|schema cache/i.test(r.error.message||''))delete q.buyer_email;if(/payment_method|column|schema cache/i.test(r.error.message||''))delete q.payment_method;r=await sb.from('orders').insert(q).select('id').single()}if(r.error)throw r.error;created.push(r.data.id);}
@@ -9259,7 +9395,7 @@ body.gm-menu-scroll-lock{position:fixed!important;overflow:hidden!important;widt
  window.gmRenderEditProductImages=function(){
    const box=$('gmEditProductExistingImages'); if(!box)return;
    const arr=Array.isArray(window.gmEditProductImagesState)?window.gmEditProductImagesState:[];
-   box.innerHTML=arr.length?arr.map((url,i)=>`<div class="gm-image-manager-item"><img src="${safeUrl(url)}" alt="Product image ${i+1}" loading="lazy"><button type="button" onclick="gmRemoveEditProductImage(${i})">Remove image</button></div>`).join(''):'<div class="gm-image-manager-empty">No saved images. Add new images below.</div>';
+   box.innerHTML=arr.length?arr.map((url,i)=>`<div class="gm-image-manager-item"><img src="${safeUrl(typeof url==='string'?url:(url&&typeof url==='object'?(url.url||url.src||url.image_url||''):''))}" alt="Product image ${i+1}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.style.display='none';const note=document.createElement('div');note.className='gm-image-manager-empty';note.textContent='تصویر کا پیش نظارہ لوڈ نہیں ہوا؛ محفوظ لنک برقرار ہے۔';this.parentNode.insertBefore(note,this.nextSibling)"><button type="button" onclick="gmRemoveEditProductImage(${i})">تصویر ہٹائیں</button></div>`).join(''):'<div class="gm-image-manager-empty">کوئی محفوظ تصویر نہیں۔ نیچے نئی تصاویر شامل کریں۔</div>';
  };
  window.gmRemoveEditProductImage=function(index){
    if(!Array.isArray(window.gmEditProductImagesState))return;
@@ -9502,5 +9638,110 @@ if(typeof _gmHubOriginalOpenAdminSection==='function'){window.openAdminSection=f
 })();
 </script>
 
+
+<style id="gm-professional-order-ui">
+#orderDetailModal .modal-content{max-width:620px!important;width:calc(100% - 22px)!important;border-radius:20px!important;padding:18px!important;background:#0d1c14!important;border:1px solid #355541!important;color:#eef6ef!important}
+#orderDetailModal .modal-content>h2{color:#f0bd55;font-size:23px;margin:0 0 14px}
+.gm-od-section{background:#14291f;border:1px solid #294936;border-radius:15px;padding:13px;margin:11px 0;min-width:0}
+.gm-od-section h3{color:#f0bd55;font-size:15px;margin:0 0 11px}
+.gm-od-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.gm-od-cell{background:#203b2d;border-radius:11px;padding:11px;min-width:0;overflow-wrap:anywhere}
+.gm-od-cell small{display:block;color:#a9c0b0;font-size:11px;margin-bottom:5px}.gm-od-cell b{font-size:14px;overflow-wrap:anywhere}
+.gm-od-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #3b5b45;padding-top:12px;margin-top:10px;font-weight:800}.gm-od-total strong{color:#f0bd55;font-size:23px}
+.gm-od-admin label{display:block;color:#c4d6ca;font-size:12px;margin:9px 0 4px}.gm-od-admin input,.gm-od-admin select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #42634d;border-radius:9px;background:#0b1911;color:#fff}
+.gm-od-admin button{width:100%;margin-top:10px}.gm-od-pill{display:inline-block;padding:5px 9px;border-radius:30px;background:#4b3b19;color:#f5d27a;font-size:11px;font-weight:800}
+.gm-member-tracking{margin-top:10px;padding:12px;border:1px solid #42634d;border-radius:12px;background:#10251a}.gm-member-tracking b{color:#f0bd55}.gm-member-tracking a{display:inline-block;margin-top:8px;color:#f0bd55;font-weight:800}
+@media(max-width:420px){#orderDetailModal .modal-content{padding:12px!important}.gm-od-grid{grid-template-columns:1fr 1fr}.gm-od-cell{padding:9px}.gm-od-cell b{font-size:13px}}
+</style>
+<script id="gm-professional-order-upgrade">
+(function(){
+'use strict';
+const escV=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const moneyV=v=>{try{return convertMoney(Number(v||0))}catch(_){return '$'+Number(v||0).toFixed(2)}};
+const originalShow=window.showOrderDetails;
+if(typeof originalShow==='function'){
+ window.showOrderDetails=async function(id,phone,address,status,name,price,buyerId,proof,qty=1,subtotal=null,deliveryUsd=null,deliveryAmount=null,grand=null,img=null,buyerName=null,productId=null){
+  const result=await originalShow.apply(this,arguments);
+  try{
+   const modal=document.querySelector('#orderDetailModal .modal-content');
+   if(!modal)return result;
+   const oldPrice=document.getElementById('orderDetailPrice');
+   const oldPriceRow=oldPrice?.closest('.item');
+   const orderHeading=document.getElementById('orderDetailName');
+   if(orderHeading){
+    const rawName=String(name||'Unknown Product');
+    const rawBuyer=String(buyerName||'Member');
+    const shortId=String(id||'').slice(-6);
+    orderHeading.innerHTML='<div class=\"gm-od-order-label\">ORDER <span>…'+escV(shortId)+'</span></div><div class=\"gm-od-product-title\">'+escV(rawName)+'</div><div class=\"gm-od-buyer-line\">'+escV(rawBuyer)+'</div>';
+   }
+   const q=Math.max(1,Number(qty)||1), sub=Number(subtotal??(Number(price||0)*q)), total=Number(grand??(sub+Number(deliveryAmount??deliveryUsd??0))), rawShip=Number(deliveryAmount??deliveryUsd??0), ship=(rawShip>0?rawShip:Math.max(0,total-sub));
+   if(oldPriceRow)oldPriceRow.style.display='none';
+   let info=document.getElementById('gmOdPriceBreakdown');
+   if(!info){info=document.createElement('section');info.id='gmOdPriceBreakdown';info.className='gm-od-section';info.innerHTML='<h3>Order Price Breakdown</h3><div class="gm-od-grid"><div class="gm-od-cell"><small>Product Amount</small><b id="gmOdSubtotal"></b><small id="gmOdQty"></small></div><div class="gm-od-cell"><small>Delivery Charges</small><b id="gmOdDelivery"></b><small>Shipping Fee</small></div></div><div class="gm-od-total"><span>Grand Total</span><strong id="gmOdGrand"></strong></div>';const statusRow=document.getElementById('orderDetailStatus')?.closest('.item');(statusRow||oldPriceRow||modal.querySelector('#paymentProofBox'))?.after(info);}
+   document.getElementById('gmOdSubtotal').textContent=moneyV(sub);document.getElementById('gmOdQty').textContent='Quantity: '+q;document.getElementById('gmOdDelivery').textContent=moneyV(ship);document.getElementById('gmOdGrand').textContent=moneyV(total);
+   const phoneRow=document.getElementById('orderDetailPhone')?.closest('.item');
+   if(phoneRow&&!document.getElementById('gmOdCustomerHeading')){const h=document.createElement('div');h.id='gmOdCustomerHeading';h.className='gm-od-section';h.innerHTML='<h3>Customer Information</h3>';phoneRow.before(h);}
+   let privateBox=document.getElementById('gmPrivateFulfillmentBox');
+   if(isAdmin){
+    if(!privateBox){privateBox=document.createElement('section');privateBox.id='gmPrivateFulfillmentBox';privateBox.className='gm-od-section gm-od-admin';privateBox.innerHTML='<h3>🔒 Private Supplier & Courier Details — Admin Only</h3><label>Supplier</label><select id="gmPrivateSupplier"><option>Markaz</option><option>CJ Dropshipping</option><option>Other</option></select><label>Supplier Order ID (صرف آپ کے لیے)</label><input id="gmPrivateSupplierOrderId" placeholder="Markaz MK order ID"><label>Courier Company</label><input id="gmCourierName" placeholder="مثلاً TCS / Leopards / PostEx"><label>Courier Tracking ID</label><input id="gmCourierTrackingId" placeholder="Tracking number"><label>Official Courier Tracking Link</label><input id="gmCourierTrackingUrl" type="url" placeholder="https://courier-official-tracking-link"><small style="color:#a9c0b0">Member کو Supplier Order ID نہیں دکھائی جائے گی۔ Tracking link آپ Courier کی آفیشل ویب سائٹ سے کاپی کر کے ڈالیں۔</small><button class="primary" type="button" id="gmSaveFulfillmentBtn">Save Supplier & Tracking Details</button><div id="gmFulfillmentStatus" class="muted" style="margin-top:8px"></div>';
+      const target=document.getElementById('cjOrderSupplierBox')||document.getElementById('paymentProofBox');target?.after(privateBox);
+      document.getElementById('gmSaveFulfillmentBtn').onclick=()=>window.gmSavePrivateFulfillment(id);
+    }
+    const {data:priv,error:privErr}=await sb.from('gm_order_private_fulfillment').select('supplier_name,supplier_order_id').eq('order_id',id).maybeSingle();
+    if(!privErr&&priv){document.getElementById('gmPrivateSupplier').value=priv.supplier_name||'Markaz';document.getElementById('gmPrivateSupplierOrderId').value=priv.supplier_order_id||'';}
+    const {data:tracking,error:trackErr}=await sb.from('orders').select('courier_name,courier_tracking_number,courier_tracking_url').eq('id',id).maybeSingle();
+    if(!trackErr&&tracking){document.getElementById('gmCourierName').value=tracking.courier_name||'';document.getElementById('gmCourierTrackingId').value=tracking.courier_tracking_number||'';document.getElementById('gmCourierTrackingUrl').value=tracking.courier_tracking_url||'';}
+   }else if(privateBox)privateBox.remove();
+  }catch(e){console.warn('GM professional order UI:',e)}
+  return result;
+ };
+}
+window.gmSavePrivateFulfillment=async function(orderId){
+ if(!isAdmin||!sb||!user)return gmMsg('Admin access required.','error');
+ const supplier=document.getElementById('gmPrivateSupplier')?.value||'Markaz';
+ const supplierId=document.getElementById('gmPrivateSupplierOrderId')?.value.trim()||null;
+ const courier=document.getElementById('gmCourierName')?.value.trim()||null;
+ const tracking=document.getElementById('gmCourierTrackingId')?.value.trim()||null;
+ const url=document.getElementById('gmCourierTrackingUrl')?.value.trim()||null;
+ if(url&&!/^https:\/\//i.test(url))return gmMsg('Courier tracking link must start with https://','warning');
+ const status=document.getElementById('gmFulfillmentStatus');if(status)status.textContent='Saving…';
+ const {error:privateError}=await sb.from('gm_order_private_fulfillment').upsert({order_id:orderId,supplier_name:supplier,supplier_order_id:supplierId,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'order_id'});
+ if(privateError){if(status)status.textContent='Private supplier details save نہیں ہوئے: '+privateError.message;return gmMsg('Private supplier details save نہیں ہوئے۔ پہلے نیا SQL چلائیں۔','error')}
+ const {error:orderError}=await sb.from('orders').update({courier_name:courier,courier_tracking_number:tracking,courier_tracking_url:url}).eq('id',orderId);
+ if(orderError){if(status)status.textContent='Tracking save نہیں ہوئی: '+orderError.message;return gmMsg('Tracking details save نہیں ہو سکیں: '+orderError.message,'error')}
+ if(status)status.textContent='Saved successfully. Supplier ID is Admin-only; tracking is visible to the order owner.';
+ gmMsg('Supplier اور Courier Tracking تفصیلات محفوظ ہوگئیں۔','success');
+};
+const originalMemberLoad=window.loadMemberOrders;
+if(typeof originalMemberLoad==='function')window.loadMemberOrders=async function(){await originalMemberLoad.apply(this,arguments);try{const box=document.getElementById('memberOrdersList');if(!box||!user||!sb)return;const {data,error}=await sb.from('orders').select('id,courier_name,courier_tracking_number,courier_tracking_url').eq('buyer_id',user.id).not('courier_tracking_number','is',null).order('created_at',{ascending:false}).limit(50);if(error){console.warn('Member courier tracking:',error);return}for(const o of data||[]){const card=[...box.querySelectorAll('.gm-notice')].find(el=>el.textContent.includes(String(o.id).slice(-8)));if(!card)continue;let panel=card.querySelector('.gm-member-tracking');if(!panel){panel=document.createElement('div');panel.className='gm-member-tracking';card.append(panel)}panel.innerHTML='<b>📦 Courier Tracking</b><div>'+escV(o.courier_name||'Courier')+' · '+escV(o.courier_tracking_number)+'</div>'+(o.courier_tracking_url?'<a href="'+escV(o.courier_tracking_url)+'" target="_blank" rel="noopener noreferrer">Track My Order ↗</a>':'<small>Tracking link ابھی دستیاب نہیں۔</small>')}}catch(e){console.warn('Member tracking display:',e)}};
+})();
+</script>
+
+
+<style id="gm-final-order-profile-polish">
+/* Order heading: compact, readable hierarchy; no vertical letter wrapping */
+#orderDetailModal #orderDetailName{display:block!important;width:100%!important;min-width:0!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.25!important;}
+#orderDetailModal .gm-od-order-label{display:flex;align-items:center;gap:8px;color:#f0bd55;font-size:12px;font-weight:900;letter-spacing:1.2px;margin:0 0 7px;}
+#orderDetailModal .gm-od-order-label span{color:#d7e5dc;font-weight:700;letter-spacing:.3px;}
+#orderDetailModal .gm-od-product-title{font-size:clamp(16px,4.5vw,20px);font-weight:850;color:#f5f7f3;line-height:1.3;overflow-wrap:anywhere;}
+#orderDetailModal .gm-od-buyer-line{font-size:12px;color:#a9c5b4;margin-top:5px;}
+/* COD shipping must be shown separately and included in the grand total */
+#gmOdPriceBreakdown .gm-od-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}
+#gmOdPriceBreakdown .gm-od-cell{min-width:0!important;overflow-wrap:anywhere!important;}
+#gmOdPriceBreakdown .gm-od-total{display:flex!important;justify-content:space-between!important;gap:10px!important;align-items:center!important;}
+/* My Profile member identity card: reserve image space and give name/ID their own readable column */
+#account #loggedInProfile .gm-ref-member-card{display:grid!important;grid-template-columns:76px minmax(0,1fr) 48px!important;gap:10px!important;align-items:center!important;padding:13px!important;overflow:visible!important;}
+#account #loggedInProfile .gm-ref-avatar{width:76px!important;height:76px!important;min-width:76px!important;border-radius:18px!important;overflow:hidden!important;}
+#account #loggedInProfile .gm-ref-avatar img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;}
+#account #loggedInProfile .gm-ref-member-info{min-width:0!important;width:100%!important;overflow:visible!important;display:flex!important;flex-direction:column!important;gap:6px!important;}
+#account #loggedInProfile .gm-ref-member-info>b{font-size:clamp(15px,4.2vw,21px)!important;line-height:1.25!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;}
+#account #loggedInProfile .gm-ref-member-info>span{display:block!important;font-size:11px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;}
+#account #loggedInProfile .gm-ref-member-info>span strong{display:inline!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:12px!important;}
+#account #loggedInProfile .gm-ref-edit-photo{width:46px!important;min-width:46px!important;padding:7px 3px!important;justify-self:end!important;}
+#account #loggedInProfile .gm-ref-edit-photo span{font-size:9px!important;line-height:1.1!important;}
+@media(max-width:360px){#account #loggedInProfile .gm-ref-member-card{grid-template-columns:62px minmax(0,1fr) 42px!important;gap:7px!important;padding:9px!important;}#account #loggedInProfile .gm-ref-avatar{width:62px!important;height:62px!important;min-width:62px!important;}#account #loggedInProfile .gm-ref-member-info>b{font-size:14px!important;}#account #loggedInProfile .gm-ref-member-info>span{font-size:10px!important;}#account #loggedInProfile .gm-ref-edit-photo{width:40px!important;min-width:40px!important;}}
+</style>
 </body>
 </html>
+
+
